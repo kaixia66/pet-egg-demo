@@ -1,0 +1,2 @@
+# Preserve vendor SDK files exactly as checked in.
+* -text
