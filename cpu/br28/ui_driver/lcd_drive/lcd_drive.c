@@ -16,7 +16,7 @@
 #include "product_test.h"
 #include "ui/lcd_spi/lcd_drive.h"
 
-#if (TCFG_UI_ENABLE && TCFG_SPI_LCD_ENABLE)
+#if ((TCFG_UI_ENABLE || LVGL_TEST_ENABLE) && TCFG_SPI_LCD_ENABLE)
 
 #define lcd_debug printf
 
@@ -2183,5 +2183,4 @@ REGISTER_LP_TARGET(lcd_lp_target) = {
 };
 
 
-#endif /* #if (TCFG_UI_ENABLE && TCFG_SPI_LCD_ENABLE) */
-
+#endif /* #if ((TCFG_UI_ENABLE || LVGL_TEST_ENABLE) && TCFG_SPI_LCD_ENABLE) */

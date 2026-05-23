@@ -161,6 +161,7 @@ DEFINES := \
 	-DLV_LVGL_H_INCLUDE_SIMPLE \
 	-DLV_EX_CONF_INCLUDE_SIMPLE \
 	-DLV_DEMO_CONF_INCLUDE_SIMPLE \
+	-DMVP_A_ASSET_ROOT=\"apps/watch/mvp_a/resources/MVP-A_Final_Engineering_Resources_V0.1\" \
 
 
 DEFINES += $(EXT_CFLAGS) # 额外的一些定义
@@ -199,6 +200,21 @@ INCLUDES := \
 	-Iapps/watch/include/task_manager/bt \
 	-Iapps/watch/include/user_api \
 	-Iapps/watch/include/sport_data \
+	-Iapps/watch/mvp_a/core \
+	-Iapps/watch/mvp_a/domain \
+	-Iapps/watch/mvp_a/services \
+	-Iapps/watch/mvp_a/ui \
+	-Iapps/watch/mvp_a/ui/widgets \
+	-Iapps/watch/mvp_a/ui/pages/boot \
+	-Iapps/watch/mvp_a/ui/pages/home \
+	-Iapps/watch/mvp_a/ui/pages/growth \
+	-Iapps/watch/mvp_a/ui/pages/training \
+	-Iapps/watch/mvp_a/ui/pages/cardbag \
+	-Iapps/watch/mvp_a/ui/pages/nfc \
+	-Iapps/watch/mvp_a/ui/pages/coop \
+	-Iapps/watch/mvp_a/ui/pages/boss \
+	-Iapps/watch/mvp_a/ui/pages/diary \
+	-Iapps/watch/mvp_a/ui/pages/debug \
 	-Iapps/common \
 	-Iapps/common/device \
 	-Iapps/common/audio \
@@ -912,6 +928,34 @@ c_SRC_FILES := \
 	apps/watch/task_manager/pc/pc.c \
 	apps/watch/task_manager/power_off/power_off.c \
 	apps/watch/task_manager/power_on/power_on.c \
+	apps/watch/mvp_a/core/mvp_a_app.c \
+	apps/watch/mvp_a/core/mvp_a_debug.c \
+	apps/watch/mvp_a/core/mvp_a_save.c \
+	apps/watch/mvp_a/domain/mvp_a_boss.c \
+	apps/watch/mvp_a/domain/mvp_a_card.c \
+	apps/watch/mvp_a/domain/mvp_a_diary.c \
+	apps/watch/mvp_a/domain/mvp_a_home.c \
+	apps/watch/mvp_a/domain/mvp_a_pet.c \
+	apps/watch/mvp_a/domain/mvp_a_training.c \
+	apps/watch/mvp_a/services/mvp_a_assets.c \
+	apps/watch/mvp_a/services/mvp_a_image_assets.c \
+	apps/watch/mvp_a/services/mvp_a_ble.c \
+	apps/watch/mvp_a/services/mvp_a_nfc.c \
+	apps/watch/mvp_a/services/mvp_a_platform.c \
+	apps/watch/mvp_a/ui/mvp_a_ui.c \
+	apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c \
+	apps/watch/mvp_a/ui/widgets/mvp_a_ui_draw.c \
+	apps/watch/mvp_a/ui/widgets/mvp_a_lvgl_page.c \
+	apps/watch/mvp_a/ui/pages/boot/mvp_a_ui_boot.c \
+	apps/watch/mvp_a/ui/pages/home/mvp_a_ui_home.c \
+	apps/watch/mvp_a/ui/pages/growth/mvp_a_ui_growth.c \
+	apps/watch/mvp_a/ui/pages/training/mvp_a_ui_training.c \
+	apps/watch/mvp_a/ui/pages/cardbag/mvp_a_ui_card.c \
+	apps/watch/mvp_a/ui/pages/nfc/mvp_a_ui_nfc.c \
+	apps/watch/mvp_a/ui/pages/coop/mvp_a_ui_coop.c \
+	apps/watch/mvp_a/ui/pages/boss/mvp_a_ui_boss.c \
+	apps/watch/mvp_a/ui/pages/diary/mvp_a_ui_diary.c \
+	apps/watch/mvp_a/ui/pages/debug/mvp_a_ui_debug.c \
 	apps/watch/task_manager/record/record.c \
 	apps/watch/task_manager/rtc/alarm_api.c \
 	apps/watch/task_manager/rtc/alarm_user.c \

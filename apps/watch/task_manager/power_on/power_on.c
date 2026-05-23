@@ -12,6 +12,7 @@
 #include "ui/ui_api.h"
 #include "app_task.h"
 #include "key_event_deal.h"
+#include "mvp_a_app.h"
 
 #if TCFG_UI_ENABLE
 #if UI_UPGRADE_RES_ENABLE
@@ -147,7 +148,13 @@ static int power_on_init(void)
 static int power_on_unint(void)
 {
 
+    mvp_a_app_init();
+    mvp_a_app_scene_switch(MVP_A_SCENE_HOME);
+#if (TCFG_UI_ENABLE && TCFG_SPI_LCD_ENABLE)
     UI_SHOW_WINDOW(ID_WINDOW_DIAL);
+#else
+    UI_SHOW_WINDOW(ID_WINDOW_POWER_ON);
+#endif
 
     tone_play_stop();
     /* UI_HIDE_CURR_WINDOW(); */
@@ -241,4 +248,3 @@ REGISTER_LP_TARGET(poweron_lp_target) = {
     .name = "power_on",
     .is_idle = poweron_idle_query,
 };
-

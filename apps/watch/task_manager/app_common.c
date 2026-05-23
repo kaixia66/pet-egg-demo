@@ -44,6 +44,9 @@
 #include "watch_common.h"
 #include "sport/sport_api.h"
 #include "sport_info_sync.h"
+#include "mvp_a_app.h"
+#include "mvp_a_lvgl_shell.h"
+#include "mvp_a_ui.h"
 #define LOG_TAG_CONST       APP_ACTION
 #define LOG_TAG             "[APP_ACTION]"
 #define LOG_ERROR_ENABLE
@@ -252,6 +255,50 @@ static void lcd_ui_key_change_page(int key_value)
 }
 #endif /* #if TCFG_UI_ENABLE */
 
+#if (TCFG_UI_ENABLE || LVGL_TEST_ENABLE)
+static int mvp_a_common_key_try_consume(int key_event)
+{
+    if (!mvp_a_app_is_active()) {
+        return false;
+    }
+
+#if LVGL_TEST_ENABLE
+    if (mvp_a_ui_handle_system_key(key_event)) {
+        printf("[MVP_A][LVGL] consume system key=%d\n", key_event);
+        mvp_a_lvgl_shell_request_refresh();
+        return true;
+    }
+#endif
+
+#if TCFG_UI_ENABLE
+    int window_id = UI_GET_WINDOW_ID();
+
+    if ((window_id != ID_WINDOW_POWER_ON) &&
+        (window_id != ID_WINDOW_DIAL) &&
+        (window_id != ID_WINDOW_BT) &&
+        (window_id != ID_WINDOW_CLOCK) &&
+        (window_id != ID_WINDOW_CALL_DIAL)) {
+        return false;
+    }
+
+    if (!mvp_a_ui_handle_system_key(key_event)) {
+        return false;
+    }
+
+    printf("[MVP_A] consume system key=%d window=0x%x\n", key_event, window_id);
+    if (window_id != ID_WINDOW_DIAL) {
+        printf("[MVP_A] force show mvp window from 0x%x\n", window_id);
+        UI_SHOW_WINDOW(ID_WINDOW_DIAL);
+    } else {
+        ui_core_redraw(ui_core_get_element_by_id(window_id));
+    }
+    return true;
+#endif
+
+    return false;
+}
+#endif
+
 
 int app_common_key_msg_deal(struct sys_event *event)
 {
@@ -263,6 +310,12 @@ int app_common_key_msg_deal(struct sys_event *event)
     if (key_event == KEY_NULL) {
         return false;
     }
+
+#if (TCFG_UI_ENABLE || LVGL_TEST_ENABLE)
+    if (mvp_a_common_key_try_consume(key_event)) {
+        return false;
+    }
+#endif
 
 #if TCFG_UI_ENABLE
     if (key_is_ui_takeover()) {
@@ -1025,4 +1078,3 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
     }
 }
 #endif
-

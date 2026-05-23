@@ -307,7 +307,7 @@ const struct iokey_port iokey_list[] = {
         .key_value = 2,
     },
 
-#if (TCFG_IOKEY3 != TCFG_RVDD2PVDD_DCDC_EN_IO)
+#if (!TCFG_RVDD2PVDD_DCDC || (TCFG_IOKEY3 != TCFG_RVDD2PVDD_DCDC_EN_IO))
     {
         .connect_way = TCFG_IOKEY3_WAY,
         .key_type.one_io.port = TCFG_IOKEY3,

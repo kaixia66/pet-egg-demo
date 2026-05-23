@@ -45,7 +45,7 @@
 /*软件IIC设置*/
 #define TCFG_SW_I2C0_CLK_PORT               IO_PORTG_03                             //软件IIC  CLK脚选择
 #define TCFG_SW_I2C0_DAT_PORT               IO_PORTG_04                             //软件IIC  DAT脚选择
-#define TCFG_SW_I2C0_DELAY_CNT              50                                      //IIC延时参数，影响通讯时钟频率
+#define TCFG_SW_I2C0_DELAY_CNT              75                                      //IIC延时参数，影响通讯时钟频率
 
 /*硬件IIC端口选择
   SCL         SDA
@@ -69,12 +69,12 @@
 #define TCFG_HW_SPI1_ROLE		SPI_ROLE_MASTER
 
 #define	TCFG_HW_SPI2_ENABLE		ENABLE_THIS_MOUDLE
-#define TCFG_HW_SPI2_PORT_CLK   NO_CONFIG_PORT
-#define TCFG_HW_SPI2_PORT_DO    NO_CONFIG_PORT
-#define TCFG_HW_SPI2_PORT_DI    NO_CONFIG_PORT
-#define TCFG_HW_SPI2_PORT_D2    NO_CONFIG_PORT
-#define TCFG_HW_SPI2_PORT_D3    NO_CONFIG_PORT
-#define TCFG_HW_SPI2_BAUD		2000000L
+#define TCFG_HW_SPI2_PORT_CLK   IO_PORTC_01
+#define TCFG_HW_SPI2_PORT_DO    IO_PORTC_02
+#define TCFG_HW_SPI2_PORT_DI    IO_PORTC_04
+#define TCFG_HW_SPI2_PORT_D2    IO_PORTC_05
+#define TCFG_HW_SPI2_PORT_D3    IO_PORTC_00
+#define TCFG_HW_SPI2_BAUD		24000000L
 #define TCFG_HW_SPI2_MODE		SPI_MODE_BIDIR_1BIT
 #define TCFG_HW_SPI2_ROLE		SPI_ROLE_MASTER
 //*********************************************************************************//
@@ -109,7 +109,7 @@
 #define TCFG_NANDFLASH_DEV_ENABLE		    DISABLE_THIS_MOUDLE
 #define TCFG_FLASH_DEV_FLASH_READ_WIDTH     SPI_MODE_UNIDIR_4BIT//SPI_MODE_UNIDIR_2BIT//SPI_MODE_BIDIR_1BIT//
 #define TCFG_FLASH_DEV_SPI_HW_NUM			2// 1: SPI1    2: SPI2
-#define TCFG_FLASH_DEV_SPI_CS_PORT	    	IO_PORTB_07
+#define TCFG_FLASH_DEV_SPI_CS_PORT	    	IO_PORTC_03
 
 #define TCFG_VIRFAT_FLASH_ENABLE  			ENABLE	// FLASH虚拟文件系统
 #define TCFG_VIRFAT_INSERT_FLASH_ENABLE  	DISABLE	// 内置FLASH虚拟文件系统
@@ -578,9 +578,9 @@ DAC硬件上的连接方式,可选的配置：
 #define TCFG_LCD_ST7735S_ENABLE	        	DISABLE_THIS_MOUDLE
 #define TCFG_LCD_ST7789V_ENABLE             DISABLE_THIS_MOUDLE
 #define TCFG_LCD_SPI_ST7789V_ENABLE         DISABLE_THIS_MOUDLE
-#define TCFG_LCD_SPI_ST7789_BOE1_54_ENABLE  ENABLE_THIS_MOUDLE
+#define TCFG_LCD_SPI_ST7789_BOE1_54_ENABLE  DISABLE_THIS_MOUDLE
 #define TCFG_LCD_SPI_RM69330_ENABLE        	DISABLE_THIS_MOUDLE
-#define TCFG_LCD_SPI_SH8601A_ENABLE        	DISABLE_THIS_MOUDLE
+#define TCFG_LCD_SPI_SH8601A_ENABLE        	ENABLE_THIS_MOUDLE
 #define TCFG_LCD_SPI_ICNA3310B_ENABLE       DISABLE_THIS_MOUDLE
 #define TCFG_LCD_QSPI_ST77903_ENABLE        DISABLE_THIS_MOUDLE
 #define TCFG_LCD_QSPI_ST77903_V1_ENABLE     DISABLE_THIS_MOUDLE
@@ -607,16 +607,16 @@ DAC硬件上的连接方式,可选的配置：
 
 #define TCFG_SPI_LCD_ENABLE                 ENABLE_THIS_MOUDLE //spi lcd开关
 #define TCFG_TFT_LCD_DEV_SPI_HW_NUM			1// 0: SPI0    1: SPI1    2: SPI2 配置lcd选择的spi口
-#define TCFG_TOUCH_PANEL_ENABLE             ENABLE//DISABLE
+#define TCFG_TOUCH_PANEL_ENABLE             DISABLE
 #define TCFG_TOUCH_USER_IIC_TYPE            0  //0:软件IIC  1:硬件IIC
 #define TCFG_TP_BL6133_ENABLE               DISABLE_THIS_MOUDLE//注意: iic 时钟需小于200k
 #define TCFG_TP_IT7259E_ENABLE              DISABLE_THIS_MOUDLE
-#define TCFG_TP_FT6336G_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_TP_FT6336G_ENABLE				DISABLE_THIS_MOUDLE
 #define TCFG_TP_CST816S_ENABLE              DISABLE_THIS_MOUDLE
 #define TCFG_TP_CST816D_ENABLE              DISABLE_THIS_MOUDLE
-#define TCFG_TP_INT_IO                      IO_PORTG_05 //TP中断脚
-#define TCFG_TP_RESET_IO                    IO_PORTG_06 //TP复位脚
-#define TCFG_TP_POWER_IO                    IO_PORTA_05 //TP电源脚
+#define TCFG_TP_INT_IO                      IO_PORTC_08 //TP中断脚
+#define TCFG_TP_RESET_IO                    IO_PORTG_05 //TP复位脚
+#define TCFG_TP_POWER_IO                    NO_CONFIG_PORT //TP电源脚
 
 #define TCFG_TP_SLEEP_EN					ENABLE	// 触摸屏sleep使能
 #define TP_POWER_DOWN_EN                    DISABLE  //tp掉电使能

@@ -13,6 +13,8 @@
 #include "lvgl.h"
 #include "ui/ui_api.h"
 #include "asm/imd.h"
+#include "asm/cache.h"
+#include "generic/rect.h"
 
 #include "app_config.h"
 
@@ -21,9 +23,9 @@
 /*********************
  *      DEFINES
  *********************/
-#define MY_DISP_HOR_RES 		240
-#define MY_DISP_VER_RES			240
-#define MY_DISP_VLOCK_H			60
+#define MY_DISP_HOR_RES 		454
+#define MY_DISP_VER_RES			454
+#define MY_DISP_VLOCK_H			20
 
 /**********************
  *      TYPEDEFS
@@ -35,6 +37,7 @@
 static void disp_init(void *lcd);
 
 static void disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p);
+static void disp_rounder(lv_disp_drv_t *disp_drv, lv_area_t *area);
 //static void gpu_fill(lv_disp_drv_t * disp_drv, lv_color_t * dest_buf, lv_coord_t dest_width,
 //        const lv_area_t * fill_area, lv_color_t color);
 
@@ -50,6 +53,12 @@ static void disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_
  *   GLOBAL FUNCTIONS
  **********************/
 extern int lcd_draw_area(u8 index, u8 *lcd_buf, int left, int top, int width, int height, int wait);
+extern int lcd_qspi_st77903_mode(void);
+extern void lcd_wait_te(void);
+extern void lcd_wait(void);
+extern void lcd_data_copy(u8 type, struct rect *rect, u8 *lcd_buf, int stride,
+                          int left, int top, int width, int height, int wait);
+extern void lcd_data_copy_wait(void);
 
 void lv_port_disp_init(void *lcd)
 {
@@ -116,12 +125,10 @@ void lv_port_disp_init(void *lcd)
 
     /*Used to copy the buffer's content to the display*/
     disp_drv.flush_cb = disp_flush;
+    disp_drv.rounder_cb = disp_rounder;
 
     /*Set a display buffer*/
     disp_drv.draw_buf = &draw_buf_dsc_2;
-
-    /*Required for Example 3)*/
-    //disp_drv.full_refresh = 1
 
     /* Fill a memory array with a color if you have GPU.
      * Note that, in lv_conf.h you can enable GPUs that has built-in support in LVGL.
@@ -167,14 +174,80 @@ static void disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_
     int top		= area->y1;
     int width	= area->x2 - area->x1 + 1;
     int height	= area->y2 - area->y1 + 1;
+
+    if ((area->x2 < 0) || (area->y2 < 0) ||
+        (area->x1 >= MY_DISP_HOR_RES) || (area->y1 >= MY_DISP_VER_RES)) {
+        lv_disp_flush_ready(disp_drv);
+        return;
+    }
+
+    if (left < 0) {
+        color_p += -left;
+        width += left;
+        left = 0;
+    }
+    if (top < 0) {
+        color_p += (-top) * (area->x2 - area->x1 + 1);
+        height += top;
+        top = 0;
+    }
+    if ((left + width) > MY_DISP_HOR_RES) {
+        width = MY_DISP_HOR_RES - left;
+    }
+    if ((top + height) > MY_DISP_VER_RES) {
+        height = MY_DISP_VER_RES - top;
+    }
+
+    if ((width <= 0) || (height <= 0)) {
+        lv_disp_flush_ready(disp_drv);
+        return;
+    }
+
     /* y_printf("[%d,%d,%d,%d]", left, top, width, height); */
-    lcd_draw_area(0, color_p, left, top, width, height, 0);
+    flush_dcache(color_p, width * height * sizeof(lv_color_t));
+    if (lcd_qspi_st77903_mode()) {
+        struct rect r = {
+            .left = left,
+            .top = top,
+            .width = width,
+            .height = height,
+        };
+
+        lcd_wait_te();
+        lcd_data_copy(2, &r, (u8 *)color_p, width * sizeof(lv_color_t),
+                      left, top, width, height, 2);
+        lcd_data_copy_wait();
+    } else {
+        lcd_draw_area(0, color_p, left, top, width, height, 1);
+        lcd_wait();
+    }
     /* lcd_draw_area(0, NULL, left, top, width, height); */
 #endif
 
     /*IMPORTANT!!!
      *Inform the graphics library that you are ready with the flushing*/
     lv_disp_flush_ready(disp_drv);
+}
+
+static void disp_rounder(lv_disp_drv_t *disp_drv, lv_area_t *area)
+{
+    area->x1 &= ~0x1;
+    area->y1 &= ~0x1;
+    area->x2 |= 0x1;
+    area->y2 |= 0x1;
+
+    if (area->x1 < 0) {
+        area->x1 = 0;
+    }
+    if (area->y1 < 0) {
+        area->y1 = 0;
+    }
+    if (area->x2 >= MY_DISP_HOR_RES) {
+        area->x2 = MY_DISP_HOR_RES - 1;
+    }
+    if (area->y2 >= MY_DISP_VER_RES) {
+        area->y2 = MY_DISP_VER_RES - 1;
+    }
 }
 
 /*OPTIONAL: GPU INTERFACE*/
@@ -203,4 +276,3 @@ typedef int keep_pedantic_happy;
 #endif
 
 #endif /* #if LVGL_TEST_ENABLE */
-

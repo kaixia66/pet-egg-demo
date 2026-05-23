@@ -4,7 +4,7 @@
  */
 
 /*Copy this file as "lv_port_indev.c" and set this value to "1" to enable content*/
-#if 0
+#if 1
 
 /*********************
  *      INCLUDES
@@ -73,6 +73,9 @@ static lv_indev_state_t encoder_state;
 
 void lv_port_indev_init(void)
 {
+    printf("[LVGL] indev template disabled, using system key bridge\n");
+    return;
+
     /**
      * Here you will find example implementation of input devices supported by LittelvGL:
      *  - Touchpad
@@ -414,4 +417,3 @@ typedef int keep_pedantic_happy;
 #endif
 
 #endif /* #if LVGL_TEST_ENABLE */
-

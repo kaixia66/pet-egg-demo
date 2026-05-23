@@ -23,6 +23,7 @@
 #include "ui/ui_effect.h"
 #include "app_common.h"
 #include "cat1/cat1_common.h"
+#include "mvp_a_ui.h"
 
 #if TCFG_UI_ENABLE && (!TCFG_LUA_ENABLE)
 #ifdef CONFIG_UI_STYLE_JL_ENABLE
@@ -686,6 +687,49 @@ static const struct uimsg_handl ui_msg_handler[] = {
     { NULL, NULL},      /* 必须以此结尾！ */
 };
 
+static int mvp_a_is_entry_window(int id)
+{
+    return id == ID_WINDOW_POWER_ON;
+}
+
+static int mvp_a_page_onkey(void *ctr, struct element_key_event *e)
+{
+    mvp_a_key_t key;
+
+    switch (e->value) {
+    case KEY_CHANGE_MODE:
+    case KEY_UI_HOME:
+        key = MVP_A_KEY_CONFIRM;
+        break;
+    case KEY_CHANGE_PAGE:
+    case KEY_MUSIC_NEXT:
+    case KEY_VOL_UP:
+        key = MVP_A_KEY_UP;
+        break;
+    case KEY_UI_SHORTCUT:
+    case KEY_MUSIC_PP:
+    case KEY_CALL_HANG_UP:
+        key = MVP_A_KEY_BACK;
+        break;
+    case KEY_UI_PLUS:
+        key = MVP_A_KEY_UP;
+        break;
+    case KEY_UI_MINUS:
+    case KEY_MUSIC_PREV:
+    case KEY_VOL_DOWN:
+        key = MVP_A_KEY_DOWN;
+        break;
+    default:
+        key = MVP_A_KEY_CONFIRM;
+        break;
+    }
+
+    printf("[MVP_A] page onkey raw=%d mapped=%d\n", e->value, key);
+    mvp_a_ui_key_event(key, MVP_A_KEY_EVENT_CLICK);
+    ui_core_redraw(ctr);
+    return true;
+}
+
 static int PAGE_mode_onchange(void *ctr, enum element_change_event e, void *arg)
 {
     struct window *window = (struct window *)ctr;
@@ -696,6 +740,11 @@ static int PAGE_mode_onchange(void *ctr, enum element_change_event e, void *arg)
         break;
     case ON_CHANGE_RELEASE:
 
+        break;
+    case ON_CHANGE_SHOW_POST:
+        if (mvp_a_is_entry_window(window->elm.id)) {
+            mvp_a_ui_render(arg);
+        }
         break;
     default:
         return false;
@@ -731,6 +780,12 @@ REGISTER_UI_EVENT_HANDLER(PAGE_2)
 REGISTER_UI_EVENT_HANDLER(PAGE_3)
 .onchange = PAGE_mode_onchange,
  .onkey = NULL,
+  .ontouch = NULL,
+};
+
+REGISTER_UI_EVENT_HANDLER(ID_WINDOW_POWER_ON)
+.onchange = PAGE_mode_onchange,
+ .onkey = mvp_a_page_onkey,
   .ontouch = NULL,
 };
 
@@ -6045,5 +6100,3 @@ static int TEST_TEXT_onchange(void *_ctrl, enum element_change_event event, void
 
 #endif
 #endif /* #if (!TCFG_LUA_ENABLE) */
-
-

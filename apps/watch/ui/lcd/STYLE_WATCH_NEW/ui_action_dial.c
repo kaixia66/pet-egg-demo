@@ -14,6 +14,8 @@
 #include "ui_draw/ui_wave.h"
 #include "ui/ui_measure.h"
 #include "app_common.h"
+#include "mvp_a_app.h"
+#include "mvp_a_ui.h"
 
 #define LOG_TAG_CONST       UI
 #define LOG_TAG     		"[UI-ACTION]"
@@ -1037,6 +1039,60 @@ static struct effect_redraw_part redraw_part = {0};
 static struct effect_sca_alpha redraw_sal = {0};
 #endif
 
+static int mvp_a_dial_onkey(void *ctr, struct element_key_event *e)
+{
+    if (!mvp_a_ui_handle_system_key(e->value)) {
+        return false;
+    }
+
+    printf("[MVP_A] dial onkey raw=%d\n", e->value);
+    ui_core_redraw(ctr);
+    return true;
+}
+
+static int mvp_a_dial_page_onchange(void *ctr, enum element_change_event e, void *arg)
+{
+    switch (e) {
+    case ON_CHANGE_INIT:
+        printf("[MVP_A] dial page init id=0x%x\n", ((struct element *)ctr)->id);
+        mvp_a_app_init();
+        mvp_a_app_set_active(MVP_A_TRUE);
+        if (ui_core_get_element_by_id(STYLE_DIAL_ID(WATCH))) {
+            ui_core_element_invisable(ui_core_get_element_by_id(STYLE_DIAL_ID(WATCH)), 1);
+            printf("[MVP_A] hide dial watch id=0x%x\n", STYLE_DIAL_ID(WATCH));
+        }
+        if (ui_core_get_element_by_id(STYLE_DIAL_ID(TIME))) {
+            ui_core_element_invisable(ui_core_get_element_by_id(STYLE_DIAL_ID(TIME)), 1);
+            printf("[MVP_A] hide dial time id=0x%x\n", STYLE_DIAL_ID(TIME));
+        }
+        break;
+    case ON_CHANGE_SHOW_POST:
+        printf("[MVP_A] dial page post render id=0x%x\n", ((struct element *)ctr)->id);
+        mvp_a_ui_render(arg);
+        break;
+    case ON_CHANGE_RELEASE:
+        mvp_a_app_set_active(MVP_A_FALSE);
+        break;
+    default:
+        break;
+    }
+
+    return false;
+}
+
+static int mvp_a_dial_hide_onchange(void *ctr, enum element_change_event e, void *arg)
+{
+    (void)arg;
+
+    if (e == ON_CHANGE_INIT) {
+        struct element *elm = (struct element *)ctr;
+        elm->css.invisible = 1;
+        printf("[MVP_A] hide dial elm id=0x%x\n", elm->id);
+    }
+
+    return false;
+}
+
 static int WATCH_onchange(void *ctr, enum element_change_event e, void *arg)
 {
     u32 rets;//
@@ -1055,10 +1111,31 @@ static int WATCH_onchange(void *ctr, enum element_change_event e, void *arg)
     void *hdl;
     struct element_css *css;
     u8 slow_sec = 0;
+    int i;
 
     switch (e) {
     case ON_CHANGE_INIT:
-
+        printf("[MVP_A] dial takeover init id=0x%x\n", elm->id);
+        mvp_a_app_init();
+        mvp_a_app_set_active(MVP_A_TRUE);
+        watch->elm.css.invisible = 1;
+        watch->ctrl_num = 0;
+        watch->elm.css.background_image = 0;
+        for (i = 0; i < WATCH_CHILD_NUM; i++) {
+            watch->child_elm[i].css.invisible = 1;
+        }
+        printf("[MVP_A] hide watch children count=%d\n", WATCH_CHILD_NUM);
+        ui_set_default_handler(watch, NULL, NULL, NULL);
+        break;
+    case ON_CHANGE_SHOW:
+        mvp_a_ui_render(dc);
+        return TRUE;
+    case ON_CHANGE_SHOW_POST:
+        printf("[MVP_A] dial watch post render id=0x%x\n", elm->id);
+        mvp_a_ui_render(dc);
+        return TRUE;
+#if 0
+    case ON_CHANGE_INIT:
         get_sys_time(&time);
 
         ui_watch_set_time(watch, time.hour % 12, time.min, time.sec);
@@ -1198,7 +1275,9 @@ static int WATCH_onchange(void *ctr, enum element_change_event e, void *arg)
             dc->preview.page = 0;
         }
         break;
+#endif
     case ON_CHANGE_RELEASE:
+        mvp_a_app_set_active(MVP_A_FALSE);
         sidebar_root = 0;
         if (watch_show_timer) {
             sys_timer_del(watch_show_timer);
@@ -1715,8 +1794,14 @@ static int WATCH_ontouch(void *_ctrl, struct element_touch_event *e)
 
 REGISTER_UI_EVENT_HANDLER(STYLE_DIAL_ID(WATCH))
 .onchange = WATCH_onchange,
- .onkey = NULL,
+ .onkey = mvp_a_dial_onkey,
   .ontouch = WATCH_ontouch,
+};
+
+REGISTER_UI_EVENT_HANDLER(STYLE_DIAL_ID(TIME))
+.onchange = mvp_a_dial_hide_onchange,
+ .onkey = NULL,
+  .ontouch = NULL,
 };
 
 
@@ -1986,8 +2071,8 @@ static int PAGE_switch_ontouch(void *_layout, struct element_touch_event *e)
 
 
 REGISTER_UI_EVENT_HANDLER(STYLE_DIAL_ID(PAGE_0))
-.onchange = NULL,
- .onkey = NULL,
+.onchange = mvp_a_dial_page_onchange,
+ .onkey = mvp_a_dial_onkey,
   .ontouch = PAGE_switch_ontouch,
 };
 
@@ -2191,4 +2276,3 @@ REGISTER_UI_EVENT_HANDLER(STYLE_DIAL_ID(DRAW_TEST))
 
 #endif
 #endif /* #if (!TCFG_LUA_ENABLE) */
-

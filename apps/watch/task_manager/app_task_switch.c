@@ -65,6 +65,13 @@ int key_event_remap(struct sys_event *e)
 {
     struct key_event *key = &e->u.key;
     int msg = KEY_NULL;
+    int raw_type = key->type;
+    int raw_value = key->value;
+    int raw_event = key->event;
+
+    printf("[MVP_A][KEY] raw type=%d value=%d event=%d task=%d\n",
+           raw_type, raw_value, raw_event, app_curr_task);
+
     switch (key->type) {
     case KEY_DRIVER_TYPE_IO:
 #if TCFG_IOKEY_ENABLE
@@ -100,10 +107,15 @@ int key_event_remap(struct sys_event *e)
         break;
     }
     if (msg == KEY_NULL) {
+        printf("[MVP_A][KEY] remap null type=%d value=%d event=%d task=%d\n",
+               raw_type, raw_value, raw_event, app_curr_task);
         return FALSE;
     }
     e->u.key.event = msg;
     e->u.key.value = 0;//
+
+    printf("[MVP_A][KEY] remap msg=%d type=%d value=%d event=%d task=%d\n",
+           msg, raw_type, raw_value, raw_event, app_curr_task);
 
 #if TCFG_UI_ENABLE && TCFG_SPI_LCD_ENABLE
     if (get_screen_saver_status()) {
@@ -373,5 +385,4 @@ u8 app_check_curr_task(u8 app)
     }
     return false;
 }
-
 

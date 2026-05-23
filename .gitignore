@@ -1,6 +1,7 @@
 # Build outputs
 /obj/
 /objs/
+/build_logs/
 /cpu/br28/tools/sdk.elf
 /cpu/br28/tools/sdk.elf.*
 /cpu/br28/tools/sdk.map

@@ -18,16 +18,14 @@
 
 #include "lvgl.h"
 #include "lv_port_disp.h"
+#include "lv_port_indev.h"
 
 #include "lv_demo_conf.h"
+#include "mvp_a_lvgl_shell.h"
 
 #if LVGL_TEST_ENABLE
 
 #define UI_TASK_NAME 	"ui"
-
-void lv_demo_widgets(void);
-void lv_demo_stress(void);
-void lv_demo_music(void);
 
 #if LV_USE_LOG && LV_LOG_PRINTF
 static void lv_rt_log(const char *buf)
@@ -53,27 +51,20 @@ static void lvgl_task(void *p)
     lv_init();
 
     lv_port_disp_init(p);
+    lv_port_indev_init();
 
     sys_s_hi_timer_add(NULL, lvgl_test_tick, 2);
 
-#if LV_USE_DEMO_WIDGETS
-    lv_demo_widgets();
-#endif /* #if LV_USE_DEMO_WIDGETS */
-
-#if LV_USE_DEMO_STRESS
-    lv_demo_stress();
-#endif /* #if LV_USE_DEMO_STRESS */
-
-#if LV_USE_DEMO_MUSIC
-    lv_demo_music();
-#endif /* #if LV_USE_DEMO_MUSIC */
+    mvp_a_lvgl_shell_create();
 
     while (1) {
         ret = os_taskq_accept(ARRAY_SIZE(msg), msg);
         if (ret == OS_TASKQ) {
             // msg deal
         }
-        lv_task_handler();
+        mvp_a_lvgl_shell_tick();
+        lv_timer_handler();
+        os_time_dly(1);
     }
 }
 
@@ -89,4 +80,3 @@ int lvgl_test_init(void *param)
 }
 
 #endif /* #if LVGL_TEST_ENABLE */
-
