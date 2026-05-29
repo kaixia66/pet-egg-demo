@@ -150,6 +150,42 @@ sdk/source/SOURCE_INDEX.md
 
 ---
 
+## 3A. `petegg/`
+
+该目录记录碰碰宠物蛋在 Jieli 701N / BR28 SDK 中的最小移植计划和 vendor copy 边界。
+
+### 3A.1 `PETEGG_JIELI_MINIMAL_PORT_PLAN.md`
+
+用途：说明 P13 Jieli minimal port skeleton 的目标、边界、stub 覆盖和 P14–P20 后续路线。
+
+适合任务：
+
+- 判断 PetEgg portable code 是否可以接入 Jieli 工程；
+- 判断真实 LCD/NFC/BLE/Flash 是否应该在当前阶段实现；
+- 判断 `jieli_port` 与 portable modules 的依赖边界。
+
+### 3A.2 `PETEGG_PORTABLE_VENDOR_COPY.md`
+
+用途：记录 portable modules 的来源仓库、来源 commit、包含模块和排除模块。
+
+适合任务：
+
+- 刷新 portable vendor copy；
+- 检查 simulator adapter 是否误进入 Jieli；
+- 检查 portable headers 是否仍保持平台无关。
+
+### 3A.3 `PETEGG_JIELI_BUILD_NOTES.md`
+
+用途：记录 P13 未修改 SDK 主构建的原因、后续建议加入的源文件组和 host-side syntax smoke 命令。
+
+适合任务：
+
+- 方案商确认 Makefile 接入；
+- P14/P15 开始接真实输入、显示或存储；
+- 排查 PetEgg source list 和 include path。
+
+---
+
 ## 4. `01_prd/`
 
 该目录保存 PRD 摘要和完整 Markdown 转写。

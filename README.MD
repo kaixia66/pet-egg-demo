@@ -8,6 +8,7 @@
 - 公共业务与驱动适配：`apps/common`
 - BR28 芯片相关实现、链接配置、后处理工具：`cpu/br28`
 - 对外 SDK 头文件与预编译库接口：`include_lib`
+- 碰碰宠物蛋最小移植骨架：`apps/watch/petegg`
 - Windows 构建脚本：`.vscode/winmk.bat`
 - 当前默认板级：`CONFIG_BOARD_701N_DEMO`
 
@@ -17,6 +18,7 @@
 
 ```text
 apps/watch/                         手表应用、任务、UI、运动、产品测试、用户 API
+apps/watch/petegg/                  碰碰宠物蛋 P13 portable vendor copy 与 Jieli port skeleton
 apps/watch/board/br28/              BR28 板级配置集合
 apps/watch/ui/lcd/STYLE_WATCH_NEW/  当前 LCD 手表 UI action 和 demo 页面
 apps/watch/ui/lua_ui/               Lua UI 绑定层
@@ -129,6 +131,29 @@ apps/watch/board/br28/board_701n_demo/board_701n_demo_cfg.h
 - 蓝牙和 SmartBox 相关宏
 - 低功耗、电源、充电相关配置
 
+## PetEgg P13 Minimal Port
+
+`apps/watch/petegg` 保存碰碰宠物蛋 Jieli 701N 最小移植骨架。P13 只建立
+portable vendor copy、`jieli_port` stub、fake input/NFC/battery injection 和 compile smoke，
+不替换现有 watch app，也不默认接真实 LCD/NFC/BLE/Flash。
+
+关键规则：
+
+- portable modules 不依赖 Jieli SDK、LVGL、SDL 或 simulator adapter；
+- `jieli_port` 是后续唯一接触 Jieli LCD、Key、VM/Flash、NFC、BLE、电源、音频的层；
+- SD 卡内容扩展已取消，内容卡指 NFC 实体卡；
+- NFC 内容卡只激活本地或外置 Flash 预置内容，不承载图片、动画、宠物资源或道具资源；
+- 设备本地最多 18 只宠物，宠物数据、卡包、装备、家园资产和 NFC 激活记录保存在设备本地。
+
+更多说明见：
+
+```text
+apps/watch/petegg/README.md
+SOURCE/petegg/PETEGG_JIELI_MINIMAL_PORT_PLAN.md
+SOURCE/petegg/PETEGG_PORTABLE_VENDOR_COPY.md
+SOURCE/petegg/PETEGG_JIELI_BUILD_NOTES.md
+```
+
 ## UI 与资源
 
 本项目同时包含传统杰理 LCD UI、LVGL v8.1.0、Lua UI 绑定、UI 资源工具和多套表盘资源。
@@ -189,4 +214,3 @@ git diff
 ```
 
 提交前确认只包含源码、配置、资源源文件和必要工具输入，不包含本地日志、构建中间物或固件打包结果。
-

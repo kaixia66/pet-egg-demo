@@ -94,6 +94,9 @@ C 代码风格以现有 SDK 为准：宏控制功能、板级头文件集中配�
 - 改功能宏时同步检查 `Makefile` 源文件列表、对应 `include_lib` 头文件、预编译库依赖和后续 `#undef` 条件块。
 - 改板级外设时同时检查 `.c` 初始化、`board_*_cfg.h` 宏、`key_table`、管脚、时钟、电源和低功耗条件。
 - 改 UI 时同时检查 action 文件、页面/窗口 ID、资源工程、字体/语言资源、显示屏与触摸宏。
+- 碰碰宠物蛋 P13 起只在 `apps/watch/petegg` 和 `SOURCE/petegg` 中建立最小移植骨架；不要把 simulator adapter、SDL、SimBroker、debug overlay 或 snapshot export 带入 Jieli 工程。
+- PetEgg portable modules 不得 include Jieli SDK、LVGL、SDL、文件 IO 或 Flash IO；后续真实 LCD/Key/VM/Flash/NFC/BLE/音频/电源适配必须经 `apps/watch/petegg/jieli_port`。
+- SD 卡内容扩展已取消；内容卡指 NFC 实体卡，只激活本地或外置 Flash 预置内容，设备本地最多 18 只宠物。
 - 不要直接编辑 `cpu/br28/liba/*.a`；这些是预编译库。
 - 不要把 `Makefile` 自动生成的 `sdk.ld`、`download.bat/sh`、`isd_config.ini` 当作长期源文件，源头通常在 `cpu/br28/sdk_ld.c`、`cpu/br28/tools/download.c`、`cpu/br28/tools/isd_config_rule.c`。
 
