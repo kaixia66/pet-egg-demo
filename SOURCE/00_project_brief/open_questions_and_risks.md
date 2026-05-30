@@ -100,3 +100,25 @@ Open items:
   field-operable menu path.
 - The existing winmk post-build/resource packaging failure remains independent of P4. P4 must not
   modify toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P5 Resource Manifest Adapter Risks
+
+Status: P5 validates the shared manifest ABI against a tiny in-memory fixture only. It does not prove
+the production Jieli resource path or external-Flash packaging.
+
+Open items:
+- The formal resource package generator is still pending. A later phase must decide how manifest.bin,
+  sprites.pak, anim_table.bin, font.bin and sfx.pak are generated from the Jieli UI tools / image_dll
+  and how those binaries are versioned.
+- External Flash offsets, sizes, erase regions, CRC table ownership and update/rollback behavior remain
+  unconfirmed. P5 does not call NOR/SFC/`flash_file_info`.
+- IMB / image_dll / `open_image_by_id` / `ui_res_flash_info_get` integration is still future work and
+  must not be inferred from the in-memory fixture.
+- Runtime byte order, compression format, palette handling, dirty-rect alignment and IMB-readable
+  address requirements still need board validation.
+- The P5 test blob marks resource 1001 as a background-role placeholder, but the frozen P1/simulator ABI
+  has no dedicated BACKGROUND enum; it is encoded as RGB565 SPRITE to avoid changing shared ABI.
+- The P5 test blob does not represent full production resource coverage, large assets, compression,
+  font/SFX packs, multi-pet manifests or content-card activation.
+- The existing winmk post-build/resource packaging failure remains independent of P5. P5 must not
+  modify toolchain paths, resource scripts or download packaging to mask that environment issue.

@@ -6,7 +6,12 @@ PET_STATIC_ASSERT(pet2d_boundary_result_size,
 
 pet_result_t pet2d_boundary_compile_check_self_test(void)
 {
-    return pet2d_boundary_self_test();
+    pet_result_t ret = pet2d_boundary_self_test();
+
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    return pet2d_boundary_resource_probe_self_test();
 }
 
 const pet_platform_t *pet2d_boundary_compile_check_platform(void)

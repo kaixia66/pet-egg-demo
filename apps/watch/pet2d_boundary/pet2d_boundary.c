@@ -1,7 +1,8 @@
 #include "pet2d_boundary.h"
 #include "pet_platform_jieli_internal.h"
+#include "pet_resource_jieli.h"
 
-#include <stdio.h>
+extern int printf(const char *format, ...);
 
 pet_result_t pet2d_boundary_enter_placeholder(void)
 {
@@ -90,4 +91,13 @@ pet_result_t pet2d_boundary_self_test(void)
     }
 
     return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_boundary_resource_probe_self_test(void)
+{
+    /*
+     * P5 probe only: validates manifest lookup plumbing without loading sprites,
+     * entering Pet2D runtime, allocating a framebuffer, or calling LCD flush.
+     */
+    return pet_resource_jieli_self_test();
 }

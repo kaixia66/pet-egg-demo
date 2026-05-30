@@ -115,3 +115,29 @@ P4 still does not:
 - enable Pet2D runtime or the HOME/Observe scene;
 - change MVP-A default page behavior or key handling;
 - write VM/Flash, or connect BLE/NFC/audio hardware.
+
+## P5 Resource Manifest Adapter Status
+
+Status: implemented as a read-only in-memory manifest parser and fixture backend; not a real external
+Flash resource integration.
+
+Current capability:
+- `apps/watch/pet_resource_jieli/` opens a caller-provided memory blob and parses the P1/simulator
+  resource manifest ABI.
+- The parser validates manifest magic, version, 16-byte header size, 28-byte entry size, entry count,
+  table bounds, data bounds, table CRC32 and entry data CRC32.
+- Lookup is available by resource ID and by type/index. `read_entry` returns a pointer/size into the
+  opened read-only blob and does not copy or decode resource data.
+- The P5 test blob contains three small fixture entries: ID 1001 as an 8x8 RGB565 background-role
+  placeholder, ID 2001 as a 4x4 RGB565 sprite placeholder, and ID 3001 as an animation-table
+  placeholder.
+- `pet2d_boundary_resource_probe_self_test()` lightly references the resource self-test without loading
+  sprites, entering Pet2D runtime, allocating a framebuffer, or writing the display.
+
+P5 still does not:
+- read external Flash, NOR, SFC or `flash_file_info`;
+- write VM/Flash;
+- parse PNG/JPG/GIF/JSON at runtime;
+- import final production art;
+- enable Pet2D runtime or real LCD flush;
+- change MVP-A default page behavior, or connect BLE/NFC/audio hardware.

@@ -61,6 +61,18 @@ but it must not modify the LVGL low-level flush callback, write RGB565 pixels to
 Pet2D runtime, take over the key path, write storage, or connect BLE/NFC. P4 self-tests validate owner
 state-machine behavior only and are not evidence of real hardware display ownership.
 
+## PetEgg P5 Resource Manifest Adapter Rule
+
+P5 is a read-only resource manifest compatibility phase. `apps/watch/pet_resource_jieli/` may parse the
+P1/simulator resource manifest ABI from an in-memory blob, validate CRCs, and perform entry lookup, but
+it must not read external Flash, write VM/Flash, decode PNG/JPG/GIF/JSON at runtime, import final art,
+or enable Pet2D rendering.
+
+The P5 static test blob is only a small fixture for compile/self-test coverage and is not the production
+resource route. Formal resources should later be produced by the Jieli resource tools / `image_dll`,
+packaged as manifest/resource binaries, and mapped to local or external Flash only after ownership,
+offset, size, byte order, compression and CRC policy are confirmed.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

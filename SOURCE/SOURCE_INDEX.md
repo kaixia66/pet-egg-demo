@@ -100,6 +100,28 @@ P4 adds the LVGL/Pet2D display-owner boundary while keeping all real rendering h
 - `SOURCE/10_engineering_reports/p4_render_owner_boundary.md`: records owner state machine, LVGL hook
   points, placeholder behavior and P4 boundaries.
 
+## P5 Resource Manifest Adapter Addendum
+
+P5 adds a read-only resource manifest parser and fixture backend while keeping real Flash/resource
+loading disabled:
+- `apps/watch/pet_resource_jieli/pet_resource_jieli.h`: public read-only blob parser API, manifest info
+  struct, lookup/read helpers and self-test declaration.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli.c`: parses the P1/simulator manifest ABI from a
+  little-endian memory blob, validates magic/version/header size/entry size/table CRC/entry CRC and
+  performs lookup without malloc, file IO or Flash IO.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.h`: fixture IDs and test blob export.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.c`: small P5-only manifest fixture with
+  three entries and fixed CRCs; not a production art/resource route.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_compile_check.c`: compile-only reference for the
+  resource parser and self-test.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h`: declares `pet2d_boundary_resource_probe_self_test()`.
+- `apps/watch/pet2d_boundary/pet2d_boundary.c`: lightly probes the resource self-test without loading
+  sprites, entering Pet2D runtime or writing the display.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: includes the resource probe in the
+  boundary compile/self-test path.
+- `SOURCE/10_engineering_reports/p5_resource_manifest_adapter.md`: records SDK resource audit,
+  manifest ABI alignment, test blob contents, parser API and P5 boundaries.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 
