@@ -26,6 +26,17 @@ or mixed encodings. Prefer `rg`, `git show`, `cmd /c type`, Git Bash, or another
 or explicitly select encoding. If output appears garbled, switch reading tools before editing and do
 not rewrite the whole file just to fix display encoding.
 
+## PetEgg P2 Jieli Platform HAL Skeleton Rule
+
+`apps/watch/pet_platform_jieli/` owns the Jieli-specific platform adapter layer for the shared PetEgg
+ABI. `apps/watch/pet_shared/include` remains platform-independent and must not include Jieli SDK
+private APIs; Jieli-specific code belongs only in `pet_platform_jieli`.
+
+P2 is skeleton/stub only. It may expose a complete `pet_platform_t` callback table and minimal compile
+checks, but it must not enable real Display, Input, Storage, BLE, NFC, Flash, VM, audio, power policy,
+Pet2D, or LVGL flush changes. Hardware callbacks should return `PET_RESULT_NOT_READY`,
+`PET_RESULT_UNSUPPORTED`, or fixed test values until their later phases explicitly wire them.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

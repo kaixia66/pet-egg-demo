@@ -216,6 +216,7 @@ INCLUDES := \
 	-Iapps/watch/mvp_a/ui/pages/diary \
 	-Iapps/watch/mvp_a/ui/pages/debug \
 	-Iapps/watch/pet_shared/include \
+	-Iapps/watch/pet_platform_jieli \
 	-Iapps/common \
 	-Iapps/common/device \
 	-Iapps/common/audio \
@@ -933,6 +934,16 @@ c_SRC_FILES := \
 	apps/watch/mvp_a/core/mvp_a_debug.c \
 	apps/watch/mvp_a/core/mvp_a_save.c \
 	apps/watch/pet_shared/pet_shared_compile_check.c \
+	apps/watch/pet_platform_jieli/pet_platform_jieli.c \
+	apps/watch/pet_platform_jieli/pet_display_jieli.c \
+	apps/watch/pet_platform_jieli/pet_input_jieli.c \
+	apps/watch/pet_platform_jieli/pet_storage_jieli.c \
+	apps/watch/pet_platform_jieli/pet_audio_jieli.c \
+	apps/watch/pet_platform_jieli/pet_ble_jieli.c \
+	apps/watch/pet_platform_jieli/pet_nfc_jieli.c \
+	apps/watch/pet_platform_jieli/pet_power_jieli.c \
+	apps/watch/pet_platform_jieli/pet_debug_jieli.c \
+	apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c \
 	apps/watch/mvp_a/domain/mvp_a_boss.c \
 	apps/watch/mvp_a/domain/mvp_a_card.c \
 	apps/watch/mvp_a/domain/mvp_a_diary.c \

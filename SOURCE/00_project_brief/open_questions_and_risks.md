@@ -40,3 +40,23 @@ Known risks:
 - Real VM/Flash ownership, item IDs, capacity and power-fail behavior are still unconfirmed.
 - Resource container naming constants are frozen for P1, but actual Jieli resource-tool output and
   external-Flash addressing still need validation.
+
+## P2 Jieli Platform HAL Skeleton Risks
+
+Status: skeleton boundary exists; real hardware work is still pending.
+
+Open items:
+- Display profile values in `pet_display_jieli.c` are 454x454 placeholders. P3 must confirm true panel
+  size, shape, safe area, RGB565 byte order, flush alignment, TE/wait behavior and owner policy.
+- Raw Jieli key mapping is not connected. P3 must map board key events to `PetKeyEvent` without
+  changing current MVP-A LVGL key behavior.
+- VM/Flash save ownership, capacity, IDs, erase/write timing and atomic A/B behavior remain pending
+  for P6. P2 must not write persistent storage.
+- BLE packet bridge is not connected. P7 must choose the Jieli transport path and avoid private BLE
+  structs leaking into shared headers.
+- NFC card and pair scan paths are not connected. P7 must confirm reader driver ownership, UID format,
+  timeout behavior and pair payload flow.
+- Power/battery callbacks return fixed values or zero. A later phase must confirm whether to use
+  `get_vbat_percent`, `vbat_check`, or another SDK power API.
+- The existing winmk post-build/resource packaging failure remains independent of P2. P2 must not
+  modify toolchain paths, resource scripts or download packaging to mask that environment issue.

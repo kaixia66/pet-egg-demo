@@ -33,6 +33,32 @@ Related P1 docs:
 - `source/00_project_brief/jieli_701n_customization_baseline.md`
 - `source/00_project_brief/open_questions_and_risks.md`
 
+## P2 Jieli Platform HAL Skeleton Addendum
+
+`apps/watch/pet_platform_jieli/` is the Jieli-specific adapter directory for the P1 shared ABI. It is
+compiled into the SDK for boundary checking, but P2 keeps all real hardware paths disabled.
+
+P2 files:
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: public getter/init entry for the Jieli platform
+  callback table.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: internal prototypes and P2 version
+  constants for the Jieli adapter modules.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.c`: owns `g_pet_platform_jieli`, fills every
+  `pet_platform_t` callback, and provides millis/device identity stubs.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: display profile and owner acquire/release stub;
+  does not touch the real LCD or LVGL flush path.
+- `apps/watch/pet_platform_jieli/pet_input_jieli.c`: key event and snapshot stub; does not alter MVP-A
+  key handling.
+- `apps/watch/pet_platform_jieli/pet_storage_jieli.c`: storage read/write stub; does not write VM,
+  Flash, files or MVP-A save data.
+- `apps/watch/pet_platform_jieli/pet_audio_jieli.c`: SFX/audio state stub.
+- `apps/watch/pet_platform_jieli/pet_ble_jieli.c`: packet send/poll stub; no real BLE GATT or loopback.
+- `apps/watch/pet_platform_jieli/pet_nfc_jieli.c`: card/pair scan stub; no real NFC or fake injection.
+- `apps/watch/pet_platform_jieli/pet_power_jieli.c`: fixed test battery values and power TODOs.
+- `apps/watch/pet_platform_jieli/pet_debug_jieli.c`: `PET_DEBUG`-guarded injection stubs.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: minimal compile-only use of
+  `pet_platform_jieli_get()`.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

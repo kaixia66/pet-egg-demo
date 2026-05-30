@@ -37,3 +37,28 @@ P1 alignment notes:
   mirror the simulator portable ABI where the simulator already exposes a frozen layout.
 - Board-only display/platform extensions remain in the P1 headers because they define future Jieli port
   boundaries, but they are not connected to real hardware in this phase.
+
+## P2 Jieli Platform HAL Skeleton Status
+
+Status: skeleton implemented for compile checking; not a real hardware HAL.
+
+P2 adds `apps/watch/pet_platform_jieli/` as the Jieli-specific adapter layer for the P1 shared ABI. The
+directory now exposes `pet_platform_jieli_get()` and `pet_platform_jieli_init()`, fills a complete
+`pet_platform_t` callback table, and compiles all callback stubs into the SDK.
+
+Current capability:
+- `millis` calls the SDK `timer_get_ms()` symbol.
+- `now_sec` returns `0` until RTC ownership and epoch policy are confirmed.
+- `get_device_identity` returns stable P2 stub identity values.
+- `get_display_profile` returns a 454x454 circular board profile placeholder.
+- display owner acquire/release is an in-memory state machine that rejects owner conflicts.
+- power percent returns a fixed test value.
+- storage, BLE, NFC, display flush and SFX playback remain `NOT_READY` or `UNSUPPORTED` stubs.
+
+P2 does not:
+- change current MVP-A LVGL behavior;
+- change LVGL flush;
+- enable Pet2D;
+- read real keys;
+- write VM/Flash/files;
+- connect real BLE, NFC, LCD, audio or battery hardware paths.
