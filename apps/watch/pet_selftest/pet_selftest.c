@@ -4,6 +4,7 @@
 #include "pet2d_dirty_rect_poc.h"
 #include "pet2d_minimal_visual.h"
 #include "pet2d_movement_poc.h"
+#include "pet2d_scene.h"
 #include "pet2d_resource_sprite_poc.h"
 #include "pet_protocol_jieli.h"
 #include "pet_key_calibration_jieli.h"
@@ -150,6 +151,11 @@ static pet_result_t pet_selftest_key_latency_movement_gate(void)
     return pet2d_boundary_movement_repeated_probe(PET2D_MOVEMENT_POC_DEFAULT_REPEAT, 0u);
 }
 
+static pet_result_t pet_selftest_pet2d_scene_handoff(void)
+{
+    return pet2d_scene_self_test();
+}
+
 static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
 {
     static const pet_selftest_fn_t k_tests[PET_SELFTEST_MAX] = {
@@ -170,6 +176,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_key_calibration_jieli_self_test,
         pet_selftest_minimal_movement_gate,
         pet_selftest_key_latency_movement_gate,
+        pet_selftest_pet2d_scene_handoff,
         pet_save_jieli_self_test,
         pet_protocol_jieli_self_test,
         pet_ble_jieli_self_test,
@@ -204,6 +211,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "key_calibration",
         "minimal_movement_poc",
         "key_latency_movement_gate",
+        "pet2d_scene_handoff",
         "save_transaction",
         "protocol_packet",
         "ble_loopback",
@@ -286,6 +294,7 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->has_minimal_sprite_movement_probe_gate = 1u;
     out_snapshot->has_movement_stats = 1u;
     out_snapshot->has_key_latency_probe_gate = 1u;
+    out_snapshot->has_pet2d_scene_handoff = 1u;
     out_snapshot->has_resource_manifest_adapter = 1u;
     out_snapshot->has_save_transaction_adapter = 1u;
     out_snapshot->has_protocol_helper = 1u;

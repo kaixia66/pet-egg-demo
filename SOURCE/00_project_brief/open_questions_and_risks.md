@@ -398,3 +398,27 @@ Open risks and prerequisites before reopening external Flash resources:
 Current work should continue without this dependency: Pet2D scene handoff, internal/compiled resources,
 internal save/syscfg work and an engineering test menu are not blocked by the paused external Flash
 route. NFC/audio/real BLE two-board validation also remains Future Scope.
+
+## P18 Pet2D Scene Handoff Risks
+
+Status: P18 adds a bounded Debug-triggered Pet2D test scene that can hold display ownership away from
+LVGL, then release and request LVGL repaint. It remains a POC and does not implement the final HOME or
+Observe renderer.
+
+Open items:
+- Board validation with a temporary `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build confirmed that the
+  sprite is no longer covered by LVGL after roughly half a second. Repeated OK presses after timeout are
+  expected to re-enter the manual Debug action and draw the sprite again.
+- The physical board may still contain a temporary real-flush test image because the final safe-source
+  build only reached the package/offline post-processing stage. The source tree has been restored to the
+  safe committed state with `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=0`.
+- The retained Debug action is an engineering POC entry. Whether it becomes part of a later engineering
+  test menu or is removed before production remains undecided.
+- The scene uses the P13/P15 compiled fixture and movement helper. It restores only the bounded 64x64
+  local test patch, not a complete HOME/Observe background or arbitrary LVGL pixels.
+- Tick cadence and render interval are conservative and bounded. Higher-resolution movement, frame
+  pacing, IMB usage and performance metrics remain P19/P20 work.
+- `pet2d_runtime_enabled` remains 0 because P18 is only a handoff shell around the minimal movement POC.
+- External Flash / virfat / raw NOR resources remain paused; formal assets still need another route.
+- Current hardware still has no NFC and no speaker, and only one board is available. Real NFC, real audio
+  and real BLE two-board validation remain Future Scope.

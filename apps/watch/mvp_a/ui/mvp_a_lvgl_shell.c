@@ -126,6 +126,7 @@ static void mvp_a_lvgl_shell_render_scene(void)
 
     mvp_a_rendered_scene = scene;
     lv_obj_invalidate(scr);
+    lv_refr_now(NULL);
     printf("[MVP_A][LVGL] render scene=%d title=%s prompt=%s action=%s\n",
            scene, page->title, page->prompt, page->action);
 }
@@ -147,6 +148,8 @@ void mvp_a_lvgl_shell_request_refresh(void)
 
 void mvp_a_lvgl_shell_tick(void)
 {
+    mvp_a_app_tick();
+
     if (!mvp_a_refresh_pending &&
         (mvp_a_rendered_scene == mvp_a_app_get_scene())) {
         return;

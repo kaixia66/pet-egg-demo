@@ -218,6 +218,7 @@ INCLUDES := \
 	-Iapps/watch/pet_shared/include \
 	-Iapps/watch/pet_platform_jieli \
 	-Iapps/watch/pet2d_boundary \
+	-Iapps/watch/pet2d_scene \
 	-Iapps/watch/pet_resource_jieli \
 	-Iapps/watch/pet_save_jieli \
 	-Iapps/watch/pet_protocol_jieli \
@@ -956,6 +957,8 @@ c_SRC_FILES := \
 	apps/watch/pet2d_boundary/pet2d_resource_sprite_poc.c \
 	apps/watch/pet2d_boundary/pet2d_movement_poc.c \
 	apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c \
+	apps/watch/pet2d_scene/pet2d_scene.c \
+	apps/watch/pet2d_scene/pet2d_scene_compile_check.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_real.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.c \

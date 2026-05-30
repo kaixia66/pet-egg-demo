@@ -478,3 +478,43 @@ Current committed-state expectations remain:
 
 External Flash / virfat / raw NOR PetEgg resources, NFC, audio/speaker and real BLE two-board validation
 are Future Scope until their platform contracts are confirmed.
+
+## P18 Pet2D Scene Mode / LVGL Handoff POC Status
+
+Status: implemented as a bounded test-scene handoff POC in source. P18 is not HOME/Observe and is not the
+full Pet2D runtime.
+
+Current capability:
+- `apps/watch/pet2d_scene/` owns a small scene state machine with `IDLE`, `ENTERING`, `RUNNING`,
+  `EXITING`, `DONE` and `ERROR` states.
+- Manual Debug action `P18 Scene` enters the scene from the Debug page only. It does not run at boot and
+  does not run from normal HOME/LVGL pages.
+- Enter releases the MVP-A LVGL shell owner, acquires `PET_DISPLAY_OWNER_PET2D`, initializes the existing
+  P13/P15 movement/resource fixture and renders through the existing gated real-flush path.
+- The scene handles LEFT_UP/RIGHT_DOWN as movement, OK as pattern toggle and CANCEL as immediate exit.
+  It also exits automatically after `PET2D_SCENE_TEST_TIMEOUT_MS` (4 seconds).
+- Exit releases PET2D ownership and requests LVGL refresh so the Debug page can reacquire owner and
+  redraw.
+- Stats record enter/exit counts, tick/key/render counts, flush success/failure, duration, last
+  key-to-flush time, last state and last exit reason.
+- Self-test adds `PET_SELFTEST_PET2D_SCENE_HANDOFF` and capability bit `has_pet2d_scene_handoff`.
+- COM3 board testing with a temporary real-flush build confirmed that the Pet2D scene is no longer
+  covered by the LVGL Debug page after roughly half a second. The final test showed repeated successful
+  Pet2D renders (`owner=3`), a 4-second timeout exit, LVGL owner reacquire and Debug page redraw without
+  panic/assert/WDT/HardFault/exception.
+- Movement trailing observed during board testing was fixed by rendering a bounded dirty union with a
+  tightly packed LCD buffer. The final POC intentionally uses a 64x64 local scene patch rather than a
+  full-screen Pet2D background.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; scene handoff is a controlled precursor, not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+
+P18 still does not:
+- implement HOME/Observe, background scrolling, full scene erase/restore or formal animation;
+- read external Flash, formal resource packages or SDK `.res` images as PetEgg sprites;
+- parse PNG/JPG/GIF/JSON;
+- allocate a full framebuffer or replace the LVGL flush callback;
+- write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.

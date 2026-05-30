@@ -68,6 +68,7 @@ typedef struct {
 
 pet_result_t pet2d_movement_poc_init(void);
 pet_result_t pet2d_movement_poc_handle_key(const pet_key_event_t *event);
+pet_result_t pet2d_movement_poc_clear_scene_background(void);
 pet_result_t pet2d_movement_poc_render_once(void);
 pet_result_t pet2d_boundary_movement_probe_step(pet_key_t key);
 pet_result_t pet2d_movement_poc_run_repeated_steps(pet_key_t direction_key,

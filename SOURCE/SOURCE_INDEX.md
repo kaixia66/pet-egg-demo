@@ -930,3 +930,22 @@ Tracked for P17S:
   Debug UI action, or external Flash self-test case enters the current mainline from P17.
 - Follow-up work should prefer Pet2D scene handoff, internal/compiled small resources, internal save or
   engineering test menu tasks unless a later task explicitly reopens the external Flash resource route.
+
+## P18 Pet2D Scene Mode / LVGL Handoff POC Addendum
+
+P18 adds a bounded Pet2D test-scene handoff POC that uses only the existing compiled P13/P15 resource
+fixture and movement surface. It does not reopen external Flash and does not mark the full Pet2D runtime
+as enabled.
+
+Tracked for P18:
+- `apps/watch/pet2d_scene/pet2d_scene.h`: scene state, exit reasons, stats and public handoff APIs.
+- `apps/watch/pet2d_scene/pet2d_scene.c`: manual test-scene state machine, LVGL release / PET2D acquire,
+  bounded tick/timeout, key handling and LVGL refresh request on exit.
+- `apps/watch/pet2d_scene/pet2d_scene_compile_check.c`: compile-time scene API check.
+- `apps/watch/mvp_a/core/mvp_a_debug.*`: retained manual-only Debug action named `P18 Scene`.
+- `apps/watch/mvp_a/core/mvp_a_app.c` and `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c`: route keys/ticks to
+  the active scene and keep LVGL repaint owner-guarded.
+- `apps/watch/pet_selftest/*`: adds `PET_SELFTEST_PET2D_SCENE_HANDOFF` and capability bit
+  `has_pet2d_scene_handoff` while keeping `pet2d_runtime_enabled = 0`.
+- `SOURCE/10_engineering_reports/p18_pet2d_scene_handoff_poc.md`: records design, safety boundaries,
+  verification and remaining risks.

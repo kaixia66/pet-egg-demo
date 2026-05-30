@@ -26,6 +26,7 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
         (snapshot.has_minimal_sprite_movement_probe_gate == 0u) ||
         (snapshot.has_movement_stats == 0u) ||
         (snapshot.has_key_latency_probe_gate == 0u) ||
+        (snapshot.has_pet2d_scene_handoff == 0u) ||
         (snapshot.real_lcd_flush_enabled != 0u) ||
         (snapshot.external_flash_resource_enabled != 0u) ||
         (snapshot.pet2d_runtime_enabled != 0u)) {
@@ -36,5 +37,5 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
 
 const char *pet_selftest_compile_check_name(void)
 {
-    return pet_selftest_case_name(PET_SELFTEST_RESOURCE_PACKAGE_PROBE);
+    return pet_selftest_case_name(PET_SELFTEST_PET2D_SCENE_HANDOFF);
 }

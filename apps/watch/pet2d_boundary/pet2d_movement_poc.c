@@ -9,9 +9,14 @@
     ((pet_i16_t)(PET_JIELI_DISPLAY_SAFE_X + PET_JIELI_DISPLAY_SAFE_W - PET2D_MOVEMENT_POC_SURFACE_SIZE))
 #define PET2D_MOVEMENT_POC_MAX_Y \
     ((pet_i16_t)(PET_JIELI_DISPLAY_SAFE_Y + PET_JIELI_DISPLAY_SAFE_H - PET2D_MOVEMENT_POC_SURFACE_SIZE))
+#define PET2D_MOVEMENT_POC_PATCH_SIZE PET2D_DIRTY_RECT_SIZE_64
 
 static pet2d_movement_poc_state_t g_pet2d_movement_state;
 static pet2d_movement_poc_stats_t g_pet2d_movement_stats;
+static pet_i16_t g_pet2d_movement_min_x = PET2D_MOVEMENT_POC_MIN_X;
+static pet_i16_t g_pet2d_movement_max_x = PET2D_MOVEMENT_POC_MAX_X;
+static pet_i16_t g_pet2d_movement_patch_x;
+static pet_i16_t g_pet2d_movement_patch_y;
 
 static pet_u32_t pet2d_movement_now_ms(void)
 {
@@ -79,11 +84,11 @@ static void pet2d_movement_update_latency_stats(pet_result_t ret)
 static pet_key_t pet2d_movement_bounded_key(pet_key_t preferred_key)
 {
     if ((preferred_key == PET_KEY_RIGHT_DOWN) &&
-        (g_pet2d_movement_state.x >= PET2D_MOVEMENT_POC_MAX_X)) {
+        (g_pet2d_movement_state.x >= g_pet2d_movement_max_x)) {
         return PET_KEY_LEFT_UP;
     }
     if ((preferred_key == PET_KEY_LEFT_UP) &&
-        (g_pet2d_movement_state.x <= PET2D_MOVEMENT_POC_MIN_X)) {
+        (g_pet2d_movement_state.x <= g_pet2d_movement_min_x)) {
         return PET_KEY_RIGHT_DOWN;
     }
     return preferred_key;
@@ -98,6 +103,14 @@ static pet_i16_t pet2d_movement_clamp_i16(pet_i16_t value, pet_i16_t min_value, 
         return max_value;
     }
     return value;
+}
+
+static pet_u16_t pet2d_movement_scene_background_pixel(pet_i16_t x, pet_i16_t y)
+{
+    pet_u16_t shade;
+
+    shade = (pet_u16_t)((((pet_u16_t)x >> 4) ^ ((pet_u16_t)y >> 4)) & 0x01u);
+    return shade ? 0x18c3u : 0x2104u;
 }
 
 static void pet2d_movement_record_dirty_rect(void)
@@ -117,6 +130,29 @@ static void pet2d_movement_record_dirty_rect(void)
         (pet_u16_t)((max_x - min_x) + (pet_i16_t)g_pet2d_movement_state.surface_w);
     g_pet2d_movement_stats.last_dirty_h =
         (pet_u16_t)((max_y - min_y) + (pet_i16_t)g_pet2d_movement_state.surface_h);
+}
+
+static pet_result_t pet2d_movement_fill_background(pet2d_minimal_surface_t *surface,
+                                                   pet_i16_t origin_x,
+                                                   pet_i16_t origin_y)
+{
+    pet_u16_t x;
+    pet_u16_t y;
+
+    if ((surface == 0) || (surface->pixels == 0) ||
+        (surface->width == 0u) || (surface->height == 0u) ||
+        (surface->pitch_pixels < surface->width)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    for (y = 0u; y < surface->height; y++) {
+        for (x = 0u; x < surface->width; x++) {
+            surface->pixels[((pet_u32_t)y * surface->pitch_pixels) + x] =
+                pet2d_movement_scene_background_pixel((pet_i16_t)(origin_x + (pet_i16_t)x),
+                                                      (pet_i16_t)(origin_y + (pet_i16_t)y));
+        }
+    }
+    return PET_RESULT_OK;
 }
 
 static pet_result_t pet2d_movement_fill_surface(pet2d_minimal_surface_t *surface)
@@ -147,6 +183,43 @@ static pet_result_t pet2d_movement_fill_surface(pet2d_minimal_surface_t *surface
     return pet2d_minimal_visual_blit_sprite(surface, 12, 12, &sprite);
 }
 
+static pet_result_t pet2d_movement_fill_dirty_surface(pet2d_minimal_surface_t *surface,
+                                                      pet_i16_t dirty_x,
+                                                      pet_i16_t dirty_y)
+{
+    pet2d_minimal_surface_t sprite_surface;
+    pet_i16_t rel_x;
+    pet_i16_t rel_y;
+    pet_result_t ret;
+
+    if ((surface == 0) || (surface->pixels == 0) ||
+        (surface->width == 0u) || (surface->height == 0u) ||
+        (surface->pitch_pixels < surface->width)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    ret = pet2d_movement_fill_background(surface, dirty_x, dirty_y);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
+    rel_x = (pet_i16_t)(g_pet2d_movement_state.x - dirty_x);
+    rel_y = (pet_i16_t)(g_pet2d_movement_state.y - dirty_y);
+    if ((rel_x < 0) || (rel_y < 0) ||
+        (((pet_u16_t)rel_x + g_pet2d_movement_state.surface_w) > surface->width) ||
+        (((pet_u16_t)rel_y + g_pet2d_movement_state.surface_h) > surface->height)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    sprite_surface.width = g_pet2d_movement_state.surface_w;
+    sprite_surface.height = g_pet2d_movement_state.surface_h;
+    sprite_surface.pitch_pixels = surface->pitch_pixels;
+    sprite_surface.pixels =
+        &surface->pixels[((pet_u32_t)(pet_u16_t)rel_y * surface->pitch_pixels) +
+                         (pet_u16_t)rel_x];
+    return pet2d_movement_fill_surface(&sprite_surface);
+}
+
 pet_result_t pet2d_movement_poc_init(void)
 {
     g_pet2d_movement_state.surface_w = PET2D_MOVEMENT_POC_SURFACE_SIZE;
@@ -161,6 +234,16 @@ pet_result_t pet2d_movement_poc_init(void)
     g_pet2d_movement_state.frame_count = 0u;
     g_pet2d_movement_state.pattern_toggle = 0u;
     g_pet2d_movement_state.exit_requested = 0u;
+    g_pet2d_movement_patch_x =
+        (pet_i16_t)(g_pet2d_movement_state.x - (pet_i16_t)((PET2D_MOVEMENT_POC_PATCH_SIZE -
+                                                            PET2D_MOVEMENT_POC_SURFACE_SIZE) / 2u));
+    g_pet2d_movement_patch_y =
+        (pet_i16_t)(g_pet2d_movement_state.y - (pet_i16_t)((PET2D_MOVEMENT_POC_PATCH_SIZE -
+                                                            PET2D_MOVEMENT_POC_SURFACE_SIZE) / 2u));
+    g_pet2d_movement_min_x = g_pet2d_movement_patch_x;
+    g_pet2d_movement_max_x =
+        (pet_i16_t)(g_pet2d_movement_patch_x + (pet_i16_t)PET2D_MOVEMENT_POC_PATCH_SIZE -
+                    (pet_i16_t)PET2D_MOVEMENT_POC_SURFACE_SIZE);
     pet2d_movement_record_dirty_rect();
     return PET_RESULT_OK;
 }
@@ -178,6 +261,64 @@ pet_result_t pet2d_movement_poc_reset_stats(void)
     g_pet2d_movement_stats.last_result = PET_RESULT_NOT_READY;
     g_pet2d_movement_stats.min_key_to_flush_done_ms = 0xffffffffu;
     return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_movement_poc_clear_scene_background(void)
+{
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    const pet_platform_t *platform = pet_platform_jieli_get();
+    pet_display_owner_t original_owner;
+    pet_bool_t acquired_here = PET_FALSE;
+    pet_result_t ret;
+    static pet_u16_t pixels[PET2D_DIRTY_RECT_SIZE_64 * PET2D_DIRTY_RECT_SIZE_64];
+    pet2d_minimal_surface_t surface;
+    pet_u16_t patch_w = PET2D_MOVEMENT_POC_PATCH_SIZE;
+    pet_u16_t patch_h = PET2D_MOVEMENT_POC_PATCH_SIZE;
+
+    if ((platform == 0) || (platform->display_acquire == 0) ||
+        (platform->display_release == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    original_owner = pet_display_jieli_get_owner();
+    if (original_owner == PET_DISPLAY_OWNER_NONE) {
+        ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
+        acquired_here = PET_TRUE;
+    } else if (original_owner != PET_DISPLAY_OWNER_PET2D) {
+        return PET_RESULT_BUSY;
+    }
+
+    surface.pixels = pixels;
+    surface.width = patch_w;
+    surface.height = patch_h;
+    surface.pitch_pixels = patch_w;
+    ret = pet2d_movement_fill_background(&surface, g_pet2d_movement_patch_x,
+                                         g_pet2d_movement_patch_y);
+    if (ret == PET_RESULT_OK) {
+        ret = pet_display_jieli_real_flush_poc_rect(g_pet2d_movement_patch_x,
+                                                    g_pet2d_movement_patch_y,
+                                                    patch_w,
+                                                    patch_h,
+                                                    surface.pixels,
+                                                    surface.pitch_pixels);
+    }
+    if (ret != PET_RESULT_OK) {
+        if (acquired_here == PET_TRUE) {
+            (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
+        }
+        return ret;
+    }
+
+    if (acquired_here == PET_TRUE) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
+    }
+    return PET_RESULT_OK;
+#else
+    return PET_RESULT_UNSUPPORTED;
+#endif
 }
 
 pet_result_t pet2d_movement_poc_get_state(pet2d_movement_poc_state_t *out_state)
@@ -230,15 +371,15 @@ pet_result_t pet2d_movement_poc_handle_key(const pet_key_event_t *event)
         next_x = (pet_i16_t)(g_pet2d_movement_state.x -
                              (pet_i16_t)g_pet2d_movement_state.step);
         g_pet2d_movement_state.x =
-            pet2d_movement_clamp_i16(next_x, PET2D_MOVEMENT_POC_MIN_X,
-                                     PET2D_MOVEMENT_POC_MAX_X);
+            pet2d_movement_clamp_i16(next_x, g_pet2d_movement_min_x,
+                                     g_pet2d_movement_max_x);
         break;
     case PET_KEY_RIGHT_DOWN:
         next_x = (pet_i16_t)(g_pet2d_movement_state.x +
                              (pet_i16_t)g_pet2d_movement_state.step);
         g_pet2d_movement_state.x =
-            pet2d_movement_clamp_i16(next_x, PET2D_MOVEMENT_POC_MIN_X,
-                                     PET2D_MOVEMENT_POC_MAX_X);
+            pet2d_movement_clamp_i16(next_x, g_pet2d_movement_min_x,
+                                     g_pet2d_movement_max_x);
         break;
     case PET_KEY_OK:
         g_pet2d_movement_state.pattern_toggle =
@@ -275,8 +416,12 @@ pet_result_t pet2d_movement_poc_render_once(void)
     pet_display_owner_t original_owner;
     pet_bool_t acquired_here = PET_FALSE;
     pet_result_t ret;
-    static pet_u16_t pixels[PET2D_MOVEMENT_POC_SURFACE_SIZE * PET2D_MOVEMENT_POC_SURFACE_SIZE];
+    static pet_u16_t pixels[PET2D_DIRTY_RECT_SIZE_64 * PET2D_DIRTY_RECT_SIZE_64];
     pet2d_minimal_surface_t surface;
+    pet_i16_t dirty_x;
+    pet_i16_t dirty_y;
+    pet_u16_t dirty_w;
+    pet_u16_t dirty_h;
 
     if ((platform == 0) || (platform->display_acquire == 0) ||
         (platform->display_release == 0)) {
@@ -289,11 +434,23 @@ pet_result_t pet2d_movement_poc_render_once(void)
 
     g_pet2d_movement_stats.render_attempt_count++;
     g_pet2d_movement_stats.last_render_start_ms = pet2d_movement_now_ms();
-    surface.width = PET2D_MOVEMENT_POC_SURFACE_SIZE;
-    surface.height = PET2D_MOVEMENT_POC_SURFACE_SIZE;
-    surface.pitch_pixels = PET2D_MOVEMENT_POC_SURFACE_SIZE;
+    dirty_x = g_pet2d_movement_stats.last_dirty_x;
+    dirty_y = g_pet2d_movement_stats.last_dirty_y;
+    dirty_w = g_pet2d_movement_stats.last_dirty_w;
+    dirty_h = g_pet2d_movement_stats.last_dirty_h;
+    if ((dirty_w == 0u) || (dirty_h == 0u) ||
+        (dirty_w > PET2D_DIRTY_RECT_SIZE_64) ||
+        (dirty_h > PET2D_DIRTY_RECT_SIZE_64)) {
+        dirty_x = g_pet2d_movement_state.x;
+        dirty_y = g_pet2d_movement_state.y;
+        dirty_w = g_pet2d_movement_state.surface_w;
+        dirty_h = g_pet2d_movement_state.surface_h;
+    }
+    surface.width = dirty_w;
+    surface.height = dirty_h;
+    surface.pitch_pixels = dirty_w;
     surface.pixels = pixels;
-    ret = pet2d_movement_fill_surface(&surface);
+    ret = pet2d_movement_fill_dirty_surface(&surface, dirty_x, dirty_y);
     if (ret != PET_RESULT_OK) {
         g_pet2d_movement_stats.render_fail_count++;
         g_pet2d_movement_stats.last_render_end_ms = pet2d_movement_now_ms();
@@ -321,8 +478,8 @@ pet_result_t pet2d_movement_poc_render_once(void)
 
     g_pet2d_movement_stats.movement_probe_attempt_count++;
     g_pet2d_movement_stats.last_flush_start_ms = pet2d_movement_now_ms();
-    ret = pet_display_jieli_real_flush_poc_rect(g_pet2d_movement_state.x,
-                                                g_pet2d_movement_state.y,
+    ret = pet_display_jieli_real_flush_poc_rect(dirty_x,
+                                                dirty_y,
                                                 surface.width,
                                                 surface.height,
                                                 surface.pixels,

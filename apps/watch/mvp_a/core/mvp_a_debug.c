@@ -1,6 +1,7 @@
 #include "mvp_a_debug.h"
 #include "mvp_a_pet.h"
 #include "mvp_a_save.h"
+#include "pet2d_scene.h"
 
 static mvp_a_debug_action_t mvp_a_debug_selected = MVP_A_DEBUG_VIEW_SAVE;
 
@@ -40,6 +41,8 @@ mvp_a_result_t mvp_a_debug_execute_selected(void)
         return mvp_a_save_reset();
     case MVP_A_DEBUG_FAST_GROWTH:
         return mvp_a_pet_set_fast_growth(mvp_a_pet_fast_growth_enabled() ? MVP_A_FALSE : MVP_A_TRUE);
+    case MVP_A_DEBUG_PET2D_SCENE:
+        return (pet2d_scene_enter_test() == PET_RESULT_OK) ? MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
     default:
         break;
     }
@@ -56,6 +59,8 @@ const char *mvp_a_debug_get_action_name(mvp_a_debug_action_t action)
         return "Clear";
     case MVP_A_DEBUG_FAST_GROWTH:
         return "Fast";
+    case MVP_A_DEBUG_PET2D_SCENE:
+        return "P18 Scene";
     default:
         break;
     }
@@ -78,6 +83,8 @@ const char *mvp_a_debug_get_prompt(void)
         return "Confirm Clear";
     case MVP_A_DEBUG_FAST_GROWTH:
         return mvp_a_pet_fast_growth_enabled() ? "Fast On" : "Fast Off";
+    case MVP_A_DEBUG_PET2D_SCENE:
+        return "Pet2D Scene";
     default:
         break;
     }

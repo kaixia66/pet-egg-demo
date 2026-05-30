@@ -7,6 +7,7 @@ typedef enum {
     MVP_A_DEBUG_VIEW_SAVE = 0,
     MVP_A_DEBUG_RESET_SAVE,
     MVP_A_DEBUG_FAST_GROWTH,
+    MVP_A_DEBUG_PET2D_SCENE,
     MVP_A_DEBUG_MAX,
 } mvp_a_debug_action_t;
 

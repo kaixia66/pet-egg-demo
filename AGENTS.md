@@ -228,6 +228,20 @@ submit external Flash package artifacts such as `petegg.pkg`, `manifest.bin`, `s
 time fixtures, the P5 resource test blob, and other explicitly bounded small-resource paths. NFC,
 audio/speaker and real BLE two-board validation remain Future Scope.
 
+## PetEgg P18 Pet2D Scene Mode / LVGL Handoff POC Rule
+
+P18 introduces only a controlled Pet2D test-scene handoff between the MVP-A LVGL shell and the existing
+minimal Pet2D-boundary movement/resource fixture. The scene may be entered manually from the Debug page,
+release LVGL display ownership, acquire `PET_DISPLAY_OWNER_PET2D`, handle bounded LEFT_UP/RIGHT_DOWN/OK/
+CANCEL input, then release PET2D ownership and request LVGL refresh on cancel, timeout or error.
+
+P18 must not enable HOME/Observe, the full Pet2D runtime, background scrolling, formal resources,
+external Flash / virfat / raw NOR, PNG/JPG/GIF/JSON decoding, full-framebuffer allocation, LVGL flush
+callback replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. Any retained Debug entry must be
+manual-only and safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is 0; the committed source must keep that
+macro at 0, `real_lcd_flush_enabled` at 0 and `pet2d_runtime_enabled` at 0. External Flash, NFC,
+audio/speaker and real BLE two-board validation remain Future Scope.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。
