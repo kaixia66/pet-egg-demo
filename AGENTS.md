@@ -183,6 +183,20 @@ source must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_ena
 `pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
 hardware.
 
+## PetEgg P15 Key Latency + Movement Stats POC Rule
+
+P15 is a key-to-render latency and movement repeated-flush statistics phase. It may extend the
+Pet2D-boundary movement POC with coarse key/logic/render/flush timestamps, dirty-rect old/new union
+tracking, bounded repeated movement steps and stats snapshots, but it must not route the real Jieli key
+queue into Pet2D or make movement run automatically.
+
+P15 does not enable full Pet2D runtime, HOME/Observe, formal resources, external Flash, full framebuffer
+allocation, LVGL flush replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. Any Debug UI trigger
+used for local board latency tests must be temporary and removed before commit. The committed source
+must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
+hardware.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

@@ -118,6 +118,27 @@ static pet_result_t pet_selftest_minimal_movement_gate(void)
     return PET_RESULT_UNSUPPORTED;
 }
 
+static pet_result_t pet_selftest_key_latency_movement_gate(void)
+{
+    pet2d_movement_poc_stats_t stats;
+    pet_result_t ret = pet2d_movement_poc_self_test();
+
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_movement_poc_get_stats(&stats);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    if ((stats.key_event_count == 0u) ||
+        (stats.movement_step_count == 0u) ||
+        (stats.last_dirty_w < PET2D_MOVEMENT_POC_SURFACE_SIZE) ||
+        (stats.last_dirty_h < PET2D_MOVEMENT_POC_SURFACE_SIZE)) {
+        return PET_RESULT_ERROR;
+    }
+    return pet2d_boundary_movement_repeated_probe(PET2D_MOVEMENT_POC_DEFAULT_REPEAT, 0u);
+}
+
 static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
 {
     static const pet_selftest_fn_t k_tests[PET_SELFTEST_MAX] = {
@@ -136,6 +157,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_selftest_resource_sprite_surface_gate,
         pet_key_calibration_jieli_self_test,
         pet_selftest_minimal_movement_gate,
+        pet_selftest_key_latency_movement_gate,
         pet_save_jieli_self_test,
         pet_protocol_jieli_self_test,
         pet_ble_jieli_self_test,
@@ -168,6 +190,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "resource_sprite_surface",
         "key_calibration",
         "minimal_movement_poc",
+        "key_latency_movement_gate",
         "save_transaction",
         "protocol_packet",
         "ble_loopback",
@@ -247,6 +270,8 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->has_resource_sprite_surface_probe_gate = 1u;
     out_snapshot->has_key_calibration = 1u;
     out_snapshot->has_minimal_sprite_movement_probe_gate = 1u;
+    out_snapshot->has_movement_stats = 1u;
+    out_snapshot->has_key_latency_probe_gate = 1u;
     out_snapshot->has_resource_manifest_adapter = 1u;
     out_snapshot->has_save_transaction_adapter = 1u;
     out_snapshot->has_protocol_helper = 1u;

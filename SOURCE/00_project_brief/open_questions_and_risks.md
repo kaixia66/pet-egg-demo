@@ -319,3 +319,28 @@ Open items:
   animation pipeline is not implemented.
 - The existing winmk post-build/resource packaging failure remains independent of P14. P14 must not modify
   toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P15 Key Latency + Movement Repeated Flush Stats POC Risks
+
+Status: P15 adds coarse movement timing and repeated-step stats around the existing manual movement gate.
+A temporary board build passed 10/30/60 repeated movement probes, but P15 does not turn the movement POC
+into a default interactive scene and does not enable full Pet2D runtime.
+
+Current hardware scope adjustment remains unchanged:
+- The available development board has no NFC and no speaker, and only one board is available. Real NFC,
+  real audio/SFX and real BLE two-board link validation remain Future Scope.
+
+Open items:
+- P15 latency values are coarse application-level timestamps from the movement helper and platform
+  `millis`; they are not ISR-level key latency, debounce latency or SDK key-queue latency.
+- The LVGL Debug page still redraws over the manual movement probe after the owner is reacquired. The
+  user observed the P15 pattern appear and then disappear; a persistent scene requires a formal
+  LVGL/Pet2D handoff mode.
+- Dirty rect tracking records old/new bounding rectangles, but old-pixel clearing, background restore and
+  dirty-rect merging across multiple sprites remain future work.
+- Repeated movement is bounded and manual-only. Higher-frequency movement, long/repeat key cadence,
+  frame pacing and performance metrics need later dedicated tests.
+- Full Pet2D runtime, HOME/Observe scene, resource animation pipeline and external resource package
+  reading are still not implemented.
+- The existing winmk post-build/resource packaging failure remains independent of P15. P15 must not modify
+  toolchain paths, resource scripts or download packaging to mask that environment issue.

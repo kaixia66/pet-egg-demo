@@ -13,6 +13,82 @@
 static pet2d_movement_poc_state_t g_pet2d_movement_state;
 static pet2d_movement_poc_stats_t g_pet2d_movement_stats;
 
+static pet_u32_t pet2d_movement_now_ms(void)
+{
+    const pet_platform_t *platform = pet_platform_jieli_get();
+
+    if ((platform == 0) || (platform->millis == 0)) {
+        return 0u;
+    }
+    return platform->millis(platform->ctx);
+}
+
+static pet_u32_t pet2d_movement_elapsed_ms(pet_u32_t end_ms, pet_u32_t start_ms)
+{
+    return (pet_u32_t)(end_ms - start_ms);
+}
+
+static void pet2d_movement_wait_ms(pet_u16_t delay_ms)
+{
+    pet_u32_t start_ms;
+
+    if (delay_ms == 0u) {
+        return;
+    }
+
+    start_ms = pet2d_movement_now_ms();
+    while (pet2d_movement_elapsed_ms(pet2d_movement_now_ms(), start_ms) < delay_ms) {
+        /* Bounded manual board-test delay only. */
+    }
+}
+
+static void pet2d_movement_update_latency_stats(pet_result_t ret)
+{
+    pet_u32_t elapsed;
+
+    if (g_pet2d_movement_stats.last_key_timestamp_ms == 0u) {
+        return;
+    }
+
+    g_pet2d_movement_stats.last_key_to_logic_ms =
+        pet2d_movement_elapsed_ms(g_pet2d_movement_stats.last_logic_start_ms,
+                                  g_pet2d_movement_stats.last_key_timestamp_ms);
+    g_pet2d_movement_stats.last_key_to_render_ms =
+        pet2d_movement_elapsed_ms(g_pet2d_movement_stats.last_render_start_ms,
+                                  g_pet2d_movement_stats.last_key_timestamp_ms);
+    g_pet2d_movement_stats.last_key_to_flush_done_ms =
+        pet2d_movement_elapsed_ms(g_pet2d_movement_stats.last_flush_end_ms,
+                                  g_pet2d_movement_stats.last_key_timestamp_ms);
+
+    if (ret == PET_RESULT_OK) {
+        elapsed = g_pet2d_movement_stats.last_key_to_flush_done_ms;
+        if ((g_pet2d_movement_stats.render_success_count == 1u) ||
+            (elapsed < g_pet2d_movement_stats.min_key_to_flush_done_ms)) {
+            g_pet2d_movement_stats.min_key_to_flush_done_ms = elapsed;
+        }
+        if (elapsed > g_pet2d_movement_stats.max_key_to_flush_done_ms) {
+            g_pet2d_movement_stats.max_key_to_flush_done_ms = elapsed;
+        }
+        g_pet2d_movement_stats.total_key_to_flush_done_ms += elapsed;
+        g_pet2d_movement_stats.avg_key_to_flush_done_ms =
+            g_pet2d_movement_stats.total_key_to_flush_done_ms /
+            g_pet2d_movement_stats.render_success_count;
+    }
+}
+
+static pet_key_t pet2d_movement_bounded_key(pet_key_t preferred_key)
+{
+    if ((preferred_key == PET_KEY_RIGHT_DOWN) &&
+        (g_pet2d_movement_state.x >= PET2D_MOVEMENT_POC_MAX_X)) {
+        return PET_KEY_LEFT_UP;
+    }
+    if ((preferred_key == PET_KEY_LEFT_UP) &&
+        (g_pet2d_movement_state.x <= PET2D_MOVEMENT_POC_MIN_X)) {
+        return PET_KEY_RIGHT_DOWN;
+    }
+    return preferred_key;
+}
+
 static pet_i16_t pet2d_movement_clamp_i16(pet_i16_t value, pet_i16_t min_value, pet_i16_t max_value)
 {
     if (value < min_value) {
@@ -100,6 +176,7 @@ pet_result_t pet2d_movement_poc_reset_stats(void)
     g_pet2d_movement_stats.last_key = PET_KEY_MAX;
     g_pet2d_movement_stats.last_event = PET_KEY_EVENT_UP;
     g_pet2d_movement_stats.last_result = PET_RESULT_NOT_READY;
+    g_pet2d_movement_stats.min_key_to_flush_done_ms = 0xffffffffu;
     return PET_RESULT_OK;
 }
 
@@ -124,18 +201,29 @@ pet_result_t pet2d_movement_poc_get_stats(pet2d_movement_poc_stats_t *out_stats)
 pet_result_t pet2d_movement_poc_handle_key(const pet_key_event_t *event)
 {
     pet_i16_t next_x;
+    pet_u32_t logic_start_ms;
+    pet_u32_t key_timestamp_ms;
 
     if (event == 0) {
         return PET_RESULT_INVALID_ARGUMENT;
     }
+    logic_start_ms = pet2d_movement_now_ms();
+    key_timestamp_ms = (event->timestamp_ms == 0u) ? logic_start_ms : event->timestamp_ms;
+    g_pet2d_movement_stats.key_event_count++;
+    g_pet2d_movement_stats.last_key_timestamp_ms = key_timestamp_ms;
+    g_pet2d_movement_stats.last_logic_start_ms = logic_start_ms;
+    g_pet2d_movement_stats.last_key = event->key;
+    g_pet2d_movement_stats.last_event = event->type;
     if (event->type != PET_KEY_EVENT_CLICK) {
+        g_pet2d_movement_stats.last_logic_end_ms = pet2d_movement_now_ms();
+        g_pet2d_movement_stats.last_result = PET_RESULT_OK;
         return PET_RESULT_OK;
     }
 
     g_pet2d_movement_state.last_x = g_pet2d_movement_state.x;
     g_pet2d_movement_state.last_y = g_pet2d_movement_state.y;
-    g_pet2d_movement_stats.last_key = event->key;
-    g_pet2d_movement_stats.last_event = event->type;
+    g_pet2d_movement_stats.last_old_x = g_pet2d_movement_state.last_x;
+    g_pet2d_movement_stats.last_old_y = g_pet2d_movement_state.last_y;
 
     switch (event->key) {
     case PET_KEY_LEFT_UP:
@@ -160,13 +248,22 @@ pet_result_t pet2d_movement_poc_handle_key(const pet_key_event_t *event)
         g_pet2d_movement_state.exit_requested = 1u;
         break;
     default:
+        g_pet2d_movement_stats.last_logic_end_ms = pet2d_movement_now_ms();
+        g_pet2d_movement_stats.last_result = PET_RESULT_UNSUPPORTED;
         return PET_RESULT_UNSUPPORTED;
     }
 
     g_pet2d_movement_state.frame_count++;
+    g_pet2d_movement_stats.movement_step_count++;
     pet2d_movement_record_dirty_rect();
+    g_pet2d_movement_stats.last_new_x = g_pet2d_movement_state.x;
+    g_pet2d_movement_stats.last_new_y = g_pet2d_movement_state.y;
     g_pet2d_movement_stats.last_x = g_pet2d_movement_state.x;
     g_pet2d_movement_stats.last_y = g_pet2d_movement_state.y;
+    g_pet2d_movement_stats.last_logic_end_ms = pet2d_movement_now_ms();
+    g_pet2d_movement_stats.last_key_to_logic_ms =
+        pet2d_movement_elapsed_ms(g_pet2d_movement_stats.last_logic_start_ms,
+                                  g_pet2d_movement_stats.last_key_timestamp_ms);
     g_pet2d_movement_stats.last_result = PET_RESULT_OK;
     return PET_RESULT_OK;
 }
@@ -186,15 +283,21 @@ pet_result_t pet2d_movement_poc_render_once(void)
         return PET_RESULT_INVALID_ARGUMENT;
     }
     if (g_pet2d_movement_state.exit_requested != 0u) {
+        g_pet2d_movement_stats.last_result = PET_RESULT_UNSUPPORTED;
         return PET_RESULT_UNSUPPORTED;
     }
 
+    g_pet2d_movement_stats.render_attempt_count++;
+    g_pet2d_movement_stats.last_render_start_ms = pet2d_movement_now_ms();
     surface.width = PET2D_MOVEMENT_POC_SURFACE_SIZE;
     surface.height = PET2D_MOVEMENT_POC_SURFACE_SIZE;
     surface.pitch_pixels = PET2D_MOVEMENT_POC_SURFACE_SIZE;
     surface.pixels = pixels;
     ret = pet2d_movement_fill_surface(&surface);
     if (ret != PET_RESULT_OK) {
+        g_pet2d_movement_stats.render_fail_count++;
+        g_pet2d_movement_stats.last_render_end_ms = pet2d_movement_now_ms();
+        g_pet2d_movement_stats.last_result = ret;
         return ret;
     }
 
@@ -202,34 +305,46 @@ pet_result_t pet2d_movement_poc_render_once(void)
     if (original_owner == PET_DISPLAY_OWNER_NONE) {
         ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
         if (ret != PET_RESULT_OK) {
+            g_pet2d_movement_stats.render_fail_count++;
+            g_pet2d_movement_stats.last_render_end_ms = pet2d_movement_now_ms();
+            g_pet2d_movement_stats.last_result = ret;
             return ret;
         }
         acquired_here = PET_TRUE;
     } else if (original_owner != PET_DISPLAY_OWNER_PET2D) {
+        g_pet2d_movement_stats.render_fail_count++;
         g_pet2d_movement_stats.movement_probe_fail_count++;
+        g_pet2d_movement_stats.last_render_end_ms = pet2d_movement_now_ms();
         g_pet2d_movement_stats.last_result = PET_RESULT_BUSY;
         return PET_RESULT_BUSY;
     }
 
     g_pet2d_movement_stats.movement_probe_attempt_count++;
+    g_pet2d_movement_stats.last_flush_start_ms = pet2d_movement_now_ms();
     ret = pet_display_jieli_real_flush_poc_rect(g_pet2d_movement_state.x,
                                                 g_pet2d_movement_state.y,
                                                 surface.width,
                                                 surface.height,
                                                 surface.pixels,
                                                 surface.pitch_pixels);
+    g_pet2d_movement_stats.last_flush_end_ms = pet2d_movement_now_ms();
+    g_pet2d_movement_stats.last_render_end_ms = g_pet2d_movement_stats.last_flush_end_ms;
     if (ret == PET_RESULT_OK) {
+        g_pet2d_movement_stats.render_success_count++;
         g_pet2d_movement_stats.movement_probe_success_count++;
     } else {
+        g_pet2d_movement_stats.render_fail_count++;
         g_pet2d_movement_stats.movement_probe_fail_count++;
     }
     g_pet2d_movement_stats.last_result = ret;
+    pet2d_movement_update_latency_stats(ret);
 
     if (acquired_here == PET_TRUE) {
         (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
     }
     return ret;
 #else
+    g_pet2d_movement_stats.last_result = PET_RESULT_UNSUPPORTED;
     return PET_RESULT_UNSUPPORTED;
 #endif
 }
@@ -248,7 +363,7 @@ pet_result_t pet2d_boundary_movement_probe_step(pet_key_t key)
 
     event.key = key;
     event.type = PET_KEY_EVENT_CLICK;
-    event.timestamp_ms = 0u;
+    event.timestamp_ms = pet2d_movement_now_ms();
     event.hold_ms = 0u;
     event.repeat_count = 0u;
     event.raw_code = 0xffffu;
@@ -261,6 +376,99 @@ pet_result_t pet2d_boundary_movement_probe_step(pet_key_t key)
         return PET_RESULT_OK;
     }
     return pet2d_movement_poc_render_once();
+}
+
+pet_result_t pet2d_movement_poc_run_repeated_steps(pet_key_t direction_key,
+                                                   pet_u16_t repeat_count,
+                                                   pet_u16_t delay_ms)
+{
+    pet_key_event_t event;
+    pet_u16_t i;
+    pet_key_t step_key;
+    pet_result_t ret;
+
+    if ((direction_key != PET_KEY_LEFT_UP) && (direction_key != PET_KEY_RIGHT_DOWN)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    if ((repeat_count == 0u) || (repeat_count > PET2D_MOVEMENT_POC_REPEAT_MAX)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    if (g_pet2d_movement_state.surface_w == 0u) {
+        ret = pet2d_movement_poc_init();
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
+    }
+
+    for (i = 0u; i < repeat_count; i++) {
+        step_key = pet2d_movement_bounded_key(direction_key);
+        event.key = step_key;
+        event.type = PET_KEY_EVENT_CLICK;
+        event.timestamp_ms = pet2d_movement_now_ms();
+        event.hold_ms = 0u;
+        event.repeat_count = i;
+        event.raw_code = (step_key == PET_KEY_LEFT_UP) ?
+                         PET_JIELI_RAW_KEY_LEFT_UP : PET_JIELI_RAW_KEY_RIGHT_DOWN;
+
+        ret = pet2d_movement_poc_handle_key(&event);
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
+        ret = pet2d_movement_poc_render_once();
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
+        pet2d_movement_wait_ms(delay_ms);
+    }
+
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_boundary_movement_repeated_probe(pet_u16_t repeat_count,
+                                                    pet_u16_t delay_ms)
+{
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    const pet_platform_t *platform = pet_platform_jieli_get();
+    pet_display_owner_t original_owner;
+    pet_bool_t acquired_here = PET_FALSE;
+    pet_result_t ret;
+
+    if ((repeat_count == 0u) || (repeat_count > PET2D_MOVEMENT_POC_REPEAT_MAX)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    if ((platform == 0) || (platform->display_acquire == 0) ||
+        (platform->display_release == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    original_owner = pet_display_jieli_get_owner();
+    if (original_owner == PET_DISPLAY_OWNER_NONE) {
+        ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
+        acquired_here = PET_TRUE;
+    } else if (original_owner != PET_DISPLAY_OWNER_PET2D) {
+        return PET_RESULT_BUSY;
+    }
+
+    (void)pet2d_movement_poc_init();
+    (void)pet2d_movement_poc_reset_stats();
+    ret = pet2d_movement_poc_run_repeated_steps(PET_KEY_RIGHT_DOWN,
+                                                repeat_count,
+                                                delay_ms);
+
+    if (acquired_here == PET_TRUE) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
+    }
+    return ret;
+#else
+    if ((repeat_count == 0u) || (repeat_count > PET2D_MOVEMENT_POC_REPEAT_MAX)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    (void)delay_ms;
+    return PET_RESULT_UNSUPPORTED;
+#endif
 }
 
 pet_result_t pet2d_movement_poc_self_test(void)
@@ -297,6 +505,17 @@ pet_result_t pet2d_movement_poc_self_test(void)
     if (state.x >= state.last_x) {
         return PET_RESULT_ERROR;
     }
+    if (pet2d_movement_poc_get_stats(&stats) != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if ((stats.last_old_x != state.last_x) ||
+        (stats.last_new_x != state.x) ||
+        (stats.last_dirty_w != (PET2D_MOVEMENT_POC_SURFACE_SIZE + PET2D_MOVEMENT_POC_STEP)) ||
+        (stats.last_dirty_h != PET2D_MOVEMENT_POC_SURFACE_SIZE) ||
+        (stats.key_event_count != 1u) ||
+        (stats.movement_step_count != 1u)) {
+        return PET_RESULT_ERROR;
+    }
 
     event.key = PET_KEY_RIGHT_DOWN;
     ret = pet2d_movement_poc_handle_key(&event);
@@ -312,6 +531,13 @@ pet_result_t pet2d_movement_poc_self_test(void)
         return PET_RESULT_ERROR;
     }
     if (state.pattern_toggle == 0u) {
+        return PET_RESULT_ERROR;
+    }
+
+    if (pet2d_boundary_movement_repeated_probe(0u, 0u) != PET_RESULT_INVALID_ARGUMENT) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_boundary_movement_repeated_probe(10u, 0u) != PET_RESULT_UNSUPPORTED) {
         return PET_RESULT_ERROR;
     }
 

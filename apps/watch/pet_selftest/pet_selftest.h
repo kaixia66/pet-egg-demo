@@ -23,6 +23,7 @@ typedef enum {
     PET_SELFTEST_RESOURCE_SPRITE_SURFACE,
     PET_SELFTEST_KEY_CALIBRATION,
     PET_SELFTEST_MINIMAL_MOVEMENT_POC,
+    PET_SELFTEST_KEY_LATENCY_MOVEMENT_GATE,
     PET_SELFTEST_SAVE_TRANSACTION,
     PET_SELFTEST_PROTOCOL_PACKET,
     PET_SELFTEST_BLE_LOOPBACK,
@@ -54,6 +55,8 @@ typedef struct {
     pet_u8_t has_resource_sprite_surface_probe_gate;
     pet_u8_t has_key_calibration;
     pet_u8_t has_minimal_sprite_movement_probe_gate;
+    pet_u8_t has_movement_stats;
+    pet_u8_t has_key_latency_probe_gate;
     pet_u8_t has_resource_manifest_adapter;
     pet_u8_t has_save_transaction_adapter;
     pet_u8_t has_protocol_helper;

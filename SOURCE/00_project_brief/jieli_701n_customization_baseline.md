@@ -385,3 +385,31 @@ P14 still does not:
 - enable full Pet2D runtime, HOME/Observe, background scrolling or formal resources;
 - allocate a full framebuffer, replace LVGL flush or change MVP-A default page behavior;
 - write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.
+
+## P15 Key Latency + Movement Repeated Flush Stats POC Status
+
+Status: implemented as a stats extension to the P14 movement gate in source; committed source keeps the
+real LCD movement path disabled by default.
+
+Current capability:
+- `apps/watch/pet2d_boundary/pet2d_movement_poc.*` now records movement key events, movement steps,
+  render attempts, render success/failure, coarse key/logic/render/flush timestamps, key-to-flush
+  min/max/average values and the last old/new sprite positions.
+- Dirty rect strategy is explicit: old sprite rect and new sprite rect are merged into a bounding
+  rectangle, then kept within the existing display-safe movement bounds. P15 still does not implement a
+  full scene erase/restore system.
+- `pet2d_movement_poc_run_repeated_steps()` and `pet2d_boundary_movement_repeated_probe()` support a
+  finite repeated movement probe capped at 60 steps. With the committed real-flush macro off, the manual
+  probe returns `PET_RESULT_UNSUPPORTED` before touching the LCD.
+- The self-test aggregator adds a key-latency/movement-stats case plus capability bits while keeping real
+  panel writes skipped in run-all.
+- Board-test note: a temporary macro-enabled build with non-committed Debug `P15S10` / `P15S30` /
+  `P15S60` actions confirmed 10/30/60 repeated movement probes all returned `ret=0` with matching
+  success counts and no observed panic/assert/WDT/HardFault/exception. The movement pattern is visible
+  during the probe but still disappears after LVGL reacquires owner and redraws the Debug page.
+
+P15 still does not:
+- route real key events into Pet2D by default or modify the MVP-A key path;
+- enable full Pet2D runtime, HOME/Observe, background scrolling, formal resources or external Flash;
+- allocate a full framebuffer, replace LVGL flush or change MVP-A default page behavior;
+- write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.

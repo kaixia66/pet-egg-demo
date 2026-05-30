@@ -90,6 +90,10 @@ pet_result_t pet_platform_jieli_compile_check_self_tests(void)
     if (pet2d_boundary_movement_probe_step(PET_KEY_RIGHT_DOWN) != PET_RESULT_UNSUPPORTED) {
         return PET_RESULT_ERROR;
     }
+    if (pet2d_boundary_movement_repeated_probe(PET2D_MOVEMENT_POC_DEFAULT_REPEAT, 0u) !=
+        PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
     if (input_ret != PET_RESULT_OK) {
         return input_ret;
     }

@@ -300,6 +300,23 @@ MVP-A's default input path and full Pet2D runtime disabled:
 - `SOURCE/10_engineering_reports/p14_minimal_sprite_movement_key_calibration.md`: records key-source
   audit, calibration strategy, mapping status, movement POC behavior and P14 board-test plan/results.
 
+## P15 Key Latency + Movement Repeated Flush Stats POC Addendum
+
+P15 extends the P14 movement POC with coarse timing and repeated-step statistics while keeping the
+committed real LCD path and full Pet2D runtime disabled:
+
+- `apps/watch/pet2d_boundary/pet2d_movement_poc.h` and `.c`: extend movement stats with key event,
+  logic, render and flush timestamps, key-to-flush min/max/average counters, old/new sprite positions,
+  dirty-rect union data and bounded repeated movement steps.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the repeated movement gate and
+  repeat-count limit without touching real LCD hardware.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references the repeated movement
+  gate in the platform compile-check path while the real-flush macro remains off.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add the key-latency/movement-stats case and
+  capability bits; run-all still skips real movement panel writes.
+- `SOURCE/10_engineering_reports/p15_key_latency_movement_stats.md`: records stats fields, latency
+  method, dirty-rect union strategy, repeated-probe behavior and P15 board-test plan/results.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 
