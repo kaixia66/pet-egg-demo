@@ -122,3 +122,24 @@ Open items:
   font/SFX packs, multi-pet manifests or content-card activation.
 - The existing winmk post-build/resource packaging failure remains independent of P5. P5 must not
   modify toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P6 Save Transaction Adapter Risks
+
+Status: P6 validates the shared save slot ABI and rollback behavior only against caller-owned memory
+slots. It does not prove real Jieli VM/Flash persistence.
+
+Open items:
+- Real syscfg/VM/Flash item IDs, ownership, region size, erase policy and update ownership remain
+  unconfirmed. P6 intentionally does not write `syscfg_write`, VM, NOR, SFC or files.
+- The P1/simulator save header has a payload CRC32 but no header CRC field. P6 uses a staged invalid
+  CRC header for partial-write tests; a future real backend may need an erase/program/commit marker
+  policy that matches the physical storage medium.
+- Power-fail atomicity, brownout behavior, page alignment, sector erase timing and wear leveling still
+  require board tests before connecting the adapter to real storage.
+- Low-battery blocking is a test flag only. It must later be wired to the confirmed battery/power API.
+- The existing MVP-A save path still uses `syscfg_read/write(MVP_A_SAVE_VM_ID)`. Migration timing and
+  compatibility from MVP-A's magic/version/checksum save data into shared save slots remain undecided.
+- `pet_platform_jieli` storage callbacks remain `NOT_READY` / `UNSUPPORTED`; later phases must decide
+  whether shared save routes through `pet_platform_t` or a storage-specific backend.
+- The existing winmk post-build/resource packaging failure remains independent of P6. P6 must not
+  modify toolchain paths, resource scripts or download packaging to mask that environment issue.

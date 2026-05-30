@@ -141,3 +141,28 @@ P5 still does not:
 - import final production art;
 - enable Pet2D runtime or real LCD flush;
 - change MVP-A default page behavior, or connect BLE/NFC/audio hardware.
+
+## P6 A/B Save Transaction Adapter Status
+
+Status: implemented as an isolated in-memory A/B transaction adapter and self-test; not a real VM/Flash
+storage integration.
+
+Current capability:
+- `apps/watch/pet_save_jieli/` validates the P1/simulator 64-byte `pet_save_slot_header_t` layout:
+  magic `0x50455453`, version `1`, schema range, payload type, payload length, counter, timestamp and
+  payload CRC32.
+- `load_latest` validates both slots and chooses the valid slot with the highest counter.
+- `write_transaction` writes only the inactive slot, stages an intentionally invalid header before the
+  payload, writes the final header only after payload bytes are present, verifies the target slot, and
+  leaves the previous valid slot readable if the staged write fails.
+- The caller-owned memory backend supports self-test fault modes for failure before write, after staged
+  header, after payload, corrupt-after-write and low-battery write blocking.
+- `pet_save_jieli_self_test()` covers empty slots, first and second writes, latest selection, CRC
+  rollback, partial-write rollback, oversize payload, low-battery block, bad version and bad payload CRC.
+
+P6 still does not:
+- write real VM, Flash, syscfg, files, NOR or SFC;
+- replace or alter the existing `mvp_a_save` default path;
+- enable `pet_platform_jieli` storage callbacks;
+- change MVP-A default page behavior or save data;
+- enable Pet2D runtime, real LCD flush, BLE/NFC/audio hardware or production resources.

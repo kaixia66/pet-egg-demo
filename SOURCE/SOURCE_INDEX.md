@@ -122,6 +122,27 @@ loading disabled:
 - `SOURCE/10_engineering_reports/p5_resource_manifest_adapter.md`: records SDK resource audit,
   manifest ABI alignment, test blob contents, parser API and P5 boundaries.
 
+## P6 Save Transaction Adapter Addendum
+
+P6 adds an isolated A/B save adapter under `apps/watch/pet_save_jieli/`. It is compiled for
+ABI/transaction checking, but it does not replace MVP-A syscfg save and does not write real VM/Flash:
+- `apps/watch/pet_save_jieli/pet_save_jieli.h`: public A/B save adapter API for opening the memory
+  backend, loading the latest slot, transaction writes, slot validation, latest-slot selection, CRC32
+  and self-test.
+- `apps/watch/pet_save_jieli/pet_save_jieli.c`: validates the P1/simulator 64-byte save slot header,
+  computes payload CRC32, chooses the higher-counter valid slot, writes inactive slots through a
+  staged header, verifies writes and exercises rollback self-tests.
+- `apps/watch/pet_save_jieli/pet_save_jieli_backend.h`: shared backend fault enum for P6 failure
+  simulation.
+- `apps/watch/pet_save_jieli/pet_save_jieli_memory_backend.h`: caller-owned A/B slot buffers and
+  test-only write-fault / low-battery flags.
+- `apps/watch/pet_save_jieli/pet_save_jieli_memory_backend.c`: no-malloc memory backend init, clear and
+  test fault controls.
+- `apps/watch/pet_save_jieli/pet_save_jieli_compile_check.c`: compile-only reference for the save
+  adapter and self-test.
+- `SOURCE/10_engineering_reports/p6_save_transaction_adapter.md`: records MVP-A save audit, ABI
+  alignment, transaction/rollback behavior, memory backend fault injection and P6 storage boundaries.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

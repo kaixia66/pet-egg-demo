@@ -219,6 +219,7 @@ INCLUDES := \
 	-Iapps/watch/pet_platform_jieli \
 	-Iapps/watch/pet2d_boundary \
 	-Iapps/watch/pet_resource_jieli \
+	-Iapps/watch/pet_save_jieli \
 	-Iapps/common \
 	-Iapps/common/device \
 	-Iapps/common/audio \
@@ -951,6 +952,9 @@ c_SRC_FILES := \
 	apps/watch/pet_resource_jieli/pet_resource_jieli.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_compile_check.c \
+	apps/watch/pet_save_jieli/pet_save_jieli.c \
+	apps/watch/pet_save_jieli/pet_save_jieli_memory_backend.c \
+	apps/watch/pet_save_jieli/pet_save_jieli_compile_check.c \
 	apps/watch/mvp_a/domain/mvp_a_boss.c \
 	apps/watch/mvp_a/domain/mvp_a_card.c \
 	apps/watch/mvp_a/domain/mvp_a_diary.c \

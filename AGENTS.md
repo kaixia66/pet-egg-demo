@@ -73,6 +73,19 @@ resource route. Formal resources should later be produced by the Jieli resource 
 packaged as manifest/resource binaries, and mapped to local or external Flash only after ownership,
 offset, size, byte order, compression and CRC policy are confirmed.
 
+## PetEgg P6 Save Transaction Adapter Rule
+
+P6 is an A/B save transaction and rollback adapter phase. `apps/watch/pet_save_jieli/` may validate
+the P1/simulator 64-byte save slot header, choose the latest valid slot by counter, write the inactive
+slot first, verify the written slot, and rely on the counter to select the latest save. It must not
+erase the old slot before the new slot verifies.
+
+P6 must not write real VM, Flash, syscfg, files or external storage, and must not replace the existing
+`mvp_a_save` default path. The memory backend and fault injection are for self-test only; they do not
+prove real power-fail atomicity, wear leveling, erase policy or Flash page alignment. `pet_platform`
+storage callbacks stay stubbed unless a later phase explicitly confirms storage ownership and power
+rules.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。
