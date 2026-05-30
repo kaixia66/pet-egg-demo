@@ -59,6 +59,24 @@ P2 files:
 - `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: minimal compile-only use of
   `pet_platform_jieli_get()`.
 
+## P3 Display Profile + Input Mapping POC Addendum
+
+P3 stays inside `apps/watch/pet_platform_jieli/` and keeps real hardware paths disabled. It refines the
+P2 display/profile and input stubs into auditable POC code:
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: now declares
+  `pet_platform_jieli_display_self_test()` and `pet_platform_jieli_input_self_test()`.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: declares P3 display constants
+  (`PET_JIELI_DISPLAY_*`), placeholder raw key/event constants, and the raw-event mapping helper.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: returns the named 454x454 RGB565 profile,
+  validates safe area/owner behavior in display self-test, and still never writes to the LCD.
+- `apps/watch/pet_platform_jieli/pet_input_jieli.c`: maps placeholder IO raw codes/events to
+  `PetKeyEvent`, owns a small private POC queue, returns `PET_RESULT_AGAIN` when no event is queued,
+  and provides input self-test coverage.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references both self-test
+  entry points without performing real hardware calls.
+- `SOURCE/10_engineering_reports/p3_display_input_poc.md`: records display and key-source audit
+  findings, mapping table, self-test expectations, and P3 hardware boundaries.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

@@ -9,6 +9,8 @@ extern "C" {
 
 void pet_platform_jieli_init(void);
 const pet_platform_t *pet_platform_jieli_get(void);
+pet_result_t pet_platform_jieli_display_self_test(void);
+pet_result_t pet_platform_jieli_input_self_test(void);
 
 #ifdef __cplusplus
 }

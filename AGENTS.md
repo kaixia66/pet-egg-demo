@@ -37,6 +37,18 @@ checks, but it must not enable real Display, Input, Storage, BLE, NFC, Flash, VM
 Pet2D, or LVGL flush changes. Hardware callbacks should return `PET_RESULT_NOT_READY`,
 `PET_RESULT_UNSUPPORTED`, or fixed test values until their later phases explicitly wire them.
 
+## PetEgg P3 Display/Input POC Rule
+
+P3 may refine the Jieli display profile and add a controlled raw-key mapping POC under
+`apps/watch/pet_platform_jieli/`, but it must not enable real LCD flush, Pet2D rendering, VM/Flash,
+BLE, NFC, or audio hardware paths. Display profile constants must state their SDK source or board-test
+TODOs; self-tests only validate profile/layout and owner/input state machines.
+
+P3 input mapping is a private PetEgg HAL POC. It must not consume the real Jieli key queue, must not
+replace `mvp_a_ui_handle_system_key()` or `mvp_a_app_key_event()`, and must not take over LVGL/MVP-A
+input. Test raw-event injection must stay local to `pet_platform_jieli` and must not be treated as a
+real hardware binding.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

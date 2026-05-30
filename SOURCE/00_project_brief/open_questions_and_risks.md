@@ -60,3 +60,23 @@ Open items:
   `get_vbat_percent`, `vbat_check`, or another SDK power API.
 - The existing winmk post-build/resource packaging failure remains independent of P2. P2 must not
   modify toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P3 Display Profile + Input Mapping POC Risks
+
+Status: P3 resolves the basic source audit and POC mapping design, but real board behavior still needs
+hardware logs and measurements.
+
+Open items:
+- The 454x454 profile is sourced from the active LVGL port and SH8601A board config, but the true LCD
+  visible mask, safe area, RGB565 byte order, TE timing and flush alignment still require board-test
+  confirmation.
+- The raw IO key codes 0, 1, 2 and 3 are sourced from the board `iokey_list`; final physical labeling
+  for left/up, right/down, OK and cancel still needs serial button-log confirmation.
+- SDK native key events expose click, long, hold/repeat and up. A true down event was not confirmed in
+  the audited path, so P3 uses a placeholder raw DOWN code only inside the PetEgg POC mapper.
+- Long/hold timing is currently inferred from SDK scan counts and POC constants. Real key latency,
+  repeat cadence and hold duration must be measured on the development board.
+- `PET_RESULT_AGAIN` is used as the shared ABI's current no-event return for an empty P3 input queue;
+  add an explicit `NO_EVENT` result only through a future shared ABI version bump if needed.
+- The existing winmk post-build/resource packaging failure remains independent of P3. P3 must not
+  modify toolchain paths, resource scripts or download packaging to mask that environment issue.

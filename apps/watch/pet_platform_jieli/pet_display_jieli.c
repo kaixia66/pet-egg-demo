@@ -23,19 +23,24 @@ pet_result_t pet_display_jieli_get_profile(void *ctx, pet_display_profile_t *pro
         return PET_RESULT_INVALID_ARGUMENT;
     }
 
-    /* TODO(P3): confirm real LCD size, safe area, byte order, TE and flush alignment on hardware. */
-    profile->width = 454u;
-    profile->height = 454u;
-    profile->shape = PET_SCREEN_SHAPE_CIRCLE;
+    /*
+     * P3 audit source:
+     * - CONFIG_BOARD_701N_LVGL_DEMO enables TCFG_LCD_SPI_SH8601A_ENABLE.
+     * - cpu/br28/ui_driver/lvgl/lv_port_disp.c fixes LVGL to 454x454.
+     * TODO(P3 board test): confirm true panel geometry, round mask, byte order, TE and alignment.
+     */
+    profile->width = PET_JIELI_DISPLAY_WIDTH;
+    profile->height = PET_JIELI_DISPLAY_HEIGHT;
+    profile->shape = PET_JIELI_DISPLAY_SHAPE;
     profile->safe_margin_percent = 12;
     profile->default_scale = 1;
     profile->flush_mode = PET_DISPLAY_FLUSH_MODE_RGB565_RECT;
-    profile->rotation = PET_DISPLAY_ROTATION_0;
+    profile->rotation = PET_JIELI_DISPLAY_ROTATION;
     profile->rgb565_order = PET_RGB565_ORDER_RGB;
-    profile->safe_area.left = 34u;
-    profile->safe_area.top = 34u;
-    profile->safe_area.right = 420u;
-    profile->safe_area.bottom = 420u;
+    profile->safe_area.left = PET_JIELI_DISPLAY_SAFE_X;
+    profile->safe_area.top = PET_JIELI_DISPLAY_SAFE_Y;
+    profile->safe_area.right = PET_JIELI_DISPLAY_SAFE_X + PET_JIELI_DISPLAY_SAFE_W;
+    profile->safe_area.bottom = PET_JIELI_DISPLAY_SAFE_Y + PET_JIELI_DISPLAY_SAFE_H;
     profile->stride_align_pixels = 1u;
     profile->min_flush_width = 1u;
     profile->min_flush_height = 1u;
@@ -91,7 +96,7 @@ pet_result_t pet_display_jieli_flush(void *ctx, const pet_display_rect_t *rect,
     (void)rect;
     (void)rgb565_pixels;
     (void)stride_bytes;
-    /* P2 must not write to the real LCD or alter the current LVGL flush path. */
+    /* P3 keeps real LCD writes disabled and does not alter the current LVGL flush path. */
     return PET_RESULT_NOT_READY;
 }
 
@@ -125,5 +130,66 @@ pet_result_t pet_display_jieli_wakeup(void *ctx)
 {
     (void)ctx;
     g_pet_display_jieli_state.sleeping = PET_FALSE;
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet_platform_jieli_display_self_test(void)
+{
+    const pet_platform_t *platform;
+    pet_display_profile_t profile;
+    pet_result_t ret;
+
+    platform = pet_platform_jieli_get();
+    if ((platform == 0) || (platform->get_display_profile == 0) ||
+        (platform->display_acquire == 0) || (platform->display_release == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    ret = platform->get_display_profile(platform->ctx, &profile);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    if ((profile.width == 0u) || (profile.height == 0u)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    if (PET_RGB565_BYTES_PER_PIXEL != 2u) {
+        return PET_RESULT_BAD_VERSION;
+    }
+    if ((profile.flush_mode != PET_DISPLAY_FLUSH_MODE_RGB565_FULL) &&
+        (profile.flush_mode != PET_DISPLAY_FLUSH_MODE_RGB565_RECT) &&
+        (profile.flush_mode != PET_DISPLAY_FLUSH_MODE_RGB565_RECT_ASYNC)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    if ((profile.rgb565_order != PET_RGB565_ORDER_RGB) &&
+        (profile.rgb565_order != PET_RGB565_ORDER_BGR)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    if ((profile.safe_area.left > profile.safe_area.right) ||
+        (profile.safe_area.top > profile.safe_area.bottom) ||
+        (profile.safe_area.right > profile.width) ||
+        (profile.safe_area.bottom > profile.height)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    pet_display_jieli_init();
+    ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI, 0u);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
+    if (ret != PET_RESULT_BUSY) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI);
+        return PET_RESULT_ERROR;
+    }
+    ret = platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
+    if (ret != PET_RESULT_BUSY) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI);
+        return PET_RESULT_ERROR;
+    }
+    ret = platform->display_release(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
     return PET_RESULT_OK;
 }
