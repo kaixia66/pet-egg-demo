@@ -243,6 +243,23 @@ disabled:
 - `SOURCE/10_engineering_reports/p11_pet2d_minimal_real_flush_poc.md`: records helper design, test pattern,
   manual probe gate, safety boundaries and manual board-test plan.
 
+## P12 Repeated Tiny Flush + Dirty Rect Alignment POC Addendum
+
+P12 adds small dirty-rect pattern generation and a finite repeated-flush probe while keeping the committed
+real LCD path disabled:
+
+- `apps/watch/pet2d_boundary/pet2d_dirty_rect_poc.h` and `.c`: define 16x16, 32x32 and 64x64 RGB565 test
+  patterns, center/odd/near-edge/out-of-bounds rect cases, bounds validation and compile self-test.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h` and `.c`: add repeated flush configuration, stats,
+  reset/get APIs and a manual repeated probe that only reaches the P10 real-flush path when the real-flush
+  macro is enabled for a local board build.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the dirty-rect helper and repeated
+  probe gate without touching hardware in the committed default.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add the repeated flush gate case and dirty-rect
+  capability bit. run-all validates pattern/bounds helpers but skips real panel writes.
+- `SOURCE/10_engineering_reports/p12_repeated_flush_dirty_rect_poc.md`: records the hardware scope change,
+  dirty-rect helper design, repeated-probe behavior, safety boundaries and board-test plan/results.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

@@ -293,3 +293,37 @@ P11 still does not:
 - allocate a full framebuffer;
 - replace LVGL flush or change MVP-A default page behavior;
 - write VM/Flash/syscfg or connect BLE/NFC.
+
+## P12 Repeated Tiny Flush + Dirty Rect Alignment POC Status
+
+Status: implemented as a dirty-rect/repeated-probe gate in source; real repeated LCD writes remain
+manual-only and the committed source keeps `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0,
+`real_lcd_flush_enabled` at 0 and `pet2d_runtime_enabled` at 0.
+
+Current hardware scope adjustment:
+- The current development board has no NFC and no speaker.
+- Only one development board is available, so real BT/BLE two-board connection testing is out of scope.
+- Real NFC, real audio/SFX and real BLE two-board link are Future Scope for this hardware cycle. P12 keeps
+  NFC fake/stub tests, audio callback stubs and BLE packet ABI/loopback only.
+
+Current capability:
+- `apps/watch/pet2d_boundary/pet2d_dirty_rect_poc.*` can generate 16x16, 32x32 and 64x64 RGB565 test
+  patterns and provide center, odd-coordinate, near-edge and out-of-bounds rect cases.
+- `pet2d_boundary_repeated_flush_probe()` is a manual-only owner-guarded probe. With the committed macro
+  off it returns `PET_RESULT_UNSUPPORTED` and does not touch the LCD.
+- Repeated-probe stats record attempts, successes, failures, last rect, repeat count, fail index and
+  elapsed-time placeholders for later board runs.
+- The self-test aggregator adds a repeated flush gate case and dirty-rect capability bit while still
+  skipping real panel writes in run-all.
+- Board-test note: a temporary macro-enabled build with a non-committed Debug `P12` trigger passed
+  16x16/32x32/64x64 center repeated flushes, a 32x32 odd-coordinate flush and out-of-bounds rejection.
+  Logs showed 40 real flush attempts, 40 successes and no observed panic/assert/WDT/HardFault/reset.
+  The user also reported that physical LEFT/UP reached Debug where the earlier instruction expected
+  RIGHT/DOWN; key physical labeling and logical mapping remain to be confirmed before changing defaults.
+
+P12 still does not:
+- enable the complete Pet2D runtime, HOME/Observe, background scrolling or sprite animation;
+- load formal resources or parse runtime image/JSON formats;
+- allocate a full framebuffer;
+- replace LVGL flush or change MVP-A default page behavior;
+- write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.

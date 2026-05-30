@@ -1,9 +1,56 @@
 #include "pet2d_boundary.h"
+#include "pet2d_dirty_rect_poc.h"
 #include "pet2d_minimal_visual.h"
 #include "pet_platform_jieli_internal.h"
 #include "pet_resource_jieli.h"
 
 extern int printf(const char *format, ...);
+
+static pet2d_boundary_repeated_flush_stats_t g_pet2d_repeated_flush_stats;
+
+static void pet2d_boundary_record_repeated_result(const pet2d_repeated_flush_config_t *config,
+                                                  pet_u16_t size,
+                                                  pet_u16_t success_count,
+                                                  pet_u16_t fail_index,
+                                                  pet_result_t result,
+                                                  pet_u32_t total_ms,
+                                                  pet_u32_t max_ms)
+{
+    g_pet2d_repeated_flush_stats.last_pattern_size = size;
+    g_pet2d_repeated_flush_stats.last_repeat_count = config->repeat_count;
+    g_pet2d_repeated_flush_stats.last_success_count = success_count;
+    g_pet2d_repeated_flush_stats.last_fail_index = fail_index;
+    g_pet2d_repeated_flush_stats.last_rect_x = config->x;
+    g_pet2d_repeated_flush_stats.last_rect_y = config->y;
+    g_pet2d_repeated_flush_stats.last_rect_w = size;
+    g_pet2d_repeated_flush_stats.last_rect_h = size;
+    g_pet2d_repeated_flush_stats.last_result = result;
+    g_pet2d_repeated_flush_stats.total_flush_ms = total_ms;
+    g_pet2d_repeated_flush_stats.max_single_flush_ms = max_ms;
+}
+
+pet_result_t pet2d_boundary_reset_repeated_flush_stats(void)
+{
+    pet_u8_t *bytes = (pet_u8_t *)&g_pet2d_repeated_flush_stats;
+    pet_u32_t i;
+
+    for (i = 0u; i < (pet_u32_t)sizeof(g_pet2d_repeated_flush_stats); i++) {
+        bytes[i] = 0u;
+    }
+    g_pet2d_repeated_flush_stats.last_result = PET_RESULT_NOT_READY;
+    g_pet2d_repeated_flush_stats.last_fail_index = 0xFFFFu;
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_boundary_get_repeated_flush_stats(
+    pet2d_boundary_repeated_flush_stats_t *out_stats)
+{
+    if (out_stats == 0) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    *out_stats = g_pet2d_repeated_flush_stats;
+    return PET_RESULT_OK;
+}
 
 pet_result_t pet2d_boundary_enter_placeholder(void)
 {
@@ -187,6 +234,197 @@ pet_result_t pet2d_boundary_minimal_real_flush_probe(void)
     }
     return ret;
 #else
+    return PET_RESULT_UNSUPPORTED;
+#endif
+}
+
+pet_result_t pet2d_boundary_repeated_flush_probe(const pet2d_repeated_flush_config_t *config)
+{
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    const pet_platform_t *platform = pet_platform_jieli_get();
+    pet_display_owner_t original_owner;
+    pet_result_t ret;
+    pet_bool_t acquired_here = PET_FALSE;
+    pet_u16_t size;
+    pet_u16_t index;
+    pet_u16_t success_count = 0u;
+    pet_u16_t fail_index = 0xFFFFu;
+    pet_u32_t total_ms = 0u;
+    pet_u32_t max_ms = 0u;
+    static pet_u16_t pixels[PET2D_DIRTY_RECT_SIZE_64 * PET2D_DIRTY_RECT_SIZE_64];
+    pet2d_minimal_surface_t surface;
+    pet2d_dirty_rect_case_t rect;
+
+    if ((config == 0) || (platform == 0) || (platform->display_acquire == 0) ||
+        (platform->display_release == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    size = pet2d_dirty_rect_poc_pattern_size(config->pattern);
+    if ((size == 0u) || (config->repeat_count == 0u) ||
+        (config->repeat_count > PET2D_DIRTY_RECT_REPEAT_MAX)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    rect.x = config->x;
+    rect.y = config->y;
+    rect.width = size;
+    rect.height = size;
+    ret = pet2d_dirty_rect_poc_rect_in_bounds(&rect);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
+    surface.width = size;
+    surface.height = size;
+    surface.pitch_pixels = size;
+    surface.pixels = pixels;
+    ret = pet2d_dirty_rect_poc_fill_pattern(config->pattern, &surface);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
+    original_owner = pet_display_jieli_get_owner();
+    if (original_owner == PET_DISPLAY_OWNER_NONE) {
+        ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
+        acquired_here = PET_TRUE;
+    } else if (original_owner != PET_DISPLAY_OWNER_PET2D) {
+        g_pet2d_repeated_flush_stats.repeated_probe_fail_count++;
+        pet2d_boundary_record_repeated_result(config, size, 0u, 0u, PET_RESULT_BUSY, 0u, 0u);
+        return PET_RESULT_BUSY;
+    }
+
+    g_pet2d_repeated_flush_stats.repeated_probe_attempt_count++;
+    for (index = 0u; index < config->repeat_count; index++) {
+        pet_u32_t start_ms = 0u;
+        pet_u32_t end_ms = 0u;
+        pet_u32_t elapsed_ms = 0u;
+        int x = (int)config->x;
+        int y = (int)config->y;
+
+        if (config->move_each_flush != 0u) {
+            x += (int)(index & 3u);
+            y += (int)((index >> 1u) & 3u);
+        }
+        rect.x = (pet_i16_t)x;
+        rect.y = (pet_i16_t)y;
+        rect.width = size;
+        rect.height = size;
+        ret = pet2d_dirty_rect_poc_rect_in_bounds(&rect);
+        if (ret != PET_RESULT_OK) {
+            fail_index = index;
+            break;
+        }
+
+        if (platform->millis != 0) {
+            start_ms = platform->millis(platform->ctx);
+        }
+        ret = pet_display_jieli_real_flush_poc_rect(x, y, size, size, pixels, size);
+        if (platform->millis != 0) {
+            end_ms = platform->millis(platform->ctx);
+            elapsed_ms = end_ms - start_ms;
+            total_ms += elapsed_ms;
+            if (elapsed_ms > max_ms) {
+                max_ms = elapsed_ms;
+            }
+        }
+        if (ret != PET_RESULT_OK) {
+            fail_index = index;
+            break;
+        }
+        success_count++;
+        (void)config->delay_ms;
+    }
+
+    if (ret == PET_RESULT_OK) {
+        g_pet2d_repeated_flush_stats.repeated_probe_success_count++;
+    } else {
+        g_pet2d_repeated_flush_stats.repeated_probe_fail_count++;
+    }
+    pet2d_boundary_record_repeated_result(config, size, success_count, fail_index,
+                                          ret, total_ms, max_ms);
+
+    if (acquired_here == PET_TRUE) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
+    }
+    return ret;
+#else
+    (void)config;
+    return PET_RESULT_UNSUPPORTED;
+#endif
+}
+
+pet_result_t pet2d_boundary_repeated_flush_default_probe(void)
+{
+    pet2d_repeated_flush_config_t config;
+    pet2d_dirty_rect_case_t rect;
+    pet_result_t ret;
+
+    ret = pet2d_dirty_rect_poc_rect_for_case(PET2D_DIRTY_RECT_PATTERN_16, 0u, &rect);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
+    config.pattern = PET2D_DIRTY_RECT_PATTERN_16;
+    config.repeat_count = PET2D_DIRTY_RECT_DEFAULT_REPEAT;
+    config.x = rect.x;
+    config.y = rect.y;
+    config.delay_ms = 50u;
+    config.move_each_flush = 0u;
+    return pet2d_boundary_repeated_flush_probe(&config);
+}
+
+pet_result_t pet2d_boundary_repeated_flush_gate_self_test(void)
+{
+    pet2d_boundary_repeated_flush_stats_t stats;
+    pet2d_repeated_flush_config_t config;
+    pet2d_dirty_rect_case_t rect;
+    pet_result_t ret;
+
+    ret = pet2d_dirty_rect_poc_self_test();
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    if (pet2d_boundary_reset_repeated_flush_stats() != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_boundary_get_repeated_flush_stats(&stats) != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (stats.repeated_probe_attempt_count != 0u) {
+        return PET_RESULT_ERROR;
+    }
+
+    ret = pet2d_dirty_rect_poc_rect_for_case(PET2D_DIRTY_RECT_PATTERN_32, 0u, &rect);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    config.pattern = PET2D_DIRTY_RECT_PATTERN_32;
+    config.repeat_count = PET2D_DIRTY_RECT_DEFAULT_REPEAT;
+    config.x = rect.x;
+    config.y = rect.y;
+    config.delay_ms = 50u;
+    config.move_each_flush = 0u;
+
+    ret = pet2d_boundary_repeated_flush_probe(&config);
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    if ((ret != PET_RESULT_OK) && (ret != PET_RESULT_BUSY)) {
+        return ret;
+    }
+    return PET_RESULT_UNSUPPORTED;
+#else
+    if (ret != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_boundary_get_repeated_flush_stats(&stats) != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (stats.repeated_probe_attempt_count != 0u) {
+        return PET_RESULT_ERROR;
+    }
     return PET_RESULT_UNSUPPORTED;
 #endif
 }

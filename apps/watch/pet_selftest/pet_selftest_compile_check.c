@@ -19,6 +19,7 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
         return PET_RESULT_ERROR;
     }
     if ((snapshot.has_pet2d_minimal_visual_probe_gate == 0u) ||
+        (snapshot.has_dirty_rect_poc_gate == 0u) ||
         (snapshot.real_lcd_flush_enabled != 0u) ||
         (snapshot.pet2d_runtime_enabled != 0u)) {
         return PET_RESULT_ERROR;
@@ -28,5 +29,5 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
 
 const char *pet_selftest_compile_check_name(void)
 {
-    return pet_selftest_case_name(PET_SELFTEST_PET2D_MINIMAL_REAL_FLUSH_GATE);
+    return pet_selftest_case_name(PET_SELFTEST_REPEATED_FLUSH_GATE);
 }

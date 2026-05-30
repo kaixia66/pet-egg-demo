@@ -145,6 +145,17 @@ Do not render HOME/Observe, load formal resources, parse PNG/JPG/GIF/JSON, alloc
 replace the LVGL flush callback, or change MVP-A default pages in P11. Temporary Debug UI triggers for
 manual board tests must be removed before commit, and build byproducts must stay out of commits.
 
+## PetEgg P12 Repeated Flush / Dirty Rect POC Rule
+
+P12 is a repeated tiny flush and dirty-rect alignment POC phase. It may add small 16x16, 32x32 and 64x64
+RGB565 test patterns plus finite repeated-probe helpers, but it must still keep full Pet2D runtime,
+HOME/Observe, formal resources, full framebuffer allocation and default MVP-A page behavior disabled.
+
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` must remain 0 in committed source. Any repeated real flush board
+test must be local, manually triggered, owner-guarded, finite, and removed from Debug UI before commit.
+The current board has no NFC, no speaker and only one unit, so real NFC, audio and BLE two-board link
+tests are Future Scope; keep only fake/stub/self-test coverage for those paths in this hardware cycle.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

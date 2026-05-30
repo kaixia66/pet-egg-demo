@@ -240,3 +240,31 @@ still skips real LCD writes and does not enable Pet2D runtime.
 - The resource-to-surface path is not connected. P11 generates pixels procedurally and does not load
   sprites from the P5 manifest adapter or formal Jieli resource tools.
 - Any temporary Debug UI trigger used for board testing must remain local and must not be committed.
+
+## P12 Repeated Tiny Flush + Dirty Rect Alignment POC Risks
+
+Status: P12 adds dirty-rect helper coverage and a finite repeated-flush probe gate. A temporary board
+build passed repeated 16x16/32x32/64x64 center flushes plus odd-coordinate and out-of-bounds checks. The
+committed default still skips real LCD writes, keeps full Pet2D runtime disabled and does not keep a Debug
+UI trigger.
+
+Current hardware scope adjustment:
+- The available development board has no NFC and no speaker, and only one board is available. Real NFC,
+  real audio/SFX and real BLE two-board link validation are therefore Future Scope.
+- P12 keeps NFC fake/stub tests, audio callback stubs and BLE packet ABI/loopback coverage only; those do
+  not prove the missing hardware paths.
+
+Open items:
+- Repeated 16x16/32x32/64x64 passed once on the current board, but still needs repeat testing across cold
+  boot, longer observation windows, page transitions and LVGL recovery cases.
+- Dirty-rect odd-coordinate and near-edge cases are represented in source, but physical panel alignment,
+  clipping and cache behavior must be confirmed on hardware.
+- Physical LEFT/UP and RIGHT/DOWN key labeling appears inconsistent with the earlier test instruction. Do
+  not change default key behavior until raw key logs and physical labeling are confirmed together.
+- Larger rectangles, repeated stress beyond the bounded P12 probe, frame pacing and performance remain
+  future work.
+- LVGL recovery after repeated out-of-band writes still needs a final policy for invalidation, owner
+  handoff and page restoration.
+- Resource sprite to RGB565 surface conversion remains disconnected; P12 patterns are procedural fixtures.
+- The existing winmk post-build/resource packaging failure remains independent of P12. P12 must not modify
+  toolchain paths, resource scripts or download packaging to mask that environment issue.

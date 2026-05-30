@@ -951,6 +951,7 @@ c_SRC_FILES := \
 	apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c \
 	apps/watch/pet2d_boundary/pet2d_boundary.c \
 	apps/watch/pet2d_boundary/pet2d_minimal_visual.c \
+	apps/watch/pet2d_boundary/pet2d_dirty_rect_poc.c \
 	apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.c \
