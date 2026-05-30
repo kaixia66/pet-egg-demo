@@ -3,6 +3,7 @@
 
 #include "pet_platform_jieli.h"
 #include "pet_protocol_jieli.h"
+#include "pet_key_calibration_jieli.h"
 
 #if defined(PET_PLATFORM_JIELI_TEST) || defined(PET_DEBUG)
 #define PET_JIELI_TEST_MODE_ENABLED 1
@@ -62,6 +63,7 @@ pet_result_t pet_input_jieli_get_snapshot(pet_input_snapshot_t *snapshot);
 pet_result_t pet_input_jieli_map_raw_event(pet_u16_t raw_code, pet_u8_t raw_event,
                                            pet_u32_t timestamp_ms,
                                            pet_key_event_t *out_event);
+pet_result_t pet_key_calibration_jieli_self_test(void);
 #if defined(PET_PLATFORM_JIELI_TEST)
 pet_result_t pet_input_jieli_test_push_raw(pet_u16_t raw_code, pet_u8_t raw_event,
                                            pet_u32_t timestamp_ms);

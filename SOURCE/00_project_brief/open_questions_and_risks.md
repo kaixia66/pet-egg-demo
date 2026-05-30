@@ -292,3 +292,30 @@ Open items:
   HOME/Observe rendering is not implemented.
 - The existing winmk post-build/resource packaging failure remains independent of P13. P13 must not modify
   toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P14 Minimal Sprite Movement + Raw Key Calibration POC Risks
+
+Status: P14 adds passive key-calibration and a minimal movement gate. It does not yet make the PetKey
+mapping authoritative for physical labels and does not route real key events into Pet2D by default.
+
+Current hardware scope adjustment remains unchanged:
+- The available development board has no NFC and no speaker, and only one board is available. Real NFC,
+  real audio/SFX and real BLE two-board link validation remain Future Scope.
+
+Open items:
+- P14 raw-key board logs confirm the current P3 mapping table: HOME/raw0 -> OK, PLUS/raw1 -> LEFT_UP,
+  MINUS/raw2 -> RIGHT_DOWN, SHORTCUT/raw3 -> CANCEL. No P3 mapping correction is made in P14.
+- The earlier LEFT_UP/RIGHT_DOWN confusion is now recorded as a Debug navigation/instruction ambiguity:
+  LEFT/UP and RIGHT/DOWN can reach different Debug actions depending on current selected item and wrap
+  direction, so future board-test instructions must name the expected prompt/action, not only a direction.
+- Minimal movement currently moves horizontally for LEFT_UP/RIGHT_DOWN to avoid overcommitting to
+  physical up/down semantics. True directional movement needs confirmed labels and product UX rules.
+- The P14 movement probe is visible only briefly because LVGL reacquires owner and redraws the Debug page
+  after the manual flush. A persistent interactive scene requires an explicit LVGL handoff / scene mode.
+- The first movement probe does not erase old sprite pixels through a full scene system; dirty rect merge
+  and old-rect clearing remain future work.
+- Key latency, long/repeat cadence and debouncing need later measurement if movement becomes interactive.
+- The bridge from P14 movement helpers to a complete Pet2D runtime, HOME/Observe scene and resource
+  animation pipeline is not implemented.
+- The existing winmk post-build/resource packaging failure remains independent of P14. P14 must not modify
+  toolchain paths, resource scripts or download packaging to mask that environment issue.

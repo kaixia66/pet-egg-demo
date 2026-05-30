@@ -168,6 +168,21 @@ the LVGL flush callback, or change MVP-A default pages. `PET_JIELI_ENABLE_REAL_L
 0 in committed source, any Debug UI trigger for board testing must be temporary, and NFC/audio/real BLE
 two-board work remains Future Scope on the current hardware.
 
+## PetEgg P14 Key Calibration + Minimal Sprite Movement POC Rule
+
+P14 is a raw-key calibration and minimal sprite movement POC phase. It may add passive key-calibration
+record buffers and small Pet2D-boundary movement helpers, but it must not consume the real Jieli key
+queue, change `mvp_a_app_key_event()` defaults, or alter the board key table without board-log evidence.
+Physical key labels, SDK key values, raw codes and `PetKey` mapping must be documented together before
+any permanent mapping correction is made.
+
+P14 does not enable full Pet2D runtime, HOME/Observe, formal resources, external Flash, full framebuffer
+allocation, LVGL flush replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. Any Debug UI trigger
+or app-common key logging used for board tests must be temporary and removed before commit. The committed
+source must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
+hardware.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

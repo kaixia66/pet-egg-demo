@@ -2,6 +2,7 @@
 #define PET2D_BOUNDARY_H
 
 #include "pet2d_dirty_rect_poc.h"
+#include "pet2d_movement_poc.h"
 #include "pet2d_resource_sprite_poc.h"
 #include "pet_platform.h"
 

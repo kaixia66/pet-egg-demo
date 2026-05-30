@@ -280,6 +280,26 @@ formal resources, external Flash and full Pet2D runtime disabled:
 - `SOURCE/10_engineering_reports/p13_resource_sprite_minimal_surface_poc.md`: records fixture IDs,
   resource->surface behavior, manual board-test plan and P13 boundaries.
 
+## P14 Minimal Sprite Movement + Raw Key Calibration POC Addendum
+
+P14 adds passive raw-key calibration storage and a minimal resource-sprite movement gate while keeping
+MVP-A's default input path and full Pet2D runtime disabled:
+
+- `apps/watch/pet_platform_jieli/pet_key_calibration_jieli.h` and `.c`: record recent raw/sdk key
+  observations, convert the audited SDK key values back to placeholder raw codes, map through the P3
+  PetKey helper, and self-test the calibration buffer without reading the real key queue.
+- `apps/watch/pet2d_boundary/pet2d_movement_poc.h` and `.c`: maintain a tiny 32x32 sprite movement
+  state, handle `PET_KEY_LEFT_UP`, `PET_KEY_RIGHT_DOWN`, `PET_KEY_OK` and `PET_KEY_CANCEL`, compute a
+  dirty bounding rect, and expose a manual gated render step.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the key-independent movement
+  self-test and macro-off movement gate.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references the key calibration
+  self-test and movement self-test without enabling real hardware.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add key-calibration and minimal-movement cases plus
+  capability bits; run-all still skips real LCD movement writes.
+- `SOURCE/10_engineering_reports/p14_minimal_sprite_movement_key_calibration.md`: records key-source
+  audit, calibration strategy, mapping status, movement POC behavior and P14 board-test plan/results.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

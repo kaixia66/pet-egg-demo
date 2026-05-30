@@ -2,7 +2,9 @@
 #include "pet2d_boundary.h"
 #include "pet2d_dirty_rect_poc.h"
 #include "pet2d_minimal_visual.h"
+#include "pet2d_movement_poc.h"
 #include "pet2d_resource_sprite_poc.h"
+#include "pet_key_calibration_jieli.h"
 #include "pet_platform.h"
 #include "pet_platform_jieli.h"
 #include "pet_protocol_jieli.h"
@@ -70,6 +72,12 @@ pet_result_t pet_platform_jieli_compile_check_self_tests(void)
     if (pet2d_resource_sprite_poc_self_test() != PET_RESULT_OK) {
         return PET_RESULT_ERROR;
     }
+    if (pet_key_calibration_jieli_self_test() != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_movement_poc_self_test() != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
     if (pet2d_boundary_minimal_real_flush_probe() != PET_RESULT_UNSUPPORTED) {
         return PET_RESULT_ERROR;
     }
@@ -77,6 +85,9 @@ pet_result_t pet_platform_jieli_compile_check_self_tests(void)
         return PET_RESULT_ERROR;
     }
     if (pet2d_boundary_resource_sprite_flush_probe() != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_boundary_movement_probe_step(PET_KEY_RIGHT_DOWN) != PET_RESULT_UNSUPPORTED) {
         return PET_RESULT_ERROR;
     }
     if (input_ret != PET_RESULT_OK) {

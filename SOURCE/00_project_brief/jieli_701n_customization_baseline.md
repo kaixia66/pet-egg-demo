@@ -356,3 +356,32 @@ P13 still does not:
 - allocate a full framebuffer;
 - replace LVGL flush or change MVP-A default page behavior;
 - write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.
+
+## P14 Minimal Sprite Movement + Raw Key Calibration POC Status
+
+Status: implemented as a passive key-calibration helper and minimal movement gate in source; committed
+source keeps the real LCD movement path disabled by default.
+
+Current capability:
+- `apps/watch/pet_platform_jieli/pet_key_calibration_jieli.*` records recent raw/sdk key observations
+  into a 16-entry ring and maps them through the P3 `pet_input_jieli_map_raw_event()` helper.
+- The calibration helper documents the confirmed SDK key path: `KEY_UI_HOME` -> raw 0 / OK,
+  `KEY_UI_PLUS` -> raw 1 / LEFT_UP, `KEY_UI_MINUS` -> raw 2 / RIGHT_DOWN, and `KEY_UI_SHORTCUT` -> raw 3 /
+  CANCEL. P14 board logs confirm this mapping, so no P3 mapping correction is made.
+- `apps/watch/pet2d_boundary/pet2d_movement_poc.*` keeps a small 32x32 movement state, uses the P13
+  resource sprite fixture on a P12 pattern surface, handles LEFT_UP/RIGHT_DOWN/OK/CANCEL, clamps to the
+  display safe area and computes the dirty bounding rect.
+- `pet2d_boundary_movement_probe_step()` is manual-only. With the committed macro off it returns
+  `PET_RESULT_UNSUPPORTED` before touching the LCD.
+- The self-test aggregator adds key-calibration and minimal-movement cases plus capability bits while
+  keeping real panel writes skipped in run-all.
+- Board-test note: a temporary macro-enabled build with non-committed Debug `P14L` / `P14R` / `P14OK` /
+  `P14C` actions confirmed that OK-triggered movement steps return `ret=0`; the small resource/pattern
+  icon appears briefly and moves according to the selected prompt, then the LVGL Debug page redraws over it.
+
+P14 still does not:
+- change `mvp_a_app_key_event`, `mvp_a_ui_handle_system_key` or the board key table in committed source;
+- consume the real Jieli key queue;
+- enable full Pet2D runtime, HOME/Observe, background scrolling or formal resources;
+- allocate a full framebuffer, replace LVGL flush or change MVP-A default page behavior;
+- write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.

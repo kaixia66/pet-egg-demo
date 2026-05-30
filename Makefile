@@ -948,11 +948,13 @@ c_SRC_FILES := \
 	apps/watch/pet_platform_jieli/pet_nfc_jieli.c \
 	apps/watch/pet_platform_jieli/pet_power_jieli.c \
 	apps/watch/pet_platform_jieli/pet_debug_jieli.c \
+	apps/watch/pet_platform_jieli/pet_key_calibration_jieli.c \
 	apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c \
 	apps/watch/pet2d_boundary/pet2d_boundary.c \
 	apps/watch/pet2d_boundary/pet2d_minimal_visual.c \
 	apps/watch/pet2d_boundary/pet2d_dirty_rect_poc.c \
 	apps/watch/pet2d_boundary/pet2d_resource_sprite_poc.c \
+	apps/watch/pet2d_boundary/pet2d_movement_poc.c \
 	apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.c \
