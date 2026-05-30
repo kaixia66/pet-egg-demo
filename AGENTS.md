@@ -212,6 +212,22 @@ source must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_ena
 `pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
 hardware.
 
+## PetEgg P17S External Flash Pause Rule
+
+P17S stops the external Flash / virfat / raw NOR resource-package route. P17 board tests showed that
+the PetEgg package file can be present on `storage/virfat_flash/C/` with the expected size, but the
+runtime payload read from both `res_fopen/res_fread` and ordinary `fopen/fread` did not match the local
+plain `MRTP` package header. A direct raw NOR read experiment also caused a soft reset, so raw NOR reads
+must not be continued as a default PetEgg path.
+
+Until a later Future Scope task confirms the Jieli `fat_comm`/virfat encryption or mapping policy and a
+safe raw-binary read channel, do not add PetEgg external Flash package generators, do not modify
+`download/watch` or `fat_comm` inputs for PetEgg resources, do not add raw NOR read probes, and do not
+submit external Flash package artifacts such as `petegg.pkg`, `manifest.bin`, `sprites.pak` or
+`anim_table.bin`. Current development continues within the 2M internal Flash environment using compile
+time fixtures, the P5 resource test blob, and other explicitly bounded small-resource paths. NFC,
+audio/speaker and real BLE two-board validation remain Future Scope.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

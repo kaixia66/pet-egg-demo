@@ -373,3 +373,28 @@ Open items:
   read range failures to `PET_RESULT_INVALID_ARGUMENT` until a future ABI bump explicitly adds one.
 - Current hardware still has no NFC and no speaker, and only one board is available. Real NFC, real audio
   and real BLE two-board validation remain Future Scope.
+
+## P17S External Flash Resource Pause Risks
+
+Status: P17 external Flash package work is paused by user decision. The board can identify and write the
+external NOR, and the PetEgg test file can be opened with the expected size, but the runtime payload is
+not the local plain `MRTP` package bytes.
+
+Observed evidence:
+- Local `petegg.pkg` header: `4d 52 54 50 01 00 03 00 93 f4 f7 ac 00 00 00 00`.
+- Board-read header from `storage/virfat_flash/C/petegg`: `00 01 22 64 c9 b2 44 89 32 65 cb b6 6d db b7 6f`.
+- `res_fopen/res_fread` and ordinary `fopen/fread` returned the same transformed header.
+- A direct `_norflash_read_watch` experiment caused a soft reset, so direct raw NOR reads are unsafe as
+  a default PetEgg route.
+
+Open risks and prerequisites before reopening external Flash resources:
+- Confirm whether `fat_comm -key`, virfat, `packres` or the resource loader encrypts/transforms ordinary
+  file payloads.
+- Confirm the supported runtime API for reading a plain raw binary from external Flash, if one exists.
+- Revalidate whether `flash_file_info` / `ui_res_flash_info_get` can safely expose PetEgg raw package
+  bytes, or whether PetEgg resources must be represented as SDK-native `.res` entries.
+- Get vendor or solution-provider guidance before adding raw NOR reads or changing download-tool policy.
+
+Current work should continue without this dependency: Pet2D scene handoff, internal/compiled resources,
+internal save/syscfg work and an engineering test menu are not blocked by the paused external Flash
+route. NFC/audio/real BLE two-board validation also remains Future Scope.

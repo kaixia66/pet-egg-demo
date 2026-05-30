@@ -451,3 +451,30 @@ P16 still does not:
 - enable full Pet2D runtime, HOME/Observe, background scrolling or a full framebuffer;
 - replace LVGL flush or keep a Debug UI trigger;
 - connect real NFC/audio/BLE hardware.
+
+## P17S External Flash Resource Pause Status
+
+P17 attempted a minimal PetEgg package generator and external Flash download integration after P16.
+Board testing confirmed that external Flash itself can be identified, written and mounted, and that a
+`storage/virfat_flash/C/petegg` file can be opened with the expected 272-byte size. However, the bytes
+read from the board did not match the local plain `MRTP` package header.
+
+- Local package header: `4d 52 54 50 01 00 03 00 93 f4 f7 ac 00 00 00 00`.
+- Runtime header from the board: `00 01 22 64 c9 b2 44 89 32 65 cb b6 6d db b7 6f`.
+- Both `res_fopen/res_fread` and ordinary `fopen/fread` produced the same transformed payload.
+- A direct raw NOR read experiment previously caused a soft reset, so raw NOR read is not a current
+  PetEgg route.
+
+The current stable baseline therefore remains P16 read-only probing plus the earlier compile-time /
+in-memory resource fixture path from P5/P13/P15. Near-term work continues in the 2M internal Flash
+environment with compile-time small resources or other explicitly bounded internal-resource paths.
+
+Current committed-state expectations remain:
+- `real_resource_package_available = 0`.
+- `external_flash_resource_enabled = 0`.
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `pet2d_runtime_enabled = 0`.
+
+External Flash / virfat / raw NOR PetEgg resources, NFC, audio/speaker and real BLE two-board validation
+are Future Scope until their platform contracts are confirmed.

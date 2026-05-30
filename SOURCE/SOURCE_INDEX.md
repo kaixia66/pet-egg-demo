@@ -912,3 +912,21 @@ docs(source): update MVP-A scope
 docs(source): record PRD conflict resolution
 docs(source): add UI source index
 ```
+
+---
+
+## P17S External Flash Resource Pause Addendum
+
+P17 attempted a minimal PetEgg resource package generator and external Flash download integration, then
+was stopped after board testing showed the file could be opened with the expected size but the payload
+read at runtime did not match the local plain `MRTP` package header. External Flash / virfat / raw NOR
+PetEgg resource work is now Future Scope.
+
+Tracked for P17S:
+- `SOURCE/10_engineering_reports/p17_external_flash_resource_blocked.md`: records the generator/download
+  attempt, transformed runtime header, direct raw NOR soft-reset risk, and the decision to continue
+  near-term work in the 2M internal Flash environment.
+- No PetEgg package generator, external Flash package artifact, `download/watch` integration, temporary
+  Debug UI action, or external Flash self-test case enters the current mainline from P17.
+- Follow-up work should prefer Pet2D scene handoff, internal/compiled small resources, internal save or
+  engineering test menu tasks unless a later task explicitly reopens the external Flash resource route.
