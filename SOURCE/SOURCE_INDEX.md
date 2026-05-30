@@ -172,6 +172,20 @@ hardware disabled:
 - `SOURCE/10_engineering_reports/p7_protocol_debug_adapter.md`: records BLE/NFC path audit, ABI
   alignment, loopback/fake queue design, debug injection boundaries and P7 risks.
 
+## P8 Platform Self-Test Snapshot Addendum
+
+P8 adds a unified self-test aggregator under `apps/watch/pet_selftest/`. It only summarizes and calls
+existing P1-P7 boundary tests; it does not enable real LCD, Pet2D, storage, BLE or NFC hardware:
+- `apps/watch/pet_selftest/pet_selftest.h`: public case enum, summary struct and capability snapshot
+  API.
+- `apps/watch/pet_selftest/pet_selftest.c`: aggregates shared ABI, platform HAL, display profile,
+  display owner, input mapping, render owner, resource manifest, Pet2D resource probe, save
+  transaction, protocol packet, BLE loopback, NFC fake and debug injection self-tests.
+- `apps/watch/pet_selftest/pet_selftest_compile_check.c`: compile-only reference for `run_all`, case
+  naming and capability snapshot APIs.
+- `SOURCE/10_engineering_reports/p8_platform_selftest_snapshot.md`: records the P1-P7 capability matrix,
+  aggregator design, capability snapshot and remaining real-hardware gaps.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

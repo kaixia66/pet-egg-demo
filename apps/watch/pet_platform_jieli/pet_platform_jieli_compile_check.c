@@ -1,8 +1,9 @@
-#include "pet2d_boundary.h"
 #include "pet_display_profile.h"
 #include "pet_platform.h"
 #include "pet_platform_jieli.h"
 #include "pet_protocol_jieli.h"
+
+pet_result_t pet2d_boundary_self_test(void);
 
 PET_STATIC_ASSERT(jieli_platform_pointer_size,
                   sizeof(pet_platform_jieli_get()) == sizeof(const pet_platform_t *));

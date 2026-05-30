@@ -1,0 +1,185 @@
+#include "pet_selftest.h"
+
+#include "pet2d_boundary.h"
+#include "pet_protocol_jieli.h"
+#include "pet_resource_jieli.h"
+#include "pet_save_jieli.h"
+#include "pet_platform_jieli.h"
+
+typedef pet_result_t (*pet_selftest_fn_t)(void);
+
+static pet_result_t pet_selftest_shared_interface(void)
+{
+    if ((PET_PROTOCOL_VERSION_MAJOR != 1u) ||
+        (PET_PACKET_MAGIC != 0xE6u) ||
+        (PET_PACKET_MAX_PAYLOAD != 64u) ||
+        (PET_PACKET_SERIALIZED_HEADER_SIZE != 10u) ||
+        (sizeof(pet_packet_t) != PET_PACKET_MAX_SERIALIZED_SIZE) ||
+        (sizeof(pet_nfc_pair_payload_t) != PET_NFC_PAIR_PAYLOAD_SERIALIZED_SIZE)) {
+        return PET_RESULT_ERROR;
+    }
+
+    return PET_RESULT_OK;
+}
+
+static pet_result_t pet_selftest_platform_hal(void)
+{
+    const pet_platform_t *platform = pet_platform_jieli_get();
+
+    if (platform == 0) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    if ((platform->millis == 0) ||
+        (platform->now_sec == 0) ||
+        (platform->get_device_identity == 0) ||
+        (platform->get_display_profile == 0) ||
+        (platform->poll_key_event == 0) ||
+        (platform->display_acquire == 0) ||
+        (platform->display_release == 0) ||
+        (platform->display_flush == 0) ||
+        (platform->display_wait == 0) ||
+        (platform->display_set_brightness == 0) ||
+        (platform->display_sleep == 0) ||
+        (platform->display_wakeup == 0) ||
+        (platform->storage_read == 0) ||
+        (platform->storage_write_atomic == 0) ||
+        (platform->audio_play_sfx == 0) ||
+        (platform->audio_stop == 0) ||
+        (platform->ble_send_packet == 0) ||
+        (platform->ble_poll_packet == 0) ||
+        (platform->nfc_start_card_scan == 0) ||
+        (platform->nfc_start_pair_scan == 0) ||
+        (platform->nfc_poll_card == 0) ||
+        (platform->nfc_poll_pair == 0) ||
+        (platform->power_get_battery_percent == 0) ||
+        (platform->power_get_battery_voltage_mv == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    return PET_RESULT_OK;
+}
+
+static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
+{
+    static const pet_selftest_fn_t k_tests[PET_SELFTEST_MAX] = {
+        pet_selftest_shared_interface,
+        pet_selftest_platform_hal,
+        pet_platform_jieli_display_self_test,
+        pet_display_jieli_owner_self_test,
+        pet_platform_jieli_input_self_test,
+        pet2d_boundary_self_test,
+        pet_resource_jieli_self_test,
+        pet2d_boundary_resource_probe_self_test,
+        pet_save_jieli_self_test,
+        pet_protocol_jieli_self_test,
+        pet_ble_jieli_self_test,
+        pet_nfc_jieli_self_test,
+        pet_debug_jieli_self_test
+    };
+
+    if ((test_case < PET_SELFTEST_SHARED_INTERFACE) || (test_case >= PET_SELFTEST_MAX)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    return k_tests[test_case]();
+}
+
+const char *pet_selftest_case_name(pet_selftest_case_t test_case)
+{
+    static const char *const k_names[PET_SELFTEST_MAX] = {
+        "shared_interface",
+        "platform_hal",
+        "display_profile",
+        "display_owner",
+        "input_mapping",
+        "render_owner_boundary",
+        "resource_manifest",
+        "pet2d_resource_probe",
+        "save_transaction",
+        "protocol_packet",
+        "ble_loopback",
+        "nfc_fake",
+        "debug_injection"
+    };
+
+    if ((test_case < PET_SELFTEST_SHARED_INTERFACE) || (test_case >= PET_SELFTEST_MAX)) {
+        return "unknown";
+    }
+
+    return k_names[test_case];
+}
+
+pet_result_t pet_selftest_run_case(pet_selftest_case_t test_case)
+{
+    return pet_selftest_call(test_case);
+}
+
+pet_result_t pet_selftest_run_all(pet_selftest_summary_t *out_summary)
+{
+    pet_selftest_summary_t summary;
+    pet_u16_t index;
+    pet_result_t ret;
+
+    if (out_summary == 0) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    summary.total = (pet_u16_t)PET_SELFTEST_MAX;
+    summary.passed = 0u;
+    summary.failed = 0u;
+    summary.skipped = 0u;
+    summary.failed_mask = 0u;
+    summary.skipped_mask = 0u;
+
+    for (index = 0u; index < (pet_u16_t)PET_SELFTEST_MAX; index++) {
+        ret = pet_selftest_run_case((pet_selftest_case_t)index);
+        if (ret == PET_RESULT_OK) {
+            summary.passed++;
+        } else if (ret == PET_RESULT_UNSUPPORTED) {
+            summary.skipped++;
+            summary.skipped_mask |= (1u << index);
+        } else {
+            summary.failed++;
+            summary.failed_mask |= (1u << index);
+        }
+    }
+
+    *out_summary = summary;
+    if (summary.failed != 0u) {
+        return PET_RESULT_ERROR;
+    }
+    if (summary.skipped != 0u) {
+        return PET_RESULT_UNSUPPORTED;
+    }
+
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapshot_t *out_snapshot)
+{
+    if (out_snapshot == 0) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    out_snapshot->has_shared_interface = 1u;
+    out_snapshot->has_platform_hal = 1u;
+    out_snapshot->has_display_profile = 1u;
+    out_snapshot->has_display_owner = 1u;
+    out_snapshot->has_input_mapping = 1u;
+    out_snapshot->has_render_owner_boundary = 1u;
+    out_snapshot->has_resource_manifest_adapter = 1u;
+    out_snapshot->has_save_transaction_adapter = 1u;
+    out_snapshot->has_protocol_helper = 1u;
+    out_snapshot->has_ble_loopback_test = 1u;
+    out_snapshot->has_nfc_fake_test = 1u;
+    out_snapshot->has_debug_injection_test = 1u;
+
+    out_snapshot->real_lcd_flush_enabled = 0u;
+    out_snapshot->real_key_queue_enabled = 0u;
+    out_snapshot->real_flash_storage_enabled = 0u;
+    out_snapshot->real_ble_enabled = 0u;
+    out_snapshot->real_nfc_enabled = 0u;
+    out_snapshot->pet2d_runtime_enabled = 0u;
+
+    return PET_RESULT_OK;
+}

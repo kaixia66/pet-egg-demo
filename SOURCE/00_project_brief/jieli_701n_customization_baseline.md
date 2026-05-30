@@ -192,3 +192,27 @@ P7 still does not:
 - write VM/Flash/syscfg or replace MVP-A save;
 - change MVP-A default page behavior, key behavior or storage behavior;
 - enable Pet2D runtime, real LCD flush, real resources or production pairing security.
+
+## P8 Platform Self-Test Aggregator Status
+
+Status: implemented as a unified self-test runner and capability snapshot; not a real hardware
+integration.
+
+Current capability:
+- `apps/watch/pet_selftest/` exposes a P1-P7 self-test case enum, summary counters, failed/skipped
+  masks and stable case names.
+- The aggregator calls the shared-interface sanity check, platform callback-table check, display
+  profile self-test, display owner self-test, input mapping self-test, Pet2D boundary self-test,
+  resource manifest self-test, Pet2D resource probe, save transaction self-test, protocol packet
+  self-test, BLE loopback self-test, NFC fake self-test and debug injection self-test.
+- `pet_selftest_run_all()` records `PET_RESULT_UNSUPPORTED` as skipped so ordinary builds can compile
+  test-only BLE/NFC/debug entries without treating disabled test hooks as failures.
+- `pet_selftest_get_capability_snapshot()` marks P1-P7 test/stub capabilities as present while keeping
+  real LCD flush, real key queue, real Flash storage, real BLE, real NFC and Pet2D runtime flags at 0.
+
+P8 still does not:
+- change MVP-A default page, input or save behavior;
+- call real LCD flush or modify the LVGL flush callback;
+- enable Pet2D runtime or allocate a full framebuffer;
+- write VM/Flash/syscfg or connect platform storage callbacks;
+- start real BLE/NFC RF paths or parse runtime PNG/JPG/GIF/JSON.

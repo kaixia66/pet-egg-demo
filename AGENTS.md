@@ -98,6 +98,19 @@ transactions. Protocol code must not depend on Jieli private BLE/NFC structs, mu
 or syscfg, and must not change MVP-A page, input or save behavior. Debug injection is a self-test and
 bring-up aid only; it is not evidence that real BLE/NFC hardware paths are wired.
 
+## PetEgg P8 Platform Self-Test Snapshot Rule
+
+P8 is a platform self-test aggregator and integration snapshot phase. `apps/watch/pet_selftest/` may
+summarize and call existing P1-P7 compile/self-test entry points, but it must not create new real
+hardware side effects, modify MVP-A defaults, enable LCD flush, start Pet2D runtime, write VM/Flash or
+syscfg, or start BLE/NFC RF activity.
+
+The P8 capability snapshot must distinguish test/stub readiness from real hardware readiness. Shared
+ABI, HAL skeleton, display profile, owner boundary, resource parser, save transaction, protocol helper,
+BLE loopback, fake NFC and debug injection may be marked present; real LCD flush, real key queue, real
+Flash storage, real BLE, real NFC and Pet2D runtime must remain disabled until later hardware phases
+explicitly wire and validate them.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

@@ -165,3 +165,22 @@ Open items:
 - `PET_DEBUG` / `PET_PLATFORM_JIELI_TEST` injection must stay disabled in the default product path.
 - The existing winmk post-build/resource packaging failure remains independent of P7. P7 must not
   modify toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P8 Platform Self-Test Snapshot Risks
+
+Status: P8 aggregates P1-P7 compile/self-test entry points and reports a capability snapshot. It is a
+software integration baseline only, not a board-level hardware validation.
+
+Open items:
+- Real LCD flush ownership still needs binding to the SDK LCD driver lock, TE/wait behavior, DMA flush
+  completion and byte-order/alignment checks.
+- Real key queue integration still needs raw key serial logs, down/up/long/repeat semantics and latency
+  measurements without breaking the MVP-A input path.
+- Real storage still needs confirmed syscfg/VM/Flash region ownership, power-fail behavior, erase
+  policy, wear leveling, low-battery blocking and migration timing from `mvp_a_save`.
+- Real BLE/NFC RF paths still need GATT/NFC reader ownership, MTU/fragmentation, reconnect/timeout,
+  UID/signature/used-flag policy, pairing security and field reliability tests.
+- P8 skipped test accounting only means macro-gated test hooks are not compiled in a default product
+  build; it is not evidence that hardware capabilities are absent or present on the board.
+- Later work should split into real hardware tracks: LCD/Pet2D display, storage/power-fail and BLE/NFC
+  RF validation. The existing winmk post-build/resource packaging failure remains independent of P8.
