@@ -184,3 +184,23 @@ Open items:
   build; it is not evidence that hardware capabilities are absent or present on the board.
 - Later work should split into real hardware tracks: LCD/Pet2D display, storage/power-fail and BLE/NFC
   RF validation. The existing winmk post-build/resource packaging failure remains independent of P8.
+
+## P9 Display Flush Owner POC Risks
+
+Status: P9 adds a no-op display flush owner guard and diagnostics. It does not prove real LCD flush or
+Pet2D rendering on hardware.
+
+Open items:
+- The true safe real LCD API for PetEgg/Pet2D is still undecided. Candidate SDK calls include
+  `lcd_draw_area`, `lcd_data_copy`, `lcd_wait`, `lcd_wait_te` and IMD/IMB callbacks, but P9 does not
+  call them.
+- TE, IMD busy, DMA completion, `lcd_data_copy_wait`, `lcd_wait` and async flush-done ownership still
+  need board validation before enabling a real flush path.
+- RGB565 byte order, cache flush requirements, PSRAM/no-cache address handling, line stride, row/column
+  alignment and round-screen clipping must be confirmed on the panel.
+- LVGL and future Pet2D still need a real mutual-exclusion strategy at the low-level LCD driver boundary;
+  P9 only enforces the PetEgg platform callback owner state.
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` defaults to 0. Enabling it requires explicit manual hardware
+  authorization and a tiny, bounded smoke test plan.
+- The existing winmk post-build/resource packaging failure remains independent of P9. P9 must not
+  modify toolchain paths, resource scripts or download packaging to mask that environment issue.

@@ -10,6 +10,10 @@
 #define PET_JIELI_TEST_MODE_ENABLED 0
 #endif
 
+#ifndef PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+#define PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC 0
+#endif
+
 #define PET_JIELI_HARDWARE_REV_701N_DEV PET_VERSION_MAKE(7u, 1u, 0u)
 #define PET_JIELI_FIRMWARE_VERSION_P2_STUB PET_VERSION_MAKE(0u, 2u, 0u)
 
@@ -41,6 +45,10 @@ pet_result_t pet_display_jieli_release(void *ctx, pet_display_owner_t owner);
 pet_result_t pet_display_jieli_flush(void *ctx, const pet_display_rect_t *rect,
                                      const void *rgb565_pixels, pet_u32_t stride_bytes);
 pet_result_t pet_display_jieli_wait(void *ctx, pet_u32_t timeout_ms);
+pet_result_t pet_display_jieli_get_flush_stats(pet_display_jieli_flush_stats_t *out_stats);
+pet_result_t pet_display_jieli_reset_flush_stats(void);
+pet_result_t pet_display_jieli_flush_self_test(void);
+pet_result_t pet_display_jieli_tiny_flush_poc(void);
 pet_result_t pet_display_jieli_set_brightness(void *ctx, pet_u8_t percent);
 pet_result_t pet_display_jieli_sleep(void *ctx);
 pet_result_t pet_display_jieli_wakeup(void *ctx);

@@ -111,6 +111,18 @@ BLE loopback, fake NFC and debug injection may be marked present; real LCD flush
 Flash storage, real BLE, real NFC and Pet2D runtime must remain disabled until later hardware phases
 explicitly wire and validate them.
 
+## PetEgg P9 Display Flush Owner POC Rule
+
+P9 is a display-flush owner guard and no-op-to-real POC phase. `pet_display_jieli_flush()` may validate
+RGB565 rectangle parameters, enforce the current `pet_display_owner_t`, record diagnostic stats and
+provide self-test coverage, but the default path must not write the LCD or replace the LVGL flush
+callback.
+
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` must default to 0. Any tiny real LCD flush experiment must be
+manual, macro-gated and authorized by a later hardware task. P9 must not enable Pet2D runtime, allocate
+a full framebuffer, change MVP-A default pages, write VM/Flash/syscfg, connect BLE/NFC or submit build
+byproducts.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

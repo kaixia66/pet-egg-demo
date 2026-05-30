@@ -186,6 +186,26 @@ existing P1-P7 boundary tests; it does not enable real LCD, Pet2D, storage, BLE 
 - `SOURCE/10_engineering_reports/p8_platform_selftest_snapshot.md`: records the P1-P7 capability matrix,
   aggregator design, capability snapshot and remaining real-hardware gaps.
 
+## P9 Display Flush Owner POC Addendum
+
+P9 keeps the active LVGL flush callback untouched and adds a guarded PetEgg display flush diagnostic
+path:
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: declares
+  `pet_display_jieli_flush_stats_t`, flush stats reset/get APIs, `pet_display_jieli_flush_self_test()`
+  and the tiny flush POC entry.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: defines
+  `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` defaulting to 0.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: validates RGB565 flush rectangles, enforces
+  display owner guard, records diagnostic stats and keeps real LCD writes disabled by default.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references flush stats and
+  flush owner self-test.
+- `apps/watch/pet_selftest/pet_selftest.h`: adds `PET_SELFTEST_DISPLAY_FLUSH_OWNER` and
+  `has_display_flush_owner_guard`.
+- `apps/watch/pet_selftest/pet_selftest.c`: aggregates the display flush owner self-test while keeping
+  `real_lcd_flush_enabled` at 0.
+- `SOURCE/10_engineering_reports/p9_display_flush_owner_poc.md`: records LVGL/LCD flush audit,
+  diagnostic stats, wait/busy semantics, macro state and remaining hardware risks.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

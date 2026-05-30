@@ -12,6 +12,7 @@ typedef enum {
     PET_SELFTEST_PLATFORM_HAL,
     PET_SELFTEST_DISPLAY_PROFILE,
     PET_SELFTEST_DISPLAY_OWNER,
+    PET_SELFTEST_DISPLAY_FLUSH_OWNER,
     PET_SELFTEST_INPUT_MAPPING,
     PET_SELFTEST_RENDER_OWNER_BOUNDARY,
     PET_SELFTEST_RESOURCE_MANIFEST,
@@ -38,6 +39,7 @@ typedef struct {
     pet_u8_t has_platform_hal;
     pet_u8_t has_display_profile;
     pet_u8_t has_display_owner;
+    pet_u8_t has_display_flush_owner_guard;
     pet_u8_t has_input_mapping;
     pet_u8_t has_render_owner_boundary;
     pet_u8_t has_resource_manifest_adapter;

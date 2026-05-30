@@ -216,3 +216,28 @@ P8 still does not:
 - enable Pet2D runtime or allocate a full framebuffer;
 - write VM/Flash/syscfg or connect platform storage callbacks;
 - start real BLE/NFC RF paths or parse runtime PNG/JPG/GIF/JSON.
+
+## P9 Display Flush Owner POC Status
+
+Status: implemented as an owner-guarded diagnostic wrapper; real LCD flush remains disabled.
+
+Current capability:
+- P9 audits the active LVGL path: `cpu/br28/ui_driver/lvgl/lv_port_disp.c` owns `disp_flush`, 454x454
+  LVGL resolution, two 20-line draw buffers and the existing calls to `lcd_data_copy`/`lcd_draw_area`.
+- `pet_display_jieli_flush()` now validates RGB565 rect parameters and records diagnostic stats for
+  call count, rejected count, busy count, last rect, last pitch, last owner, mode and requested pixels.
+- The PetEgg flush path enforces owner guard: no owner returns `PET_RESULT_NOT_READY`, LVGL owner
+  returns `PET_RESULT_BUSY`, and only PET2D/DEBUG owner can reach the no-op diagnostic path.
+- The legal diagnostic path still returns `PET_RESULT_NOT_READY` because `real_lcd_flush_enabled` is
+  0 and no hardware flush is started.
+- `pet_display_jieli_flush_self_test()` covers no-owner, LVGL-busy, PET2D no-op, invalid parameter,
+  out-of-bounds, pitch checks, stats and non-blocking wait behavior.
+- `apps/watch/pet_selftest/` now includes `PET_SELFTEST_DISPLAY_FLUSH_OWNER` and marks
+  `has_display_flush_owner_guard = 1` while keeping `real_lcd_flush_enabled = 0`.
+
+P9 still does not:
+- replace or modify the LVGL `disp_flush` callback;
+- call `lcd_draw_area`, `lcd_data_copy`, `lcd_wait`, `lcd_wait_te` or any real LCD driver API;
+- enable Pet2D runtime, HOME/Observe rendering or a full framebuffer;
+- change MVP-A default page/input/save behavior;
+- write VM/Flash/syscfg, connect storage callbacks, BLE or NFC.

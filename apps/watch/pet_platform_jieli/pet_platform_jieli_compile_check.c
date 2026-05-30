@@ -17,6 +17,7 @@ pet_result_t pet_platform_jieli_compile_check_self_tests(void)
 {
     pet_result_t display_ret;
     pet_result_t owner_ret;
+    pet_result_t flush_ret;
     pet_result_t input_ret;
     pet_result_t pet2d_ret;
     pet_result_t protocol_ret;
@@ -24,8 +25,11 @@ pet_result_t pet_platform_jieli_compile_check_self_tests(void)
     pet_result_t nfc_ret;
     pet_result_t debug_ret;
 
+    pet_display_jieli_flush_stats_t flush_stats;
+
     display_ret = pet_platform_jieli_display_self_test();
     owner_ret = pet_display_jieli_owner_self_test();
+    flush_ret = pet_display_jieli_flush_self_test();
     input_ret = pet_platform_jieli_input_self_test();
     pet2d_ret = pet2d_boundary_self_test();
     protocol_ret = pet_protocol_jieli_self_test();
@@ -37,6 +41,12 @@ pet_result_t pet_platform_jieli_compile_check_self_tests(void)
     }
     if (owner_ret != PET_RESULT_OK) {
         return owner_ret;
+    }
+    if (flush_ret != PET_RESULT_OK) {
+        return flush_ret;
+    }
+    if (pet_display_jieli_get_flush_stats(&flush_stats) != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
     }
     if (input_ret != PET_RESULT_OK) {
         return input_ret;
