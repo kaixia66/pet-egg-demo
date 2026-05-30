@@ -1,5 +1,31 @@
 # AGENTS.md
 
+## PetEgg P1 Shared Interface Pack Rule
+
+`apps/watch/pet_shared/include` owns the frozen cross-platform PetEgg interface headers used to align
+future Jieli ports with the PC simulator shared portable layer. These headers must remain C99
+compatible and must not include Jieli SDK private headers, LVGL, SDL, simulator adapters, malloc,
+printf, file-system APIs, Flash APIs, BLE private structs, or real hardware driver APIs.
+
+P1 has been aligned against the simulator reference headers in
+`D:/0-jieli_sdk/simulator/shared_portable/include`. Keep that path as the comparison source before
+changing packet, key, save, resource, result-code, or display-profile ABI fields.
+
+The interface pack is a contract boundary, not a hardware implementation. New fields may be added only
+with version macros and explicit layout/compatibility notes. Existing field names, sizes, packet/save
+layout, and resource manifest semantics should be treated as frozen unless a later phase explicitly
+bumps the shared interface version and documents the simulator/Jieli migration impact.
+
+Build byproducts must not be committed for this pack. In particular, keep `build_logs/`,
+`cpu/br28/tools/download/watch/*`, `cpu/br28/tools/sdk.elf`, firmware/package outputs, object
+directories, `*.depend`, `*.layout`, and build-mutated tool executables out of commits unless a task
+explicitly proves they are source changes.
+
+When reading repository text files, avoid PowerShell `Get-Content` for files that may contain Chinese
+or mixed encodings. Prefer `rg`, `git show`, `cmd /c type`, Git Bash, or another tool that can preserve
+or explicitly select encoding. If output appears garbled, switch reading tools before editing and do
+not rewrite the whole file just to fix display encoding.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

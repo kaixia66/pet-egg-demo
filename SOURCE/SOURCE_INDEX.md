@@ -1,5 +1,38 @@
 # SOURCE_INDEX.md
 
+## P1 Shared Interface Pack Addendum
+
+The P1 shared interface files live under `apps/watch/pet_shared/include/` and are indexed here because
+they define the simulator/Jieli contract boundary while `source/` remains documentation-only.
+The simulator reference used for ABI alignment is `D:/0-jieli_sdk/simulator/shared_portable/include`.
+
+Interface files:
+- `apps/watch/pet_shared/include/pet_types.h`: fixed-width aliases, bool compatibility, shared result
+  codes, version macros, static assert and packed layout helpers.
+- `apps/watch/pet_shared/include/pet_display_profile.h`: screen shape, RGB565 display profile,
+  display owner, flush mode, safe area and rotation fields.
+- `apps/watch/pet_shared/include/pet_key.h`: four-key logical input, key actions, event timestamps,
+  hold/repeat/raw fields and input snapshots.
+- `apps/watch/pet_shared/include/pet_protocol.h`: BLE-independent packet framing and NFC pair payload.
+- `apps/watch/pet_shared/include/pet_save_format.h`: packed A/B save slot header, counters, payload
+  length, CRC32 and transaction/status fields.
+- `apps/watch/pet_shared/include/pet_resource_format.h`: packed resource manifest/header entries,
+  resource type enum, CRC fields and canonical resource file names.
+- `apps/watch/pet_shared/include/pet_platform.h`: callback table for time, identity, display, input,
+  storage, audio, BLE packet, NFC scan/poll and power APIs.
+- `apps/watch/pet_shared/pet_shared_compile_check.c`: minimal compile-only include check for the
+  shared interface pack.
+
+Simulator name mapping:
+- `pet_key.h` maps simulator `pet_input.h`.
+- `pet_protocol.h` maps simulator `pet_packet.h` and `pet_nfc_pair_payload.h`.
+- `pet_resource_format.h` maps simulator `pet_resource_manifest.h`.
+- `pet_platform.h` extends simulator `PetPlatformCallbacks` for future Jieli port callbacks.
+
+Related P1 docs:
+- `source/00_project_brief/jieli_701n_customization_baseline.md`
+- `source/00_project_brief/open_questions_and_risks.md`
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

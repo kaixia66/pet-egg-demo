@@ -215,6 +215,7 @@ INCLUDES := \
 	-Iapps/watch/mvp_a/ui/pages/boss \
 	-Iapps/watch/mvp_a/ui/pages/diary \
 	-Iapps/watch/mvp_a/ui/pages/debug \
+	-Iapps/watch/pet_shared/include \
 	-Iapps/common \
 	-Iapps/common/device \
 	-Iapps/common/audio \
@@ -931,6 +932,7 @@ c_SRC_FILES := \
 	apps/watch/mvp_a/core/mvp_a_app.c \
 	apps/watch/mvp_a/core/mvp_a_debug.c \
 	apps/watch/mvp_a/core/mvp_a_save.c \
+	apps/watch/pet_shared/pet_shared_compile_check.c \
 	apps/watch/mvp_a/domain/mvp_a_boss.c \
 	apps/watch/mvp_a/domain/mvp_a_card.c \
 	apps/watch/mvp_a/domain/mvp_a_diary.c \
