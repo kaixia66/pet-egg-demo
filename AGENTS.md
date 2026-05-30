@@ -4,11 +4,13 @@
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。
 
-本目录不是 Git 仓库；修改前后不要假定可以用 `git status` 或 `git diff` 做完整追踪。
+本目录已初始化为 Git 仓库，当前主线分支使用 `master`/`origin/master`。修改前后优先用 `git status --short` 和必要的 `git diff` 检查变更；用户明确要求忽略某个 feature 分支时，不要把该分支上的未合并实现当作主线事实。
 
 ## 默认构建
 
-- 默认构建命令：`make`
+- Windows 默认构建命令：`.vscode\winmk.bat all`
+- 该脚本会把 `tools\utils` 加入 `PATH`，并执行 `make "all" -j %NUMBER_OF_PROCESSORS%`。
+- 直接构建命令：`make`
 - 详细构建：`make VERBOSE=1`
 - 清理构建产物：`make clean`
 - 如果旧版 `make` 不支持 `$(file ...)` 函数，按 `Makefile` 注释使用：`LINK_AT=0 make`
@@ -17,12 +19,21 @@ Windows 下 `Makefile` 默认工具链在 `C:/JL/pi32/bin`，使用 `clang.exe`�
 
 构建输出主文件是 `cpu/br28/tools/sdk.elf`。构建会在 `pre_build` 阶段预处理并生成 `cpu/br28/sdk.ld`、`cpu/br28/sdk_used_list.used`、`cpu/br28/tools/download.bat` 或 `cpu/br28/tools/download.sh`、`cpu/br28/tools/isd_config.ini`，随后运行下载/打包后处理脚本。
 
+运行编译时不要把完整日志直接输出到对话上下文。优先把 stdout/stderr 重定向到 `build_logs/` 下的文件，再从日志文件中摘取错误、警告摘要和最后结果：
+
+```powershell
+New-Item -ItemType Directory -Force build_logs | Out-Null
+.\.vscode\winmk.bat all *> build_logs\winmk-all.log
+Select-String -Path build_logs\winmk-all.log -Pattern 'error|warning|failed|undefined|No such file|cannot|Error' -CaseSensitive:$false
+Get-Content -Path build_logs\winmk-all.log -Tail 80
+```
+
 ## 入口与配置
 
 - 应用入口：`apps/watch/app_main.c`，`app_main()` 初始化 UI、电源、升级资源下载逻辑后进入 `app_task_loop()`。
 - 任务分发：`apps/watch/app_main.c` 根据 `app_curr_task` 切换 `APP_POWERON_TASK`、`APP_BT_TASK`、`APP_MUSIC_TASK`、`APP_RTC_TASK`、`APP_SMARTBOX_ACTION_TASK`、`APP_IDLE_TASK` 等。
-- 板级选择：`apps/watch/board/br28/board_config.h` 当前启用 `CONFIG_BOARD_701N_DEMO`。
-- 当前板级配置：`apps/watch/board/br28/board_701n_demo/board_701n_demo_cfg.h`。
+- 板级选择：`apps/watch/board/br28/board_config.h` 当前主线启用 `CONFIG_BOARD_701N_LVGL_DEMO`。
+- 当前板级配置：`apps/watch/board/br28/board_701n_lvgl_demo/board_701n_lvgl_demo_cfg.h`，其中 `LVGL_TEST_ENABLE` 为 1。
 - 链接脚本源：`cpu/br28/sdk_ld.c` 预处理生成 `cpu/br28/sdk.ld`；最终链接还使用 `apps/watch/board/br28/app.ld`、`apps/watch/board/br28/app_overlay.ld` 相关配置。
 
 切换板级时优先改 `board_config.h` 的 `CONFIG_BOARD_*` 选择，并同时检查对应 `board_*_cfg.h`、`key_table`、显示屏、触摸、存储和蓝牙宏，不要只改某一个驱动文件。
@@ -30,9 +41,10 @@ Windows 下 `Makefile` 默认工具链在 `C:/JL/pi32/bin`，使用 `clang.exe`�
 ## 目录地图
 
 - `apps/watch`: 手表应用、任务管理、UI、运动、SmartBox、LTE/CAT1、产品测试和用户 API。
+- `apps/watch/mvp_a`: 主线 MVP-A LVGL Demo 框架，包含核心状态、存档、资源索引、平台 stub、LVGL 页面 shell 和页面 widgets。
 - `apps/watch/board/br28`: BR28 板级配置集合，含 `board_701n_demo`、`board_701n_lvgl_demo`、`board_701n_nandflash_demo` 等。
-- `apps/watch/ui/lcd/STYLE_WATCH_NEW`: 当前 Makefile 中大量编译的 LCD 手表 UI action 和 demo 页面。
-- `apps/watch/ui/lua_ui`: Lua UI 绑定层；当前 `board_701n_demo_cfg.h` 中 `TCFG_LUA_ENABLE` 为关闭状态，启用前要同步资源和内存配置。
+- `apps/watch/ui/lcd/STYLE_WATCH_NEW`: 传统 LCD 手表 UI action 和 demo 页面；主线 MVP-A 页面当前不在这里实现。
+- `apps/watch/ui/lua_ui`: Lua UI 绑定层；当前 LVGL demo 板级中 `TCFG_LUA_ENABLE` 为关闭状态，启用前要同步资源和内存配置。
 - `apps/common`: 公共音频、设备、文件、更新、网络、支付、LVGL、第三方协议与配置。
 - `cpu/br28`: 芯片相关音频、功耗、UI driver、P11/充电/时钟/IIC 等实现。
 - `cpu/br28/liba`: 预编译库，覆盖蓝牙、音频编解码、运动健康算法、QuickJS、网络、UI、升级等。
@@ -43,19 +55,44 @@ Windows 下 `Makefile` 默认工具链在 `C:/JL/pi32/bin`，使用 `clang.exe`�
 
 `Makefile` 定义了大量全局宏，例如 `CONFIG_CPU_BR28`、`CONFIG_UCOS_ENABLE`、`CONFIG_SOUNDBOX`、`CONFIG_WATCH_CASE_ENABLE`、`CONFIG_UPDATA_ENABLE`、`CONFIG_OTA_UPDATA_ENABLE`、`LV_LVGL_H_INCLUDE_SIMPLE` 等。功能开关更多集中在板级 `board_*_cfg.h`。
 
-当前 `board_701n_demo_cfg.h` 中可见的长期约束：
+当前 `board_701n_lvgl_demo_cfg.h` 中可见的长期约束：
 
 - `TCFG_APP_BT_EN`、`TCFG_APP_MUSIC_EN`、`TCFG_APP_RTC_EN` 默认开启；`TCFG_APP_LINEIN_EN`、`TCFG_APP_PC_EN`、`TCFG_APP_RECORD_EN`、`TCFG_APP_CAT1_EN` 默认关闭。
 - `CONFIG_APP_BT_ENABLE` 启用后会开启 `SMART_BOX_EN`，并进一步强制打开 BLE。
-- UI 总开关 `TCFG_UI_ENABLE` 开启；LCD 相关默认包含 `TCFG_LCD_SPI_SH8601A_ENABLE`，后续又可能被条件 `#undef` 改写为其他屏配置。检查最终宏值时要看完整条件块。
+- LVGL demo 板级启用 `LVGL_TEST_ENABLE`，当前主线 UI 验证路径走 `cpu/br28/ui_driver/lvgl/lvgl_main.c` 和 `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c`。
+- UI 总开关和 LCD 屏相关宏仍可能被板级条件块 `#undef`/重定义。检查最终宏值时要看完整条件块。
 - 触摸屏 `TCFG_TOUCH_PANEL_ENABLE` 开启；具体触摸型号和 IIC 时序要在同一板级配置文件内核对。
 - 存储相关宏存在多处 `#undef`/重定义，改 NOR/NAND/SFC/VIRFAT 时必须从板级配置顶部一路检查到后续条件块。
 
 ## UI 与资源
 
-本工程同时包含传统 `ui_new`/LCD UI、LVGL v8.1.0、Lua UI 绑定、UI 资源工具和多套表盘资源。代码侧入口常在 `apps/watch/ui/lcd/STYLE_WATCH_NEW`，资源侧常在 `cpu/br28/tools/UI工程/ui_454x454_watch`。
+本工程同时包含传统 `ui_new`/LCD UI、LVGL v8.1.0、Lua UI 绑定、UI 资源工具和多套表盘资源。当前主线 MVP-A Demo 已接入 `apps/watch/mvp_a` 的 LVGL shell；传统 LCD UI 代码仍在 `apps/watch/ui/lcd/STYLE_WATCH_NEW`，资源侧常在 `cpu/br28/tools/UI工程/ui_454x454_watch`。
 
 UI 资源目录内有大量工具生成文件、预览文件、`.bat` 脚本和中文路径。修改 UI 功能时先判断是代码逻辑、资源工程、字体/语言表、还是打包脚本问题；不要把资源生成输出当作手写源码随意重排。
+
+MVP-A 主线代码状态：
+
+- `mvp_a_app.c` 负责初始化、场景切换和 4 键事件分发。
+- `mvp_a_save.c` 通过 `syscfg_read/write` 保存 `mvp_a_save_data_t`，带 magic/version/data_len/checksum。
+- `mvp_a_platform.c` 中 NFC/BLE 当前仍是 `MVP_A_RESULT_NOT_READY` stub。
+- `mvp_a_assets.c` 是资源 metadata/manifest 映射层；`mvp_a_image_assets.c` 是少量过渡用 C 数组图像，不是正式资源路线。
+- LVGL 页面由 `mvp_a_lvgl_shell.c` 统一创建，页面文件位于 `apps/watch/mvp_a/ui/pages/`。
+
+## Pet2D / LVGL 渲染约束
+
+以下是后续 Pet2D 架构的长期口径。注意：这些约束不代表 `master` 当前已经实现 Pet2D；当前主线仍是 MVP-A LVGL demo skeleton。实现 Pet2D 时必须遵守：
+
+1. HOME / Observe 仍由 Pet2D 实现，不得改成杰理 UI 页面。
+2. LVGL 继续用于系统菜单、卡包、状态、Debug HUD。
+3. 后续 Pet2D 实屏渲染优先使用 IMB 2D 硬件加速。
+4. 图像资源优先使用杰理 SDK 资源工具 / image_dll 生成硬件可识别压缩格式。
+5. 正式图像资源必须放 16M 外置 Flash，不得转 C 数组。
+6. 运行时禁止解 PNG / JSON。
+7. IMB 可直接从 NOR Flash 读取的资源，优先通过 `flash_file_info` / 地址映射交给 IMB。
+8. 旋转资源原则上不要直接从 Flash 做，实时旋转只用于小图或先加载到 SRAM。
+9. 不使用 full framebuffer，不使用双全屏 framebuffer。
+10. LVGL 与 Pet2D 仍通过 Render Owner 互斥。
+11. 任何实屏 smoke 必须宏控制，默认关闭或受控执行。
 
 ## 生成物与搜索排除
 
@@ -73,6 +110,14 @@ UI 资源目录内有大量工具生成文件、预览文件、`.bat` 脚本和�
 - `cpu/br28/tools/isd_config.ini`
 - `cpu/br28/tools/download.bat`
 - `cpu/br28/tools/download.sh`
+- `cpu/br28/tools/app.bin`
+- `cpu/br28/tools/sdk.lst`
+- `cpu/br28/tools/symbol_tbl.txt`
+- `cpu/br28/tools/download/watch/*.bin`
+- `cpu/br28/tools/download/watch/*.fw`
+- `cpu/br28/tools/download/watch/*.ufw`
+- `cpu/br28/tools/download/watch/*.zip`
+- `build_logs/`
 - `cpu/br28/tools/UI工程/**/project/preview/`
 
 推荐搜索示例：
@@ -102,7 +147,7 @@ C 代码风格以现有 SDK 为准：宏控制功能、板级头文件集中配�
 普通代码修改后至少运行：
 
 ```powershell
-make
+.\.vscode\winmk.bat all *> build_logs\winmk-all.log
 ```
 
 涉及构建系统、链接、后处理脚本或资源打包时运行：
@@ -118,11 +163,11 @@ make VERBOSE=1
 
 - `board_config.h` 只选择板型；真正大部分功能宏在对应 `board_*_cfg.h`，并可能被后面的条件块再次改写。
 - `SMART_BOX_EN` 会影响 BLE/RCSP 相关路径，关闭或开启时要查 `apps/common/config/include/bt_profile_cfg.h` 和 SmartBox 目录。
-- UI 代码、LVGL、Lua UI 和资源工具并存；不要看到 `lvgl` 目录就默认当前界面全走 LVGL。
+- UI 代码、LVGL、Lua UI 和资源工具并存；不要看到 `lvgl` 目录就默认所有界面全走 LVGL，也不要把 feature 分支上的 Pet2D 代码当作 `master` 已有能力。
 - `cpu/br28/tools` 下既有源头 `.c`，也有构建生成 `.bat/.ini` 和下载输出；改前先确认文件角色。
 - 中文路径和脚本对 Windows 工具链友好，跨平台脚本改动要同时看 `Makefile` 中 Windows/Linux 分支。
 - 根目录 `AC701N.cbp` 是 IDE 工程文件，`AC701N.depend` 和 `AC701N.layout` 更像本地/生成状态；不要优先从它们推断源码结构。
 
 ## 信息来源
 
-本文件基于以下项目文件生成：根 `Makefile`，`apps/watch/app_main.c`，`apps/watch/board/br28/board_config.h`，`apps/watch/board/br28/board_701n_demo/board_701n_demo_cfg.h`，目录扫描结果，以及 `cpu/br28/tools`、`cpu/br28/liba`、`include_lib`、`apps/common`、`apps/watch` 的结构。
+本文件基于以下项目文件生成：根 `Makefile`，`apps/watch/app_main.c`，`apps/watch/board/br28/board_config.h`，`apps/watch/board/br28/board_701n_lvgl_demo/board_701n_lvgl_demo_cfg.h`，`apps/watch/mvp_a`，目录扫描结果，以及 `cpu/br28/tools`、`cpu/br28/liba`、`include_lib`、`apps/common`、`apps/watch` 的结构。更新时以 `master`/`origin/master` 为准，明确忽略未合入的 feature 分支实现。

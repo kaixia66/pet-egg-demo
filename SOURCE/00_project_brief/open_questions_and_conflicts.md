@@ -10,8 +10,8 @@
 当不同文档之间出现冲突时，MVP-A 当前执行优先级如下：
 
 1. 用户当前任务中的明确指令；
-2. `sdk/source/CODEX_CONTEXT.md`；
-3. `sdk/source/00_project_brief/mvp_a_scope.md`；
+2. `SOURCE/CODEX_CONTEXT.md`；
+3. `SOURCE/00_project_brief/mvp_a_scope.md`；
 4. 本文件；
 5. MVP-A UI / 资源设计文档；
 6. 软件版 PRD；
@@ -301,14 +301,43 @@ UI 只表达核心动作：
 - manifest / csv / json / md 放 Git；
 - 关键少量参考图可放 Git；
 - 大量 PNG 序列帧和 ZIP 资源包可先放外部存储或 release；
-- 若必须放入 SDK 资源工程，应只放最终工程需要的压缩 / 转换后资源。
+- 若必须放入 SDK 资源工程，应只放最终工程需要的压缩 / 转换后资源；
+- 正式图像资源放 16M 外置 Flash，不转 C 数组；
+- 运行时禁止解 PNG / JSON；
+- 优先使用杰理 SDK 资源工具 / `image_dll` 生成硬件可识别压缩格式；
+- IMB 可直接从 NOR Flash 读取的资源，优先通过 `flash_file_info` / 地址映射交给 IMB。
 
 ### CodeX 规则
 
 - 不要把大 ZIP 直接提交到 source；
 - 不要把所有生成中间文件提交；
+- 不要继续扩大 `mvp_a_image_assets.c` 这种 C 数组过渡方案；
 - 先生成 `resource_index`；
 - 确认资源路径和命名后再接入 UI 工程。
+
+---
+
+## 2.9 当前 LVGL main vs 后续 Pet2D HOME / Observe
+
+### 冲突描述
+
+`master` 当前已经有 MVP-A LVGL skeleton：`apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c` 创建 Boot、Home、Growth、Training、CardBag、NFC、Coop、Boss、Diary、Debug 等页面。后续架构口径要求 HOME / Observe 由 Pet2D 实现，LVGL 保留系统菜单、卡包、状态和 Debug HUD。
+
+### MVP-A 当前执行口径
+
+```text
+master 当前事实 = LVGL MVP-A skeleton
+后续架构目标 = HOME / Observe 迁移到 Pet2D，LVGL 与 Pet2D 通过 Render Owner 互斥
+```
+
+用户要求“忽略 feature/pet-arch-home-observe-validation”时，不要把该分支上的 Pet2D、Render Owner 或外置 Flash 验证代码写成主线已实现。
+
+### CodeX 规则
+
+- 文档可记录 Pet2D 约束，但必须标明 `master` 尚未实现；
+- 不要把 HOME / Observe 改成杰理传统 UI 页面；
+- 不要同时启用 LVGL 和 Pet2D 写屏；
+- 后续实屏 smoke 必须宏控制，默认关闭或受控执行。
 
 ---
 
@@ -364,7 +393,12 @@ MVP-A 建议优先稳定：
 
 ### 3.5 UI 资源格式
 
-状态：需根据当前 SDK UI 工具确认。
+状态：主线当前仍是过渡态。
+
+已知：
+
+- LVGL skeleton 可通过少量 C 数组 / fallback 路径验证页面；
+- 这不是正式资源路线。
 
 待确认：
 
@@ -374,6 +408,8 @@ MVP-A 建议优先稳定：
 - 帧动画配置方式；
 - UI 工程资源 ID 生成方式；
 - 454×454 到设备屏幕的适配方式。
+- 外置 Flash raw/container 资源布局；
+- `flash_file_info` / 地址映射交给 IMB 的最终接口。
 
 ---
 
@@ -432,6 +468,7 @@ NFC = 读卡入 Demo 卡包
 BLE = 碰一碰后进入合作岩灵 Boss
 养成 = 简化喂食 / 陪伴 / 训练 / 成长
 资源 = 青龙 Stage0–Stage5 + 岩灵 Boss + UI 组件
+渲染 = 当前 master 为 LVGL skeleton；后续 HOME / Observe 由 Pet2D，LVGL 保留菜单/卡包/状态/Debug HUD
 存档 = 保存 Stage / 成长 / 卡包 / Boss 结果
 不做 = 完整商业版多宠、完整卡牌经济、复杂对战、App、云端、联网
 ```

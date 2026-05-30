@@ -1,13 +1,13 @@
 # SOURCE_INDEX.md
 
-> 本文件说明 `sdk/source/` 目录中各类文件的用途、阅读顺序和适用任务。  
+> 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 
 ---
 
 ## 1. 目录定位
 
-`sdk/source/` 是碰碰宠物蛋 MVP-A 的工程知识库，用于给 CodeX、开发者、测试、UI 资源整理任务提供稳定上下文。
+`SOURCE/` 是碰碰宠物蛋 MVP-A 的工程知识库，用于给 CodeX、开发者、测试、UI 资源整理任务提供稳定上下文。
 
 它不是 SDK 源码目录，不参与编译，不承载固件业务逻辑。
 
@@ -39,8 +39,8 @@
 每个 CodeX 任务都必须优先读取以下两个文件：
 
 ```text
-sdk/source/CODEX_CONTEXT.md
-sdk/source/SOURCE_INDEX.md
+SOURCE/CODEX_CONTEXT.md
+SOURCE/SOURCE_INDEX.md
 ```
 
 ### 2.1 `CODEX_CONTEXT.md`
@@ -152,7 +152,7 @@ sdk/source/SOURCE_INDEX.md
 
 ## 4. `01_prd/`
 
-该目录保存 PRD 摘要和完整 Markdown 转写。
+该目录是规划中的 PRD 摘要和完整 Markdown 转写位置；当前 `master` 未提交该目录时，不要假定这些文件已经存在。
 
 ### 4.1 推荐结构
 
@@ -201,7 +201,7 @@ CodeX 只有在 summary 不足时才读取 full text。
 
 ## 5. `02_mvp_a_ui/`
 
-该目录用于 UI、交互、页面、视觉规格任务。
+该目录是规划中的 UI、交互、页面、视觉规格任务位置；当前主线代码事实以 `apps/watch/mvp_a/ui` 和 `apps/watch/mvp_a/core/mvp_a_def.h` 为准。
 
 ### 5.1 `ui_design_principles.md`
 
@@ -298,7 +298,7 @@ CodeX 只有在 summary 不足时才读取 full text。
 
 ## 6. `03_assets/`
 
-该目录用于资源和动画索引，不建议存放大型资源本体。
+该目录是规划中的资源和动画索引位置，不建议存放大型资源本体。当前主线资源 metadata 在 `apps/watch/mvp_a/services/mvp_a_assets.c`，资源落点说明在 `apps/watch/mvp_a/resources/MVP-A_Final_Engineering_Resources_V0.1/README.md`。
 
 ### 6.1 `asset_manifest.md`
 
@@ -403,9 +403,12 @@ fx_nfc_success_0001.png
 
 ```text
 apps/watch
+apps/watch/mvp_a
+cpu/br28/ui_driver/lvgl
+apps/common/ui/lvgl_v810
 apps/watch/ui/lcd/STYLE_WATCH_NEW
 cpu/br28/tools/UI工程/ui_454x454_watch
-CONFIG_BOARD_701N_DEMO
+CONFIG_BOARD_701N_LVGL_DEMO
 ```
 
 适合任务：
@@ -414,6 +417,15 @@ CONFIG_BOARD_701N_DEMO
 - 页面注册；
 - 资源导入；
 - 构建入口查找。
+
+当前 `master` 的 MVP-A 主线事实：
+
+- 板级选择：`apps/watch/board/br28/board_config.h` 启用 `CONFIG_BOARD_701N_LVGL_DEMO`。
+- LVGL 版本：Makefile 使用 `apps/common/ui/lvgl_v810`，版本宏为 8.1.0。
+- MVP-A 应用层：`apps/watch/mvp_a/core/mvp_a_app.c`。
+- MVP-A LVGL shell：`apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c`。
+- 存档：`apps/watch/mvp_a/core/mvp_a_save.c` 通过 `syscfg` 保存。
+- NFC/BLE：`apps/watch/mvp_a/services/mvp_a_platform.c` 当前仍为 `MVP_A_RESULT_NOT_READY` stub。
 
 ### 7.2 `ui_resource_mapping.md`
 
@@ -520,7 +532,7 @@ CONFIG_BOARD_701N_DEMO
 
 | 任务类型 | 必读文件 |
 |---|---|
-| 环境扫描 | `CODEX_CONTEXT.md`, `SOURCE_INDEX.md`, `04_engineering_mapping/sdk_paths.md` |
+| 环境扫描 | `CODEX_CONTEXT.md`, `SOURCE_INDEX.md`; 若 `04_engineering_mapping/sdk_paths.md` 尚不存在，直接查 `Makefile`、`board_config.h`、`apps/watch/mvp_a` |
 | UI 页面开发 | `CODEX_CONTEXT.md`, `02_mvp_a_ui/ui_design_principles.md`, `02_mvp_a_ui/page_inventory.md`, `02_mvp_a_ui/four_key_interaction_table.md` |
 | 页面状态机 | `02_mvp_a_ui/page_state_machine.md`, `04_engineering_mapping/state_to_code_mapping.md` |
 | 资源导入 | `03_assets/asset_manifest.md`, `03_assets/animation_manifest.md`, `03_assets/asset_naming_rules.md`, `03_assets/asset_qa_checklist.md` |
@@ -540,7 +552,7 @@ CONFIG_BOARD_701N_DEMO
 
 1. `CODEX_CONTEXT.md`
 2. `SOURCE_INDEX.md`
-3. 当前任务相关专题文件；
+3. 当前任务相关专题文件；若索引列出的专题文件尚未提交，则直接读取对应代码路径；
 4. 对应 PRD summary；
 5. 对应 PRD full text；
 6. archive 文件只作历史参考。

@@ -33,11 +33,16 @@ MVP-A 按以下工程环境执行：
 
 - 芯片 / SDK：杰理 AC701N / BR28 手表类 SDK；
 - 主应用：`apps/watch`；
-- UI 代码路径：`apps/watch/ui/lcd/STYLE_WATCH_NEW`；
+- 当前 MVP-A 代码路径：`apps/watch/mvp_a`；
+- 当前 MVP-A UI 路径：`apps/watch/mvp_a/ui`；
+- 传统杰理 LCD UI 路径：`apps/watch/ui/lcd/STYLE_WATCH_NEW`；
 - UI 资源工程路径：`cpu/br28/tools/UI工程/ui_454x454_watch`；
-- 板级配置：`CONFIG_BOARD_701N_DEMO`；
+- 板级配置：`CONFIG_BOARD_701N_LVGL_DEMO`；
+- 当前 LVGL 路径：`apps/common/ui/lvgl_v810`，版本宏为 8.1.0；
 - 运行方式：离线运行；
 - 依赖限制：不依赖 App、云端、联网、OTA。
+
+当前 `master` 已有 MVP-A LVGL skeleton：`mvp_a_app.c` 负责场景与按键，`mvp_a_save.c` 负责 `syscfg` 存档，`mvp_a_lvgl_shell.c` 负责 LVGL 页面创建，NFC/BLE 平台接口仍是 `MVP_A_RESULT_NOT_READY` stub。不要把未合入 feature 分支上的 Pet2D 或外置 Flash 验证代码当作主线能力。
 
 ---
 
@@ -402,6 +407,8 @@ MVP-A 可简化：
 - copy_cn.json；
 - resource_index.csv。
 
+主线当前只提交了少量 fallback PNG 和过渡用 C 数组图像。正式资源策略是：图像资源优先用杰理 SDK 资源工具 / `image_dll` 转成硬件可识别压缩格式，放入 16M 外置 Flash；运行时禁止解 PNG / JSON，不再扩大 C 数组图像方案。后续 Pet2D 实屏渲染优先走 IMB 2D，能从 NOR Flash 直接读取的资源优先通过 `flash_file_info` / 地址映射交给 IMB。
+
 ### 7.4 QA 要求
 
 必须检查：
@@ -487,6 +494,8 @@ MVP-A 可简化：
 - 存档有基础保护；
 - 异常能安全退出；
 - 有测试说明。
+
+如果做实屏 smoke，必须受宏控制，默认关闭或只在明确测试路径中执行，不能让 smoke 逻辑影响正常开机和量产路径。
 
 ### 9.3 CodeX 输出验收
 

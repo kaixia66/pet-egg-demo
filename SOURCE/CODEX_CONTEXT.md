@@ -34,16 +34,31 @@ CodeX 在本项目中的角色是：
 
 - 芯片 / SDK：杰理 AC701N / BR28 手表类 SDK；
 - 主应用：`apps/watch`；
-- UI 代码路径：`apps/watch/ui/lcd/STYLE_WATCH_NEW`；
+- 当前 MVP-A 代码路径：`apps/watch/mvp_a`；
+- 当前 MVP-A UI 路径：`apps/watch/mvp_a/ui`；
+- 传统杰理 LCD UI 路径：`apps/watch/ui/lcd/STYLE_WATCH_NEW`；
 - UI 资源工程路径：`cpu/br28/tools/UI工程/ui_454x454_watch`；
-- 板级配置：`CONFIG_BOARD_701N_DEMO`；
+- 板级配置：`CONFIG_BOARD_701N_LVGL_DEMO`；
+- 当前 LVGL 路径：`apps/common/ui/lvgl_v810`，版本宏为 8.1.0；
 - Demo 离线运行；
 - 不依赖 App；
 - 不依赖云端；
 - 不依赖联网；
 - 不依赖 OTA。
 
-### 3.2 标准硬件交互口径
+### 3.2 当前 main 代码状态
+
+本节只描述 `master`/`origin/master` 已有事实，不包含 `feature/pet-arch-home-observe-validation` 上的未合入代码。
+
+- `apps/watch/mvp_a/core/mvp_a_app.c` 已提供 MVP-A 初始化、场景切换和 4 键事件分发。
+- `apps/watch/mvp_a/core/mvp_a_def.h` 定义 Boot、Home、Care/Growth、Training、CardBag、NFC、Coop、Boss、Diary、Debug 等场景。
+- `apps/watch/mvp_a/core/mvp_a_save.c` 通过 `syscfg_read/write` 保存 `mvp_a_save_data_t`，包含 magic、version、data_len 和 checksum。
+- `apps/watch/mvp_a/services/mvp_a_platform.c` 中 NFC/BLE 接口当前仍返回 `MVP_A_RESULT_NOT_READY`，只是待接硬件/协议的 stub。
+- `apps/watch/mvp_a/services/mvp_a_assets.c` 是资源 metadata/manifest 映射；`mvp_a_image_assets.c` 是少量过渡用 C 数组图像，不是正式资源策略。
+- `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c` 基于 LVGL 创建当前 MVP-A 页面。
+- 后续 Pet2D HOME / Observe 架构尚未在 `master` 合入；讨论或实现时必须明确分支来源。
+
+### 3.3 标准硬件交互口径
 
 MVP-A / 当前 SDK Demo 只围绕以下输入与硬件能力设计：
 
@@ -184,6 +199,21 @@ MVP-A 不做：
 - 长按确认：唤醒 / 蓄力 / 重要确认；
 - 长按返回：回首页 / 退出战斗需二次确认。
 
+### 5.4 Pet2D / LVGL 分工口径
+
+当前 `master` 是 LVGL MVP-A skeleton；后续架构约束是：
+
+- HOME / Observe 由 Pet2D 实现，不改成杰理传统 UI 页面。
+- LVGL 继续用于系统菜单、卡包、状态、Debug HUD。
+- LVGL 与 Pet2D 通过 Render Owner 互斥，避免同时写屏。
+- Pet2D 实屏渲染优先使用 IMB 2D 硬件加速。
+- 正式图像资源必须放 16M 外置 Flash，不转 C 数组。
+- 运行时禁止解 PNG / JSON；资源优先用杰理 SDK 资源工具 / `image_dll` 转成硬件可识别格式。
+- IMB 可直接从 NOR Flash 读取的资源，优先通过 `flash_file_info` / 地址映射交给 IMB。
+- 旋转资源原则上不要直接从 Flash 做，实时旋转只用于小图或先加载到 SRAM。
+- 不使用 full framebuffer，不使用双全屏 framebuffer。
+- 任何实屏 smoke 必须宏控制，默认关闭或受控执行。
+
 ---
 
 ## 6. 核心系统设计口径
@@ -298,9 +328,9 @@ MVP-A 必须避免关键数据丢失：
 当文档或需求冲突时，CodeX 应按以下顺序处理：
 
 1. 用户在当前任务中的明确指令；
-2. `sdk/source/CODEX_CONTEXT.md`；
-3. `sdk/source/00_project_brief/mvp_a_scope.md`；
-4. `sdk/source/00_project_brief/open_questions_and_conflicts.md`；
+2. `SOURCE/CODEX_CONTEXT.md`；
+3. `SOURCE/00_project_brief/mvp_a_scope.md`；
+4. `SOURCE/00_project_brief/open_questions_and_conflicts.md`；
 5. MVP-A UI / 资源设计文档；
 6. 软件版 PRD；
 7. 硬件版 PRD；
@@ -317,8 +347,8 @@ MVP-A 必须避免关键数据丢失：
 
 CodeX 应先读取：
 
-1. `sdk/source/CODEX_CONTEXT.md`；
-2. `sdk/source/SOURCE_INDEX.md`；
+1. `SOURCE/CODEX_CONTEXT.md`；
+2. `SOURCE/SOURCE_INDEX.md`；
 3. 与任务相关的专题文件。
 
 ### 8.2 改代码前
@@ -336,7 +366,7 @@ CodeX 应先读取：
 - 不要在未确认构建入口前大规模改 SDK；
 - 不要改无关模块；
 - 不要把大型美术资源直接塞进代码目录；
-- 不要把 `source/` 加入固件编译；
+- 不要把 `SOURCE/` 加入固件编译；
 - 不要提交构建产物；
 - 不要删除 SDK 原有文件；
 - 不要重命名核心目录；
@@ -416,5 +446,5 @@ CodeX 应先读取：
 4. 圆屏可读性优先于信息完整度。
 5. NFC / BLE 技术验证优先于完整卡牌经济。
 6. 本地存档稳定性优先于玩法复杂度。
-7. `source/` 是 CodeX 知识库，不参与编译。
+7. `SOURCE/` 是 CodeX 知识库，不参与编译。
 8. 遇到 PRD 冲突时，应先查 `open_questions_and_conflicts.md`。

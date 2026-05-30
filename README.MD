@@ -9,7 +9,8 @@
 - BR28 芯片相关实现、链接配置、后处理工具：`cpu/br28`
 - 对外 SDK 头文件与预编译库接口：`include_lib`
 - Windows 构建脚本：`.vscode/winmk.bat`
-- 当前默认板级：`CONFIG_BOARD_701N_DEMO`
+- 当前主线板级：`CONFIG_BOARD_701N_LVGL_DEMO`
+- MVP-A Demo 代码：`apps/watch/mvp_a`
 
 应用入口在 `apps/watch/app_main.c`，`app_main()` 会初始化 UI、电源、升级资源下载逻辑，然后进入 `app_task_loop()` 进行任务分发。
 
@@ -17,8 +18,9 @@
 
 ```text
 apps/watch/                         手表应用、任务、UI、运动、产品测试、用户 API
+apps/watch/mvp_a/                   MVP-A LVGL Demo 框架、状态、存档、资源映射和页面
 apps/watch/board/br28/              BR28 板级配置集合
-apps/watch/ui/lcd/STYLE_WATCH_NEW/  当前 LCD 手表 UI action 和 demo 页面
+apps/watch/ui/lcd/STYLE_WATCH_NEW/  传统 LCD 手表 UI action 和 demo 页面
 apps/watch/ui/lua_ui/               Lua UI 绑定层
 apps/common/                        公共音频、设备、文件、更新、网络、LVGL、第三方协议
 cpu/br28/                           芯片相关实现、库、链接脚本源和工具
@@ -115,8 +117,10 @@ apps/watch/board/br28/board_config.h
 当前板级配置：
 
 ```text
-apps/watch/board/br28/board_701n_demo/board_701n_demo_cfg.h
+apps/watch/board/br28/board_701n_lvgl_demo/board_701n_lvgl_demo_cfg.h
 ```
+
+当前 `board_config.h` 选择 `CONFIG_BOARD_701N_LVGL_DEMO`，该板级中 `LVGL_TEST_ENABLE` 为 1。若切回传统表盘 demo，需要同步检查 `board_701n_demo_cfg.h`、Makefile 源文件列表、显示屏、触摸、按键和存储宏。
 
 切换板级时不要只改某一个驱动文件，需要同时检查：
 
@@ -136,10 +140,14 @@ apps/watch/board/br28/board_701n_demo/board_701n_demo_cfg.h
 常用入口：
 
 ```text
+apps/watch/mvp_a
+cpu/br28/ui_driver/lvgl
 apps/watch/ui/lcd/STYLE_WATCH_NEW
 cpu/br28/tools/UI工程/ui_454x454_watch
 cpu/br28/tools/ui_resource
 ```
+
+当前主线的 MVP-A 页面不是传统杰理 UI 页面，而是通过 `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c` 创建 LVGL 页面。`apps/watch/mvp_a/core/mvp_a_app.c` 负责场景和 4 键事件分发，`apps/watch/mvp_a/core/mvp_a_save.c` 通过 `syscfg` 保存 `mvp_a_save_data_t`。
 
 UI 修改时先判断问题属于哪一类：
 
@@ -158,18 +166,30 @@ UI 修改时先判断问题属于哪一类：
 
 注意：`onchange` 回调中通常不要直接调用 `ui_show()` / `ui_hide()`，控件显示状态更适合在 `onkey` 或 `ontouch` 中处理。
 
+## MVP-A 当前主线状态
+
+- LVGL 版本：当前 Makefile 使用 `apps/common/ui/lvgl_v810`，版本宏为 8.1.0。
+- 当前页面范围：Boot、Home、Growth/Care、Training、CardBag、NFC、Coop、Boss、Diary、Debug。
+- NFC/BLE：`apps/watch/mvp_a/services/mvp_a_platform.c` 仍返回 `MVP_A_RESULT_NOT_READY`，属于待接硬件/协议 stub。
+- 资源：`mvp_a_assets.c` 是资源 metadata/manifest 映射；`mvp_a_image_assets.c` 和少量 PNG 只是当前 main 的过渡验证资源。
+- 存档：当前使用 `syscfg_read/write`，带 magic、version、data_len、checksum。
+
+后续 Pet2D 架构口径：HOME / Observe 将由 Pet2D 实现，LVGL 继续用于系统菜单、卡包、状态和 Debug HUD；二者通过 Render Owner 互斥。当前 `master` 尚未包含 feature 分支上的 Pet2D 实现，不能把未合入代码当成主线能力。
+
+## 资源策略
+
+正式图像资源不要继续转成 C 数组。后续应优先使用杰理 SDK 资源工具 / `image_dll` 生成硬件可识别压缩格式，并放入 16M 外置 Flash。运行时禁止解 PNG / JSON；能让 IMB 从 NOR Flash 直接读取的资源，优先通过 `flash_file_info` / 地址映射交给 IMB。实时旋转只用于小图或先加载到 SRAM 的资源，不使用 full framebuffer 或双全屏 framebuffer。
+
 ## LVGL 开发提示
 
-仓库中已有 LVGL 相关目录和宏，但不能仅凭 `lvgl` 目录判断当前界面已经完全走 LVGL。若希望用 LVGL 替代原表盘表针页面，需要重点确认：
+仓库中已有多份 LVGL 相关目录。当前 Makefile 使用 `apps/common/ui/lvgl_v810` 和 `cpu/br28/ui_driver/lvgl`；另一个 `apps/common/ui/lvgl` 目录存在但不是当前主线编译路径。新增 LVGL 页面时需要重点确认：
 
-- 板级是否启用 LVGL 相关配置
+- 板级是否仍启用 `CONFIG_BOARD_701N_LVGL_DEMO` 和 `LVGL_TEST_ENABLE`
 - 显示驱动和 flush 回调是否正确对接
 - 输入设备是否接入 LVGL indev
-- 原传统 UI 主页面是否仍被启动
+- 是否会与传统 UI 或未来 Pet2D Render Owner 冲突
 - 资源、内存、PSRAM、刷新 buffer 是否满足新页面需求
 - Makefile 是否包含新增 LVGL 页面源文件
-
-建议先以 `apps/watch/board/br28/board_701n_lvgl_demo` 作为参考，再逐步把当前板级迁移到自定义 LVGL 首页。
 
 ## 常见注意事项
 
@@ -189,4 +209,3 @@ git diff
 ```
 
 提交前确认只包含源码、配置、资源源文件和必要工具输入，不包含本地日志、构建中间物或固件打包结果。
-
