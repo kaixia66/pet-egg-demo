@@ -2,6 +2,13 @@
 #define PET_PLATFORM_JIELI_INTERNAL_H
 
 #include "pet_platform_jieli.h"
+#include "pet_protocol_jieli.h"
+
+#if defined(PET_PLATFORM_JIELI_TEST) || defined(PET_DEBUG)
+#define PET_JIELI_TEST_MODE_ENABLED 1
+#else
+#define PET_JIELI_TEST_MODE_ENABLED 0
+#endif
 
 #define PET_JIELI_HARDWARE_REV_701N_DEV PET_VERSION_MAKE(7u, 1u, 0u)
 #define PET_JIELI_FIRMWARE_VERSION_P2_STUB PET_VERSION_MAKE(0u, 2u, 0u)
@@ -65,12 +72,25 @@ pet_bool_t pet_audio_jieli_is_busy(void);
 void pet_ble_jieli_init(void);
 pet_result_t pet_ble_jieli_send_packet(void *ctx, const pet_packet_t *packet);
 pet_result_t pet_ble_jieli_poll_packet(void *ctx, pet_packet_t *packet);
+pet_result_t pet_ble_jieli_self_test(void);
+#if PET_JIELI_TEST_MODE_ENABLED
+pet_result_t pet_ble_jieli_test_set_loopback_enabled(pet_bool_t enabled);
+pet_result_t pet_ble_jieli_test_clear_loopback(void);
+#endif
 
 void pet_nfc_jieli_init(void);
 pet_result_t pet_nfc_jieli_start_card_scan(void *ctx);
 pet_result_t pet_nfc_jieli_start_pair_scan(void *ctx);
 pet_result_t pet_nfc_jieli_poll_card(void *ctx, pet_nfc_card_t *card);
 pet_result_t pet_nfc_jieli_poll_pair(void *ctx, pet_nfc_pair_t *pair);
+pet_result_t pet_nfc_jieli_self_test(void);
+#if PET_JIELI_TEST_MODE_ENABLED
+pet_result_t pet_nfc_jieli_test_set_fake_enabled(pet_bool_t enabled);
+pet_result_t pet_nfc_jieli_test_inject_card(const pet_nfc_card_t *card);
+pet_result_t pet_nfc_jieli_test_inject_pair(const pet_nfc_pair_t *pair);
+pet_result_t pet_nfc_jieli_test_inject_pair_payload(const pet_nfc_pair_payload_t *payload);
+pet_result_t pet_nfc_jieli_test_clear(void);
+#endif
 
 void pet_power_jieli_init(void);
 pet_result_t pet_power_jieli_get_battery_percent(void *ctx, pet_u8_t *percent);
@@ -78,5 +98,11 @@ pet_result_t pet_power_jieli_get_battery_voltage_mv(void *ctx, pet_u16_t *voltag
 pet_bool_t pet_power_jieli_is_low_power(void);
 
 void pet_debug_jieli_init(void);
+pet_result_t pet_debug_jieli_self_test(void);
+#if PET_JIELI_TEST_MODE_ENABLED
+pet_bool_t pet_debug_jieli_get_fake_millis(pet_u32_t *out_millis);
+pet_bool_t pet_debug_jieli_get_fake_now_sec(pet_u32_t *out_now_sec);
+pet_bool_t pet_debug_jieli_get_fake_battery(pet_u8_t *out_percent, pet_u16_t *out_voltage_mv);
+#endif
 
 #endif

@@ -13,6 +13,21 @@ pet_display_owner_t pet_display_jieli_get_owner(void);
 pet_result_t pet_display_jieli_owner_self_test(void);
 pet_result_t pet_platform_jieli_display_self_test(void);
 pet_result_t pet_platform_jieli_input_self_test(void);
+pet_result_t pet_ble_jieli_self_test(void);
+pet_result_t pet_nfc_jieli_self_test(void);
+pet_result_t pet_debug_jieli_self_test(void);
+
+#if defined(PET_PLATFORM_JIELI_TEST) || defined(PET_DEBUG)
+pet_result_t pet_debug_jieli_set_fake_millis(pet_u32_t millis);
+pet_result_t pet_debug_jieli_advance_fake_millis(pet_u32_t delta_ms);
+pet_result_t pet_debug_jieli_set_fake_now_sec(pet_u32_t now_sec);
+pet_result_t pet_debug_jieli_set_fake_battery(pet_u8_t percent, pet_u16_t voltage_mv);
+pet_result_t pet_debug_jieli_enable_ble_loopback(pet_bool_t enabled);
+pet_result_t pet_debug_jieli_inject_ble_packet(const pet_packet_t *packet);
+pet_result_t pet_debug_jieli_inject_nfc_card(const pet_nfc_card_t *card);
+pet_result_t pet_debug_jieli_inject_nfc_pair_payload(const pet_nfc_pair_payload_t *payload);
+pet_result_t pet_debug_jieli_clear_all(void);
+#endif
 
 #ifdef __cplusplus
 }

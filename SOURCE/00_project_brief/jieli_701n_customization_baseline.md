@@ -166,3 +166,29 @@ P6 still does not:
 - enable `pet_platform_jieli` storage callbacks;
 - change MVP-A default page behavior or save data;
 - enable Pet2D runtime, real LCD flush, BLE/NFC/audio hardware or production resources.
+
+## P7 BLE/NFC Stub And Debug Injection Status
+
+Status: implemented as a macro-isolated protocol/debug adapter; not a real BLE GATT or NFC reader
+integration.
+
+Current capability:
+- `apps/watch/pet_protocol_jieli/` builds and validates P1/simulator `pet_packet_t` packets, including
+  magic `0xE6`, version `1`, 10-byte header, 64-byte max payload, seq/ack preservation and CRC16
+  CCITT-FALSE.
+- The same helper validates the 24-byte NFC pair payload ABI and CRC16 range.
+- `pet_ble_jieli.c` keeps default `send_packet` / `poll_packet` as `PET_RESULT_NOT_READY`, but
+  `PET_PLATFORM_JIELI_TEST` or `PET_DEBUG` builds can enable a fixed 4-packet loopback queue.
+- `pet_nfc_jieli.c` keeps default scan/poll callbacks as `PET_RESULT_NOT_READY`, but test/debug builds
+  can inject fake `pet_nfc_card_t` and NFC pair payloads into small in-memory queues.
+- `pet_debug_jieli.c` provides test/debug-only fake millis, fake now_sec, fake battery, BLE packet
+  injection, NFC card injection, NFC pair payload injection and clear-all helpers.
+- P7 self-tests cover packet build/validate, bad magic/version/len/CRC, BLE loopback, queue full,
+  fake NFC card/pair polling and debug fake state.
+
+P7 still does not:
+- start BLE advertising, scanning, connecting or GATT services;
+- start real NFC reader scans or RF transactions;
+- write VM/Flash/syscfg or replace MVP-A save;
+- change MVP-A default page behavior, key behavior or storage behavior;
+- enable Pet2D runtime, real LCD flush, real resources or production pairing security.

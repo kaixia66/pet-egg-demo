@@ -143,6 +143,35 @@ ABI/transaction checking, but it does not replace MVP-A syscfg save and does not
 - `SOURCE/10_engineering_reports/p6_save_transaction_adapter.md`: records MVP-A save audit, ABI
   alignment, transaction/rollback behavior, memory backend fault injection and P6 storage boundaries.
 
+## P7 Protocol Debug Adapter Addendum
+
+P7 adds packet/NFC-pair helpers and test-only BLE/NFC/debug injection paths while keeping real BLE/NFC
+hardware disabled:
+- `apps/watch/pet_protocol_jieli/pet_protocol_jieli.h`: packet and NFC pair helper API for CRC16,
+  build/finalize/validate and self-test.
+- `apps/watch/pet_protocol_jieli/pet_protocol_jieli.c`: C99, no-malloc helper implementation aligned
+  with simulator packet and 24-byte NFC pair payload semantics.
+- `apps/watch/pet_protocol_jieli/pet_protocol_jieli_compile_check.c`: compile-only reference for
+  packet and NFC pair ABI checks.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: declares P7 BLE/NFC/debug self-tests and
+  `PET_DEBUG` / `PET_PLATFORM_JIELI_TEST` debug injection controls.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: declares test-mode BLE loopback,
+  fake NFC injection and fake debug state helpers.
+- `apps/watch/pet_platform_jieli/pet_ble_jieli.c`: adds a fixed-size packet loopback queue that is
+  available only in test/debug mode; default sends/polls still return `NOT_READY`.
+- `apps/watch/pet_platform_jieli/pet_nfc_jieli.c`: adds fake NFC card and NFC pair queues only in
+  test/debug mode; real scans remain disabled.
+- `apps/watch/pet_platform_jieli/pet_debug_jieli.c`: adds macro-isolated fake time, fake battery,
+  BLE packet injection, NFC card injection and NFC pair payload injection.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.c`: reads fake debug time only when test/debug
+  mode is compiled.
+- `apps/watch/pet_platform_jieli/pet_power_jieli.c`: reads fake debug battery only when test/debug
+  mode is compiled.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references protocol, BLE, NFC
+  and debug self-tests without real hardware calls.
+- `SOURCE/10_engineering_reports/p7_protocol_debug_adapter.md`: records BLE/NFC path audit, ABI
+  alignment, loopback/fake queue design, debug injection boundaries and P7 risks.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

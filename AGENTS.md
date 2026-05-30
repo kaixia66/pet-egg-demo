@@ -86,6 +86,18 @@ prove real power-fail atomicity, wear leveling, erase policy or Flash page align
 storage callbacks stay stubbed unless a later phase explicitly confirms storage ownership and power
 rules.
 
+## PetEgg P7 Protocol Debug Adapter Rule
+
+P7 is a BLE/NFC stub and debug-injection phase. Packet helpers may validate the P1/simulator packet and
+NFC pair payload ABI, and `apps/watch/pet_platform_jieli/` may expose BLE loopback and fake NFC queues
+only under `PET_DEBUG` or `PET_PLATFORM_JIELI_TEST`. The default product path must continue to return
+`PET_RESULT_NOT_READY` for real BLE/NFC callbacks.
+
+P7 must not start BLE advertising, scanning, connecting, GATT services, NFC reader scans or RF
+transactions. Protocol code must not depend on Jieli private BLE/NFC structs, must not write VM/Flash
+or syscfg, and must not change MVP-A page, input or save behavior. Debug injection is a self-test and
+bring-up aid only; it is not evidence that real BLE/NFC hardware paths are wired.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

@@ -143,3 +143,25 @@ Open items:
   whether shared save routes through `pet_platform_t` or a storage-specific backend.
 - The existing winmk post-build/resource packaging failure remains independent of P6. P6 must not
   modify toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P7 Protocol Debug Adapter Risks
+
+Status: P7 validates packet/NFC-pair ABI behavior and test-only queues. It does not prove real BLE or
+NFC hardware behavior.
+
+Open items:
+- Real BLE GATT service UUIDs, characteristic UUIDs, notify/write-with-response policy and security
+  requirements remain undefined.
+- BLE MTU, fragmentation, retransmit policy, connection state, reconnect behavior, timeout handling and
+  packet scheduling still need a real transport phase.
+- The P7 loopback queue validates `pet_packet_t` ABI and queue behavior only; it does not start
+  advertising, scanning, connection, pairing or BLE controller paths.
+- Real NFC reader ownership, scan timing, UID length, card type mapping, signature/counter validation
+  and used-flag write policy remain unconfirmed.
+- Fake NFC card/pair injection does not represent RF success rate, anti-collision behavior, card
+  security, tag write endurance or field failure behavior.
+- NFC pair payload security is still placeholder-level. Pairing token/session binding, replay
+  protection, privacy and tamper checks need a later design.
+- `PET_DEBUG` / `PET_PLATFORM_JIELI_TEST` injection must stay disabled in the default product path.
+- The existing winmk post-build/resource packaging failure remains independent of P7. P7 must not
+  modify toolchain paths, resource scripts or download packaging to mask that environment issue.

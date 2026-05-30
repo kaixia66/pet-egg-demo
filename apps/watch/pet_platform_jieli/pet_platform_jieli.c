@@ -10,13 +10,31 @@ static pet_platform_jieli_state_t g_pet_platform_jieli_state;
 
 static pet_u32_t pet_platform_jieli_millis(void *ctx)
 {
+    pet_u32_t fake_millis;
+
     (void)ctx;
+#if PET_JIELI_TEST_MODE_ENABLED
+    if (pet_debug_jieli_get_fake_millis(&fake_millis) == PET_TRUE) {
+        return fake_millis;
+    }
+#else
+    (void)fake_millis;
+#endif
     return (pet_u32_t)timer_get_ms();
 }
 
 static pet_u32_t pet_platform_jieli_now_sec(void *ctx)
 {
+    pet_u32_t fake_now_sec;
+
     (void)ctx;
+#if PET_JIELI_TEST_MODE_ENABLED
+    if (pet_debug_jieli_get_fake_now_sec(&fake_now_sec) == PET_TRUE) {
+        return fake_now_sec;
+    }
+#else
+    (void)fake_now_sec;
+#endif
     /* TODO(P2): wire to RTC once the board RTC ownership and epoch policy are confirmed. */
     return 0u;
 }
