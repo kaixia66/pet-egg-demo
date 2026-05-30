@@ -49,6 +49,18 @@ replace `mvp_a_ui_handle_system_key()` or `mvp_a_app_key_event()`, and must not 
 input. Test raw-event injection must stay local to `pet_platform_jieli` and must not be treated as a
 real hardware binding.
 
+## PetEgg P4 Render Owner Boundary Rule
+
+P4 establishes only the render-owner boundary between the current MVP-A LVGL shell and a future Pet2D
+renderer. LVGL and PET2D must coordinate through `pet_display_owner_t` acquire/release before any real
+LCD flush is enabled. `apps/watch/pet2d_boundary/` is a placeholder boundary for owner handoff and
+self-test only; it is not the Pet2D engine and must not import simulator Pet2D code.
+
+P4 may hook MVP-A LVGL shell create/render paths to acquire or release `PET_DISPLAY_OWNER_LVGL_SYSTEM_UI`,
+but it must not modify the LVGL low-level flush callback, write RGB565 pixels to the LCD, enable real
+Pet2D runtime, take over the key path, write storage, or connect BLE/NFC. P4 self-tests validate owner
+state-machine behavior only and are not evidence of real hardware display ownership.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

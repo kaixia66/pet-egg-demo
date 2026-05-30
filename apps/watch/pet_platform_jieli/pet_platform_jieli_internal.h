@@ -27,6 +27,7 @@
 #define PET_JIELI_RAW_EVENT_DOWN 0x80u
 
 void pet_display_jieli_init(void);
+pet_display_owner_t pet_display_jieli_get_owner(void);
 pet_result_t pet_display_jieli_get_profile(void *ctx, pet_display_profile_t *profile);
 pet_result_t pet_display_jieli_acquire(void *ctx, pet_display_owner_t owner, pet_u32_t timeout_ms);
 pet_result_t pet_display_jieli_release(void *ctx, pet_display_owner_t owner);

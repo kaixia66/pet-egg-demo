@@ -80,3 +80,23 @@ Open items:
   add an explicit `NO_EVENT` result only through a future shared ABI version bump if needed.
 - The existing winmk post-build/resource packaging failure remains independent of P3. P3 must not
   modify toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P4 Render Owner Boundary Risks
+
+Status: P4 adds an in-memory owner boundary only. Real LVGL flush ownership and Pet2D rendering remain
+unverified on hardware.
+
+Open items:
+- The P4 owner state machine is not yet tied to the SDK LCD driver lock, TE wait, DMA state, or flush
+  completion path. A later phase must decide where the real display lock lives.
+- MVP-A LVGL now acquires `PET_DISPLAY_OWNER_LVGL_SYSTEM_UI` before shell rendering, but the existing
+  low-level LVGL flush callback remains unchanged. Final integration must ensure the flush callback
+  cannot write while PET2D owns the display.
+- `apps/watch/pet2d_boundary/` only validates owner handoff. It does not prove RGB565 byte order,
+  clipping, dirty-rect alignment, framebuffer ownership, resource loading, or Pet2D frame timing.
+- Same-owner re-acquire is currently a reentrant-like stub policy without reference counting. Real
+  driver integration may need a stricter lock or lifecycle contract.
+- No debug UI entry was added in P4, so owner self-tests are compile/log validation hooks rather than a
+  field-operable menu path.
+- The existing winmk post-build/resource packaging failure remains independent of P4. P4 must not
+  modify toolchain paths, resource scripts or download packaging to mask that environment issue.

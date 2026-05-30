@@ -217,6 +217,7 @@ INCLUDES := \
 	-Iapps/watch/mvp_a/ui/pages/debug \
 	-Iapps/watch/pet_shared/include \
 	-Iapps/watch/pet_platform_jieli \
+	-Iapps/watch/pet2d_boundary \
 	-Iapps/common \
 	-Iapps/common/device \
 	-Iapps/common/audio \
@@ -944,6 +945,8 @@ c_SRC_FILES := \
 	apps/watch/pet_platform_jieli/pet_power_jieli.c \
 	apps/watch/pet_platform_jieli/pet_debug_jieli.c \
 	apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c \
+	apps/watch/pet2d_boundary/pet2d_boundary.c \
+	apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c \
 	apps/watch/mvp_a/domain/mvp_a_boss.c \
 	apps/watch/mvp_a/domain/mvp_a_card.c \
 	apps/watch/mvp_a/domain/mvp_a_diary.c \

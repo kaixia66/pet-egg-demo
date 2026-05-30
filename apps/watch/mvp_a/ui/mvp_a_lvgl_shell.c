@@ -13,17 +13,71 @@
 #include "mvp_a_ui_home.h"
 #include "mvp_a_ui_nfc.h"
 #include "mvp_a_ui_training.h"
+#include "pet_platform_jieli.h"
 
 #if LVGL_TEST_ENABLE
 
 static u8 mvp_a_refresh_pending;
 static mvp_a_scene_t mvp_a_rendered_scene = MVP_A_SCENE_MAX;
+static u8 mvp_a_lvgl_owner_acquired;
+
+static mvp_a_bool_t mvp_a_lvgl_shell_acquire_display_owner(void)
+{
+    const pet_platform_t *platform;
+    pet_result_t ret;
+
+    if (mvp_a_lvgl_owner_acquired &&
+        (pet_display_jieli_get_owner() == PET_DISPLAY_OWNER_LVGL_SYSTEM_UI)) {
+        return MVP_A_TRUE;
+    }
+
+    platform = pet_platform_jieli_get();
+    if ((platform == 0) || (platform->display_acquire == 0)) {
+        printf("[MVP_A][LVGL_OWNER] acquire unavailable\n");
+        mvp_a_lvgl_owner_acquired = 0u;
+        return MVP_A_FALSE;
+    }
+
+    ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI, 0u);
+    if (ret != PET_RESULT_OK) {
+        printf("[MVP_A][LVGL_OWNER] acquire failed ret=%d owner=%d\n",
+               ret, pet_display_jieli_get_owner());
+        mvp_a_lvgl_owner_acquired = 0u;
+        return MVP_A_FALSE;
+    }
+
+    mvp_a_lvgl_owner_acquired = 1u;
+    printf("[MVP_A][LVGL_OWNER] acquired owner=%d\n", pet_display_jieli_get_owner());
+    return MVP_A_TRUE;
+}
+
+static mvp_a_bool_t mvp_a_lvgl_shell_has_display_owner(void)
+{
+    pet_display_owner_t owner = pet_display_jieli_get_owner();
+
+    if (owner == PET_DISPLAY_OWNER_LVGL_SYSTEM_UI) {
+        return MVP_A_TRUE;
+    }
+
+    if (mvp_a_lvgl_owner_acquired) {
+        printf("[MVP_A][LVGL_OWNER] owner lost current=%d\n", owner);
+    }
+    mvp_a_lvgl_owner_acquired = 0u;
+    return MVP_A_FALSE;
+}
 
 static void mvp_a_lvgl_shell_render_scene(void)
 {
     lv_obj_t *scr = lv_scr_act();
     mvp_a_scene_t scene = mvp_a_app_get_scene();
     const mvp_a_ui_page_t *page = mvp_a_ui_get_page(scene);
+
+    if (!mvp_a_lvgl_shell_has_display_owner() &&
+        !mvp_a_lvgl_shell_acquire_display_owner()) {
+        printf("[MVP_A][LVGL_OWNER] render skipped scene=%d owner=%d\n",
+               scene, pet_display_jieli_get_owner());
+        return;
+    }
 
     if (!scr || !page) {
         return;
@@ -82,6 +136,7 @@ void mvp_a_lvgl_shell_create(void)
     mvp_a_app_init();
     mvp_a_app_set_active(MVP_A_TRUE);
     mvp_a_rendered_scene = MVP_A_SCENE_MAX;
+    (void)mvp_a_lvgl_shell_acquire_display_owner();
     mvp_a_lvgl_shell_render_scene();
 }
 
@@ -99,6 +154,32 @@ void mvp_a_lvgl_shell_tick(void)
 
     mvp_a_refresh_pending = 0;
     mvp_a_lvgl_shell_render_scene();
+}
+
+void mvp_a_lvgl_shell_release_display_owner(void)
+{
+    const pet_platform_t *platform = pet_platform_jieli_get();
+    pet_display_owner_t owner = pet_display_jieli_get_owner();
+    pet_result_t ret;
+
+    if ((platform == 0) || (platform->display_release == 0)) {
+        printf("[MVP_A][LVGL_OWNER] release unavailable\n");
+        mvp_a_lvgl_owner_acquired = 0u;
+        return;
+    }
+
+    if (owner != PET_DISPLAY_OWNER_LVGL_SYSTEM_UI) {
+        printf("[MVP_A][LVGL_OWNER] release skipped owner=%d\n", owner);
+        mvp_a_lvgl_owner_acquired = 0u;
+        return;
+    }
+
+    ret = platform->display_release(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI);
+    printf("[MVP_A][LVGL_OWNER] release ret=%d owner=%d\n",
+           ret, pet_display_jieli_get_owner());
+    if (ret == PET_RESULT_OK) {
+        mvp_a_lvgl_owner_acquired = 0u;
+    }
 }
 
 #endif

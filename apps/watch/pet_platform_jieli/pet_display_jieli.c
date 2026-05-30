@@ -15,6 +15,11 @@ void pet_display_jieli_init(void)
     g_pet_display_jieli_state.brightness = 80u;
 }
 
+pet_display_owner_t pet_display_jieli_get_owner(void)
+{
+    return g_pet_display_jieli_state.owner;
+}
+
 pet_result_t pet_display_jieli_get_profile(void *ctx, pet_display_profile_t *profile)
 {
     (void)ctx;
@@ -171,24 +176,78 @@ pet_result_t pet_platform_jieli_display_self_test(void)
         return PET_RESULT_INVALID_ARGUMENT;
     }
 
+    ret = pet_display_jieli_owner_self_test();
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet_display_jieli_owner_self_test(void)
+{
+    const pet_platform_t *platform;
+    pet_display_owner_t original_owner;
+    pet_result_t ret;
+
+    platform = pet_platform_jieli_get();
+    if ((platform == 0) || (platform->display_acquire == 0) || (platform->display_release == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    original_owner = pet_display_jieli_get_owner();
     pet_display_jieli_init();
+
+    if (pet_display_jieli_get_owner() != PET_DISPLAY_OWNER_NONE) {
+        return PET_RESULT_ERROR;
+    }
+
+    ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_NONE, 0u);
+    if (ret != PET_RESULT_INVALID_ARGUMENT) {
+        return PET_RESULT_ERROR;
+    }
+
     ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI, 0u);
     if (ret != PET_RESULT_OK) {
         return ret;
     }
+
+    /*
+     * P3/P4 stub policy: the same owner may acquire again without ref counting.
+     * This is only a boundary check and is not the final LCD driver lock model.
+     */
+    ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI, 0u);
+    if (ret != PET_RESULT_OK) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI);
+        return PET_RESULT_ERROR;
+    }
+
     ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
     if (ret != PET_RESULT_BUSY) {
         (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI);
         return PET_RESULT_ERROR;
     }
+
     ret = platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
     if (ret != PET_RESULT_BUSY) {
         (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI);
         return PET_RESULT_ERROR;
     }
+
     ret = platform->display_release(platform->ctx, PET_DISPLAY_OWNER_LVGL_SYSTEM_UI);
     if (ret != PET_RESULT_OK) {
         return ret;
+    }
+
+    if (pet_display_jieli_get_owner() != PET_DISPLAY_OWNER_NONE) {
+        return PET_RESULT_ERROR;
+    }
+
+    if (original_owner != PET_DISPLAY_OWNER_NONE) {
+        ret = platform->display_acquire(platform->ctx, original_owner, 0u);
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
     }
 
     return PET_RESULT_OK;

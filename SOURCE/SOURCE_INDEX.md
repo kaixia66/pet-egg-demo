@@ -77,6 +77,29 @@ P2 display/profile and input stubs into auditable POC code:
 - `SOURCE/10_engineering_reports/p3_display_input_poc.md`: records display and key-source audit
   findings, mapping table, self-test expectations, and P3 hardware boundaries.
 
+## P4 Render Owner Boundary Addendum
+
+P4 adds the LVGL/Pet2D display-owner boundary while keeping all real rendering hardware paths disabled:
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: declares `pet_display_jieli_get_owner()` and
+  `pet_display_jieli_owner_self_test()` for controlled owner-state checks.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: exposes the owner getter internally for
+  Jieli boundary modules.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: factors owner validation into
+  `pet_display_jieli_owner_self_test()` and documents the same-owner re-acquire stub policy.
+- `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c`: acquires the LVGL display owner at shell create/render time,
+  verifies owner before rendering, and provides `mvp_a_lvgl_shell_release_display_owner()` for future
+  handoff. It does not change LVGL flush or page creation logic.
+- `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.h`: declares the controlled LVGL owner release hook.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h`: public placeholder boundary API for future Pet2D entry,
+  exit and self-test.
+- `apps/watch/pet2d_boundary/pet2d_boundary.c`: validates PET2D owner acquisition/release without
+  allocating a framebuffer or calling LCD flush.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: compile-only reference for the boundary.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references display-owner and
+  Pet2D boundary self-tests without hardware calls.
+- `SOURCE/10_engineering_reports/p4_render_owner_boundary.md`: records owner state machine, LVGL hook
+  points, placeholder behavior and P4 boundaries.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

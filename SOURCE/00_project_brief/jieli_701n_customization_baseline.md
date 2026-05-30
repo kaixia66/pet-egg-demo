@@ -91,5 +91,27 @@ P3 still does not:
 - change `mvp_a_app_key_event` or `mvp_a_ui_handle_system_key`;
 - consume or take over the real Jieli key queue;
 - enable real LCD flush or Pet2D;
-- write VM/Flash/files;
-- connect real BLE, NFC, audio or battery hardware paths.
+- write VM/Flash, or connect BLE/NFC/audio hardware.
+
+## P4 Render Owner Boundary POC Status
+
+Status: implemented as a compile/log validation boundary; not a real Pet2D or LCD integration.
+
+Current capability:
+- `pet_display_jieli_get_owner()` exposes the in-memory display owner state for controlled boundary
+  checks.
+- `pet_display_jieli_owner_self_test()` verifies NONE rejection, LVGL acquire, same-owner re-acquire,
+  PET2D conflict, non-owner release rejection and release back to NONE.
+- `mvp_a_lvgl_shell_create()` acquires `PET_DISPLAY_OWNER_LVGL_SYSTEM_UI` before rendering.
+- `mvp_a_lvgl_shell_render_scene()` verifies LVGL ownership before touching the LVGL scene tree and
+  skips rendering if another owner holds the display.
+- `mvp_a_lvgl_shell_release_display_owner()` provides a future handoff hook before entering Pet2D.
+- `apps/watch/pet2d_boundary/` contains a placeholder enter/exit/self-test that only exercises
+  owner handoff. It does not allocate a framebuffer, call LCD flush, load resources, or run Pet2D.
+
+P4 still does not:
+- change the LVGL low-level flush callback;
+- write RGB565 pixels to the real LCD;
+- enable Pet2D runtime or the HOME/Observe scene;
+- change MVP-A default page behavior or key handling;
+- write VM/Flash, or connect BLE/NFC/audio hardware.
