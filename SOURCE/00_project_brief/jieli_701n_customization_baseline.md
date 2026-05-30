@@ -241,3 +241,29 @@ P9 still does not:
 - enable Pet2D runtime, HOME/Observe rendering or a full framebuffer;
 - change MVP-A default page/input/save behavior;
 - write VM/Flash/syscfg, connect storage callbacks, BLE or NFC.
+
+## P10 Tiny Real LCD Flush POC Status
+
+Status: implemented as a manual-only, macro-gated tiny flush POC boundary. Committed source still keeps
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0 and `real_lcd_flush_enabled` at 0.
+
+- P10 re-audits the real LVGL/LCD path and chooses `lcd_draw_area(..., wait=1)` plus `lcd_wait()` as the
+  tiny POC candidate API because it matches the non-QSPI branch in the active LVGL flush callback.
+- `pet_display_jieli_real_flush_poc_rect()` and `pet_display_jieli_tiny_flush_poc()` exist, but committed
+  builds return `PET_RESULT_UNSUPPORTED` before touching LCD hardware.
+- Board-test note: a temporary local build with the macro enabled and a non-committed Debug `Tiny` trigger
+  successfully drew the center 8x8 block on hardware and logged `P10_TINY_FLUSH ret=0`; the committed
+  source keeps the macro disabled and does not keep that Debug UI entry.
+- If a later manual board build enables `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1`, the call is still gated by
+  display owner state and an internal manual-arm flag; normal `display_flush` self-tests do not automatically
+  write the panel.
+- `pet2d_boundary_tiny_visual_probe()` verifies the future Pet2D handoff boundary without entering Pet2D
+  runtime or loading resources. With the macro off, it returns `UNSUPPORTED`.
+- Self-test aggregation adds a tiny flush POC case, but run-all marks it skipped so default test execution
+  cannot cause a real LCD write.
+
+P10 still does not:
+- replace the LVGL flush callback or change default MVP-A page behavior;
+- keep a Debug UI entry for tiny flush in the committed default;
+- enable Pet2D runtime, HOME/Observe rendering, dirty rect rendering or full framebuffer allocation;
+- write VM/Flash/syscfg or connect BLE/NFC.

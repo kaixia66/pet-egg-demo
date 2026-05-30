@@ -48,6 +48,9 @@ pet_result_t pet_display_jieli_wait(void *ctx, pet_u32_t timeout_ms);
 pet_result_t pet_display_jieli_get_flush_stats(pet_display_jieli_flush_stats_t *out_stats);
 pet_result_t pet_display_jieli_reset_flush_stats(void);
 pet_result_t pet_display_jieli_flush_self_test(void);
+pet_result_t pet_display_jieli_real_flush_poc_rect(int x, int y, int w, int h,
+                                                   const pet_u16_t *rgb565,
+                                                   int pitch_pixels);
 pet_result_t pet_display_jieli_tiny_flush_poc(void);
 pet_result_t pet_display_jieli_set_brightness(void *ctx, pet_u8_t percent);
 pet_result_t pet_display_jieli_sleep(void *ctx);

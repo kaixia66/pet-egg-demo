@@ -48,6 +48,17 @@ pet_result_t pet_platform_jieli_compile_check_self_tests(void)
     if (pet_display_jieli_get_flush_stats(&flush_stats) != PET_RESULT_OK) {
         return PET_RESULT_ERROR;
     }
+    if ((flush_stats.real_flush_enabled != 0u) ||
+        (flush_stats.tiny_poc_enabled != 0u) ||
+        (flush_stats.real_flush_attempt_count != 0u)) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet_display_jieli_real_flush_poc_rect(0, 0, 1, 1, 0, 1) != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet_display_jieli_tiny_flush_poc() != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
     if (input_ret != PET_RESULT_OK) {
         return input_ret;
     }

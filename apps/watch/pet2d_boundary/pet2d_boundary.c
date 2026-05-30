@@ -101,3 +101,37 @@ pet_result_t pet2d_boundary_resource_probe_self_test(void)
      */
     return pet_resource_jieli_self_test();
 }
+
+pet_result_t pet2d_boundary_tiny_visual_probe(void)
+{
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    const pet_platform_t *platform = pet_platform_jieli_get();
+    pet_display_owner_t original_owner;
+    pet_result_t ret;
+    pet_bool_t acquired_here = PET_FALSE;
+
+    if ((platform == 0) || (platform->display_acquire == 0) ||
+        (platform->display_release == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    original_owner = pet_display_jieli_get_owner();
+    if (original_owner == PET_DISPLAY_OWNER_NONE) {
+        ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
+        acquired_here = PET_TRUE;
+    } else if (original_owner != PET_DISPLAY_OWNER_PET2D) {
+        return PET_RESULT_BUSY;
+    }
+
+    ret = pet_display_jieli_tiny_flush_poc();
+    if (acquired_here == PET_TRUE) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
+    }
+    return ret;
+#else
+    return PET_RESULT_UNSUPPORTED;
+#endif
+}

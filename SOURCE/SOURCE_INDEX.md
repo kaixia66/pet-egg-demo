@@ -206,6 +206,25 @@ path:
 - `SOURCE/10_engineering_reports/p9_display_flush_owner_poc.md`: records LVGL/LCD flush audit,
   diagnostic stats, wait/busy semantics, macro state and remaining hardware risks.
 
+## P10 Tiny Real LCD Flush POC Addendum
+
+P10 keeps the committed default real LCD path disabled while adding the manual-only tiny flush gate:
+
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: extends display flush diagnostic stats with
+  real-attempt counters, driver status, duration and tiny POC gate state; declares the tiny/manual POC APIs.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: keeps
+  `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` defaulting to 0 and declares P10 internal APIs.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: adds manual-armed, owner-guarded tiny RGB565 flush
+  POC plumbing. The committed default does not call LCD driver APIs.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h` and `.c`: add `pet2d_boundary_tiny_visual_probe()` as a
+  manual boundary probe; it returns `UNSUPPORTED` while the real-flush macro is off.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the visual probe without touching
+  hardware.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add the tiny flush POC case and capability bit; run-all
+  reports this case as skipped so it never performs a real panel write.
+- `SOURCE/10_engineering_reports/p10_tiny_real_lcd_flush_poc.md`: records the second LCD API audit, manual
+  enablement steps, acceptance criteria and rollback instructions.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

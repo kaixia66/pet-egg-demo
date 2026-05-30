@@ -3,6 +3,8 @@
 
 PET_STATIC_ASSERT(pet2d_boundary_result_size,
                   sizeof(pet2d_boundary_enter_placeholder()) == sizeof(pet_result_t));
+PET_STATIC_ASSERT(pet2d_boundary_tiny_visual_result_size,
+                  sizeof(pet2d_boundary_tiny_visual_probe()) == sizeof(pet_result_t));
 
 pet_result_t pet2d_boundary_compile_check_self_test(void)
 {
@@ -10,6 +12,10 @@ pet_result_t pet2d_boundary_compile_check_self_test(void)
 
     if (ret != PET_RESULT_OK) {
         return ret;
+    }
+    ret = pet2d_boundary_tiny_visual_probe();
+    if (ret != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
     }
     return pet2d_boundary_resource_probe_self_test();
 }

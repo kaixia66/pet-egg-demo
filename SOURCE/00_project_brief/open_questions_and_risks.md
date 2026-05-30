@@ -204,3 +204,21 @@ Open items:
   authorization and a tiny, bounded smoke test plan.
 - The existing winmk post-build/resource packaging failure remains independent of P9. P9 must not
   modify toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P10 Tiny Real LCD Flush POC Risks
+
+Status: P10 adds a manual-only tiny flush gate and visual probe. A temporary local board-test build
+confirmed a center 8x8 flush can succeed with `ret=0`, but the committed default still does not perform
+real LCD writes.
+
+- The center tiny flush smoke test passed once on the current board. It still needs repeat testing across
+  cold boot, wake/sleep, different LVGL pages and longer observation windows.
+- `lcd_draw_area()` appears to accept `(index, buffer, left, top, width, height, wait)`, but RGB565 byte
+  order, cache maintenance, PSRAM/non-cache address constraints and row/column alignment still need panel
+  validation.
+- The QSPI/ST77903 path uses `lcd_wait_te()`, `lcd_data_copy()` and `lcd_data_copy_wait()`; P10 chooses the
+  simpler `lcd_draw_area()` candidate for manual POC and does not prove the QSPI copy path.
+- LVGL recovery after a manual tiny flush must be board-tested. P10 does not yet define a final policy for
+  restoring or invalidating LVGL content after an out-of-band tiny rectangle write.
+- Entering later Pet2D runtime or broader dirty-rect rendering should depend on successful tiny flush board
+  testing and an explicit owner/flush recovery plan.

@@ -1,10 +1,18 @@
 #include "pet_platform_jieli_internal.h"
 
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+extern int lcd_draw_area(unsigned char index, unsigned char *lcd_buf,
+                         int left, int top, int width, int height, int wait);
+extern void lcd_wait(void);
+extern unsigned int timer_get_ms(void);
+#endif
+
 typedef struct {
     pet_display_owner_t owner;
     pet_bool_t sleeping;
     pet_u8_t brightness;
     pet_bool_t flush_busy;
+    pet_bool_t real_flush_manual_armed;
     pet_display_jieli_flush_stats_t flush_stats;
 } pet_display_jieli_state_t;
 
@@ -16,6 +24,7 @@ void pet_display_jieli_init(void)
     g_pet_display_jieli_state.sleeping = PET_FALSE;
     g_pet_display_jieli_state.brightness = 80u;
     g_pet_display_jieli_state.flush_busy = PET_FALSE;
+    g_pet_display_jieli_state.real_flush_manual_armed = PET_FALSE;
     (void)pet_display_jieli_reset_flush_stats();
 }
 
@@ -112,6 +121,7 @@ pet_result_t pet_display_jieli_flush(void *ctx, const pet_display_rect_t *rect,
     stats->last_owner = (pet_u8_t)g_pet_display_jieli_state.owner;
     stats->last_mode = (pet_u8_t)PET_DISPLAY_FLUSH_MODE_RGB565_RECT;
     stats->real_flush_enabled = (pet_u8_t)PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC;
+    stats->tiny_poc_enabled = (pet_u8_t)PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC;
     stats->busy = (pet_u8_t)g_pet_display_jieli_state.flush_busy;
 
     if (rect != 0) {
@@ -174,10 +184,38 @@ pet_result_t pet_display_jieli_flush(void *ctx, const pet_display_rect_t *rect,
     stats->total_requested_pixels += (pet_u32_t)rect->width * (pet_u32_t)rect->height;
 
 #if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
-    /*
-     * TODO(P9 board authorization): call a confirmed LCD/IMD API only after owner lock,
-     * byte order, alignment and wait semantics are validated on hardware.
-     */
+    {
+        unsigned int start_ms;
+        unsigned int end_ms;
+        int driver_status;
+
+        if (g_pet_display_jieli_state.real_flush_manual_armed != PET_TRUE) {
+            stats->last_real_flush_result = PET_RESULT_NOT_READY;
+            return PET_RESULT_NOT_READY;
+        }
+
+        stats->real_flush_attempt_count++;
+        g_pet_display_jieli_state.flush_busy = PET_TRUE;
+        stats->busy = 1u;
+        start_ms = timer_get_ms();
+        driver_status = lcd_draw_area(0u, (unsigned char *)rgb565_pixels,
+                                      (int)rect->x, (int)rect->y,
+                                      (int)rect->width, (int)rect->height, 1);
+        lcd_wait();
+        end_ms = timer_get_ms();
+        g_pet_display_jieli_state.flush_busy = PET_FALSE;
+        stats->busy = 0u;
+        stats->last_driver_status = (pet_i32_t)driver_status;
+        stats->last_real_flush_duration_ms = (pet_u32_t)(end_ms - start_ms);
+        if (driver_status == 0) {
+            stats->real_flush_success_count++;
+            stats->last_real_flush_result = PET_RESULT_OK;
+            return PET_RESULT_OK;
+        }
+        stats->real_flush_fail_count++;
+        stats->last_real_flush_result = PET_RESULT_ERROR;
+        return PET_RESULT_ERROR;
+    }
 #endif
     /* P9 diagnostic path: real LCD writes remain disabled and LVGL flush is untouched. */
     return PET_RESULT_NOT_READY;
@@ -198,6 +236,7 @@ pet_result_t pet_display_jieli_get_flush_stats(pet_display_jieli_flush_stats_t *
 
     *out_stats = g_pet_display_jieli_state.flush_stats;
     out_stats->real_flush_enabled = (pet_u8_t)PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC;
+    out_stats->tiny_poc_enabled = (pet_u8_t)PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC;
     out_stats->busy = (pet_u8_t)g_pet_display_jieli_state.flush_busy;
     return PET_RESULT_OK;
 }
@@ -218,14 +257,71 @@ pet_result_t pet_display_jieli_reset_flush_stats(void)
     stats->last_mode = (pet_u8_t)PET_DISPLAY_FLUSH_MODE_RGB565_RECT;
     stats->last_owner = (pet_u8_t)g_pet_display_jieli_state.owner;
     stats->real_flush_enabled = (pet_u8_t)PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC;
+    stats->tiny_poc_enabled = (pet_u8_t)PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC;
     stats->busy = (pet_u8_t)g_pet_display_jieli_state.flush_busy;
+    stats->real_flush_attempt_count = 0u;
+    stats->real_flush_success_count = 0u;
+    stats->real_flush_fail_count = 0u;
+    stats->last_real_flush_result = PET_RESULT_UNSUPPORTED;
+    stats->last_driver_status = 0;
+    stats->last_real_flush_duration_ms = 0u;
     return PET_RESULT_OK;
+}
+
+pet_result_t pet_display_jieli_real_flush_poc_rect(int x, int y, int w, int h,
+                                                   const pet_u16_t *rgb565,
+                                                   int pitch_pixels)
+{
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    const pet_platform_t *platform = pet_platform_jieli_get();
+    pet_display_rect_t rect;
+    pet_result_t ret;
+
+    if ((platform == 0) || (platform->display_flush == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    if ((x < 0) || (y < 0) || (w <= 0) || (h <= 0) || (pitch_pixels < w) ||
+        (rgb565 == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    rect.x = (pet_u16_t)x;
+    rect.y = (pet_u16_t)y;
+    rect.width = (pet_u16_t)w;
+    rect.height = (pet_u16_t)h;
+    g_pet_display_jieli_state.real_flush_manual_armed = PET_TRUE;
+    ret = platform->display_flush(platform->ctx, &rect, rgb565,
+                                  (pet_u32_t)pitch_pixels * PET_RGB565_BYTES_PER_PIXEL);
+    g_pet_display_jieli_state.real_flush_manual_armed = PET_FALSE;
+    return ret;
+#else
+    (void)x;
+    (void)y;
+    (void)w;
+    (void)h;
+    (void)rgb565;
+    (void)pitch_pixels;
+    return PET_RESULT_UNSUPPORTED;
+#endif
 }
 
 pet_result_t pet_display_jieli_tiny_flush_poc(void)
 {
 #if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
-    return PET_RESULT_NOT_READY;
+    static const pet_u16_t k_pixels[64] = {
+        0xF800u, 0xF800u, 0xF800u, 0xF800u, 0x07E0u, 0x07E0u, 0x07E0u, 0x07E0u,
+        0xF800u, 0xF800u, 0xF800u, 0xF800u, 0x07E0u, 0x07E0u, 0x07E0u, 0x07E0u,
+        0xF800u, 0xF800u, 0xF800u, 0xF800u, 0x07E0u, 0x07E0u, 0x07E0u, 0x07E0u,
+        0xF800u, 0xF800u, 0xF800u, 0xF800u, 0x07E0u, 0x07E0u, 0x07E0u, 0x07E0u,
+        0x001Fu, 0x001Fu, 0x001Fu, 0x001Fu, 0xFFFFu, 0xFFFFu, 0xFFFFu, 0xFFFFu,
+        0x001Fu, 0x001Fu, 0x001Fu, 0x001Fu, 0xFFFFu, 0xFFFFu, 0xFFFFu, 0xFFFFu,
+        0x001Fu, 0x001Fu, 0x001Fu, 0x001Fu, 0xFFFFu, 0xFFFFu, 0xFFFFu, 0xFFFFu,
+        0x001Fu, 0x001Fu, 0x001Fu, 0x001Fu, 0xFFFFu, 0xFFFFu, 0xFFFFu, 0xFFFFu
+    };
+
+    return pet_display_jieli_real_flush_poc_rect((PET_JIELI_DISPLAY_WIDTH / 2) - 4,
+                                                 (PET_JIELI_DISPLAY_HEIGHT / 2) - 4,
+                                                 8, 8, k_pixels, 8);
 #else
     return PET_RESULT_UNSUPPORTED;
 #endif
@@ -460,11 +556,15 @@ pet_result_t pet_display_jieli_flush_self_test(void)
         (stats.rejected_count != 4u) ||
         (stats.busy_count != 1u) ||
         (stats.total_requested_pixels != 4u) ||
+        (stats.real_flush_attempt_count != 0u) ||
+        (stats.real_flush_success_count != 0u) ||
+        (stats.real_flush_fail_count != 0u) ||
         (stats.last_x != (pet_i16_t)rect.x) ||
         (stats.last_y != (pet_i16_t)rect.y) ||
         (stats.last_w != rect.width) ||
         (stats.last_h != rect.height) ||
         (stats.last_pitch_pixels != 1u) ||
+        (stats.tiny_poc_enabled != 0u) ||
         (stats.real_flush_enabled != 0u)) {
         (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
         return PET_RESULT_ERROR;

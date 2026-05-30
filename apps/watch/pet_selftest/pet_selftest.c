@@ -59,6 +59,15 @@ static pet_result_t pet_selftest_platform_hal(void)
     return PET_RESULT_OK;
 }
 
+static pet_result_t pet_selftest_display_tiny_flush_poc_gate(void)
+{
+    /*
+     * The real tiny LCD probe is manual-only. run_all records this case as skipped
+     * so PET_PLATFORM_JIELI_TEST cannot unexpectedly write the panel.
+     */
+    return PET_RESULT_UNSUPPORTED;
+}
+
 static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
 {
     static const pet_selftest_fn_t k_tests[PET_SELFTEST_MAX] = {
@@ -67,6 +76,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_platform_jieli_display_self_test,
         pet_display_jieli_owner_self_test,
         pet_display_jieli_flush_self_test,
+        pet_selftest_display_tiny_flush_poc_gate,
         pet_platform_jieli_input_self_test,
         pet2d_boundary_self_test,
         pet_resource_jieli_self_test,
@@ -93,6 +103,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "display_profile",
         "display_owner",
         "display_flush_owner",
+        "display_tiny_flush_poc",
         "input_mapping",
         "render_owner_boundary",
         "resource_manifest",
@@ -168,6 +179,7 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->has_display_profile = 1u;
     out_snapshot->has_display_owner = 1u;
     out_snapshot->has_display_flush_owner_guard = 1u;
+    out_snapshot->has_tiny_lcd_flush_poc_gate = 1u;
     out_snapshot->has_input_mapping = 1u;
     out_snapshot->has_render_owner_boundary = 1u;
     out_snapshot->has_resource_manifest_adapter = 1u;

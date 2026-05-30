@@ -123,6 +123,17 @@ manual, macro-gated and authorized by a later hardware task. P9 must not enable 
 a full framebuffer, change MVP-A default pages, write VM/Flash/syscfg, connect BLE/NFC or submit build
 byproducts.
 
+## PetEgg P10 Tiny Real LCD Flush POC Rule
+
+P10 is a tiny, manual-only LCD flush POC phase. `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` must still default
+to 0 in committed source. Any real flush attempt must be explicitly macro-gated, manually triggered, and
+guarded by display owner state; it must not run from boot, the default LVGL page, or platform run-all
+self-tests.
+
+Do not replace the LVGL flush callback, change `lv_port_disp.c` default behavior, enable Pet2D runtime,
+allocate a full framebuffer, or render HOME/Observe scenes in P10. Manual board tests must first confirm
+owner state and use only a tiny caller-owned RGB565 rectangle.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。
