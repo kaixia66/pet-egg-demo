@@ -1,6 +1,7 @@
 #include "pet2d_boundary.h"
 #include "pet2d_dirty_rect_poc.h"
 #include "pet2d_minimal_visual.h"
+#include "pet2d_resource_sprite_poc.h"
 #include "pet_platform_jieli.h"
 
 PET_STATIC_ASSERT(pet2d_boundary_result_size,
@@ -11,6 +12,8 @@ PET_STATIC_ASSERT(pet2d_minimal_visual_surface_size,
                   sizeof(pet2d_minimal_surface_t) >= (sizeof(pet_u16_t) * 4u));
 PET_STATIC_ASSERT(pet2d_dirty_rect_repeat_limit,
                   PET2D_DIRTY_RECT_REPEAT_MAX <= 60u);
+PET_STATIC_ASSERT(pet2d_resource_sprite_view_has_id,
+                  sizeof(pet2d_resource_sprite_view_t) >= (sizeof(pet_u16_t) * 4u));
 
 pet_result_t pet2d_boundary_compile_check_self_test(void)
 {
@@ -40,6 +43,18 @@ pet_result_t pet2d_boundary_compile_check_self_test(void)
         return PET_RESULT_ERROR;
     }
     ret = pet2d_boundary_repeated_flush_gate_self_test();
+    if (ret != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
+    ret = pet2d_resource_sprite_poc_self_test();
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_boundary_resource_sprite_flush_probe();
+    if (ret != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
+    ret = pet2d_boundary_resource_sprite_gate_self_test();
     if (ret != PET_RESULT_UNSUPPORTED) {
         return PET_RESULT_ERROR;
     }

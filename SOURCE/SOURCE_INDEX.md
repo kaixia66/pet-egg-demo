@@ -260,6 +260,26 @@ real LCD path disabled:
 - `SOURCE/10_engineering_reports/p12_repeated_flush_dirty_rect_poc.md`: records the hardware scope change,
   dirty-rect helper design, repeated-probe behavior, safety boundaries and board-test plan/results.
 
+## P13 Resource Sprite To Minimal Surface POC Addendum
+
+P13 connects the P5 test resource fixture to the Pet2D boundary's small RGB565 surfaces while keeping
+formal resources, external Flash and full Pet2D runtime disabled:
+
+- `apps/watch/pet2d_boundary/pet2d_resource_sprite_poc.h` and `.c`: open P5 fixture resources 1001 and
+  2001, validate their RGB565 sprite metadata, expose a sprite view, and blit raw pixels into a
+  caller-owned minimal surface with clipping.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h` and `.c`: add resource-sprite visual probe stats and a
+  manual resource-derived flush probe. With the committed real-flush macro off, the probe returns
+  `UNSUPPORTED` before touching LCD hardware.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the sprite view helper, blit
+  self-test and manual probe gate.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: includes the P13 helper in the
+  platform compile-check path without enabling real hardware.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add the resource-sprite surface case and capability
+  bit. run-all validates resource lookup and blit behavior, then skips the real panel write gate.
+- `SOURCE/10_engineering_reports/p13_resource_sprite_minimal_surface_poc.md`: records fixture IDs,
+  resource->surface behavior, manual board-test plan and P13 boundaries.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

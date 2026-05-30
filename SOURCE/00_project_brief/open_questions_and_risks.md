@@ -268,3 +268,27 @@ Open items:
 - Resource sprite to RGB565 surface conversion remains disconnected; P12 patterns are procedural fixtures.
 - The existing winmk post-build/resource packaging failure remains independent of P12. P12 must not modify
   toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P13 Resource Sprite To Minimal Surface POC Risks
+
+Status: P13 connects the P5 in-memory test resource fixture to the minimal Pet2D-boundary surface and
+manual flush gate. A temporary board build displayed the resource-derived pattern once with `ret=0`, but
+it does not prove the production resource package, external Flash path or full Pet2D runtime.
+
+Current hardware scope adjustment remains unchanged:
+- The available development board has no NFC and no speaker, and only one board is available. Real NFC,
+  real audio/SFX and real BLE two-board link validation remain Future Scope.
+
+Open items:
+- P13 validates only fixture resource IDs 1001 and 2001. It does not prove formal manifest generation,
+  sprite metadata completeness, palette/transparent color rules, RLE/compression or multi-frame assets.
+- The resource data is treated as raw RGB565. Production resources still need byte-order, alignment,
+  compression and IMB-readable address validation.
+- External Flash/NOR/SFC/`flash_file_info` reading remains disconnected; P13 uses only the compiled P5
+  test blob.
+- Resource-derived flush is still manual-only and macro-gated. Repeated sprite flush, movement, LVGL
+  recovery and performance remain future work.
+- The bridge from resource sprite views into a full Pet2D runtime, scene graph, dirty-rect scheduler and
+  HOME/Observe rendering is not implemented.
+- The existing winmk post-build/resource packaging failure remains independent of P13. P13 must not modify
+  toolchain paths, resource scripts or download packaging to mask that environment issue.

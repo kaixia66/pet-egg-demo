@@ -20,6 +20,7 @@ typedef enum {
     PET_SELFTEST_REPEATED_FLUSH_GATE,
     PET_SELFTEST_RESOURCE_MANIFEST,
     PET_SELFTEST_PET2D_RESOURCE_PROBE,
+    PET_SELFTEST_RESOURCE_SPRITE_SURFACE,
     PET_SELFTEST_SAVE_TRANSACTION,
     PET_SELFTEST_PROTOCOL_PACKET,
     PET_SELFTEST_BLE_LOOPBACK,
@@ -48,6 +49,7 @@ typedef struct {
     pet_u8_t has_render_owner_boundary;
     pet_u8_t has_pet2d_minimal_visual_probe_gate;
     pet_u8_t has_dirty_rect_poc_gate;
+    pet_u8_t has_resource_sprite_surface_probe_gate;
     pet_u8_t has_resource_manifest_adapter;
     pet_u8_t has_save_transaction_adapter;
     pet_u8_t has_protocol_helper;

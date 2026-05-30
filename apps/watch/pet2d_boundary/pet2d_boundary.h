@@ -2,6 +2,7 @@
 #define PET2D_BOUNDARY_H
 
 #include "pet2d_dirty_rect_poc.h"
+#include "pet2d_resource_sprite_poc.h"
 #include "pet_platform.h"
 
 #ifdef __cplusplus
@@ -47,6 +48,24 @@ pet_result_t pet2d_boundary_get_repeated_flush_stats(
     pet2d_boundary_repeated_flush_stats_t *out_stats);
 pet_result_t pet2d_boundary_reset_repeated_flush_stats(void);
 pet_result_t pet2d_boundary_repeated_flush_gate_self_test(void);
+
+typedef struct {
+    pet_u32_t resource_sprite_probe_attempt_count;
+    pet_u32_t resource_sprite_probe_success_count;
+    pet_u32_t resource_sprite_probe_fail_count;
+    pet_u32_t last_resource_id;
+    pet_u16_t last_surface_w;
+    pet_u16_t last_surface_h;
+    pet_u16_t last_sprite_w;
+    pet_u16_t last_sprite_h;
+    pet_result_t last_result;
+} pet2d_boundary_resource_sprite_stats_t;
+
+pet_result_t pet2d_boundary_resource_sprite_flush_probe(void);
+pet_result_t pet2d_boundary_resource_sprite_gate_self_test(void);
+pet_result_t pet2d_boundary_get_resource_sprite_stats(
+    pet2d_boundary_resource_sprite_stats_t *out_stats);
+pet_result_t pet2d_boundary_reset_resource_sprite_stats(void);
 
 #ifdef __cplusplus
 }

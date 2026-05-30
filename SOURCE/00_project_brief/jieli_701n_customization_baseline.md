@@ -327,3 +327,32 @@ P12 still does not:
 - allocate a full framebuffer;
 - replace LVGL flush or change MVP-A default page behavior;
 - write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.
+
+## P13 Resource Sprite To Minimal Pet2D Surface POC Status
+
+Status: implemented as a P5 fixture-to-surface bridge in source; real resource-derived LCD writes remain
+manual-only and the committed source keeps `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0,
+`real_lcd_flush_enabled` at 0 and `pet2d_runtime_enabled` at 0.
+
+Current capability:
+- `apps/watch/pet2d_boundary/pet2d_resource_sprite_poc.*` opens the P5 static test blob, validates RGB565
+  SPRITE entries and exposes resource 2001 as a 4x4 sprite view and resource 1001 as an 8x8
+  background-role fixture view.
+- `pet2d_minimal_visual_blit_sprite()` copies raw RGB565 fixture pixels into caller-owned minimal
+  surfaces with clipping. It does not use transparency, malloc, file IO, Flash IO or image decoding.
+- `pet2d_boundary_resource_sprite_flush_probe()` is a manual-only resource-derived visual probe. With
+  the committed macro off it returns `PET_RESULT_UNSUPPORTED` before touching the LCD.
+- The self-test aggregator adds a resource-sprite surface case and capability bit while still skipping
+  real panel writes in run-all.
+- Board-test note: a temporary macro-enabled build with a non-committed Debug `P13` / `Resource` action
+  successfully displayed the resource-derived 32x32 pattern on hardware and logged
+  `[P13_RESOURCE_SPRITE] debug trigger ret=0`. The committed source keeps the macro disabled and does
+  not keep that Debug UI entry.
+
+P13 still does not:
+- enable the complete Pet2D runtime, HOME/Observe, background scrolling or sprite animation;
+- load formal production resources or read external Flash/NOR/SFC/`flash_file_info`;
+- parse runtime PNG/JPG/GIF/JSON;
+- allocate a full framebuffer;
+- replace LVGL flush or change MVP-A default page behavior;
+- write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.

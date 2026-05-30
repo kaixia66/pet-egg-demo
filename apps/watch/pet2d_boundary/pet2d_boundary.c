@@ -1,12 +1,31 @@
 #include "pet2d_boundary.h"
 #include "pet2d_dirty_rect_poc.h"
 #include "pet2d_minimal_visual.h"
+#include "pet2d_resource_sprite_poc.h"
 #include "pet_platform_jieli_internal.h"
 #include "pet_resource_jieli.h"
 
 extern int printf(const char *format, ...);
 
 static pet2d_boundary_repeated_flush_stats_t g_pet2d_repeated_flush_stats;
+static pet2d_boundary_resource_sprite_stats_t g_pet2d_resource_sprite_stats;
+
+static void pet2d_boundary_record_resource_sprite_result(
+    const pet2d_minimal_surface_t *surface,
+    const pet2d_resource_sprite_view_t *sprite,
+    pet_result_t result)
+{
+    if (sprite != 0) {
+        g_pet2d_resource_sprite_stats.last_resource_id = sprite->resource_id;
+        g_pet2d_resource_sprite_stats.last_sprite_w = sprite->width;
+        g_pet2d_resource_sprite_stats.last_sprite_h = sprite->height;
+    }
+    if (surface != 0) {
+        g_pet2d_resource_sprite_stats.last_surface_w = surface->width;
+        g_pet2d_resource_sprite_stats.last_surface_h = surface->height;
+    }
+    g_pet2d_resource_sprite_stats.last_result = result;
+}
 
 static void pet2d_boundary_record_repeated_result(const pet2d_repeated_flush_config_t *config,
                                                   pet_u16_t size,
@@ -49,6 +68,28 @@ pet_result_t pet2d_boundary_get_repeated_flush_stats(
         return PET_RESULT_INVALID_ARGUMENT;
     }
     *out_stats = g_pet2d_repeated_flush_stats;
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_boundary_reset_resource_sprite_stats(void)
+{
+    pet_u8_t *bytes = (pet_u8_t *)&g_pet2d_resource_sprite_stats;
+    pet_u32_t i;
+
+    for (i = 0u; i < (pet_u32_t)sizeof(g_pet2d_resource_sprite_stats); i++) {
+        bytes[i] = 0u;
+    }
+    g_pet2d_resource_sprite_stats.last_result = PET_RESULT_NOT_READY;
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_boundary_get_resource_sprite_stats(
+    pet2d_boundary_resource_sprite_stats_t *out_stats)
+{
+    if (out_stats == 0) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    *out_stats = g_pet2d_resource_sprite_stats;
     return PET_RESULT_OK;
 }
 
@@ -423,6 +464,136 @@ pet_result_t pet2d_boundary_repeated_flush_gate_self_test(void)
         return PET_RESULT_ERROR;
     }
     if (stats.repeated_probe_attempt_count != 0u) {
+        return PET_RESULT_ERROR;
+    }
+    return PET_RESULT_UNSUPPORTED;
+#endif
+}
+
+pet_result_t pet2d_boundary_resource_sprite_flush_probe(void)
+{
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    const pet_platform_t *platform = pet_platform_jieli_get();
+    pet_display_owner_t original_owner;
+    pet_result_t ret;
+    pet_bool_t acquired_here = PET_FALSE;
+    static pet_u16_t pixels[PET2D_DIRTY_RECT_SIZE_32 * PET2D_DIRTY_RECT_SIZE_32];
+    pet2d_minimal_surface_t surface;
+    pet2d_resource_sprite_view_t sprite;
+    pet2d_resource_sprite_view_t background;
+    int x;
+    int y;
+
+    if ((platform == 0) || (platform->display_acquire == 0) ||
+        (platform->display_release == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    surface.width = PET2D_DIRTY_RECT_SIZE_32;
+    surface.height = PET2D_DIRTY_RECT_SIZE_32;
+    surface.pitch_pixels = PET2D_DIRTY_RECT_SIZE_32;
+    surface.pixels = pixels;
+
+    ret = pet2d_dirty_rect_poc_fill_pattern(PET2D_DIRTY_RECT_PATTERN_32, &surface);
+    if (ret != PET_RESULT_OK) {
+        pet2d_boundary_record_resource_sprite_result(&surface, 0, ret);
+        return ret;
+    }
+    ret = pet2d_resource_sprite_poc_open(PET2D_RESOURCE_SPRITE_POC_ID_8X8, &background);
+    if (ret != PET_RESULT_OK) {
+        pet2d_boundary_record_resource_sprite_result(&surface, 0, ret);
+        return ret;
+    }
+    ret = pet2d_minimal_visual_blit_sprite(&surface, 4, 4, &background);
+    if (ret != PET_RESULT_OK) {
+        pet2d_boundary_record_resource_sprite_result(&surface, &background, ret);
+        return ret;
+    }
+    ret = pet2d_resource_sprite_poc_open(PET2D_RESOURCE_SPRITE_POC_ID_4X4, &sprite);
+    if (ret != PET_RESULT_OK) {
+        pet2d_boundary_record_resource_sprite_result(&surface, &background, ret);
+        return ret;
+    }
+    ret = pet2d_minimal_visual_blit_sprite(&surface,
+                                           ((int)surface.width - (int)sprite.width) / 2,
+                                           ((int)surface.height - (int)sprite.height) / 2,
+                                           &sprite);
+    if (ret != PET_RESULT_OK) {
+        pet2d_boundary_record_resource_sprite_result(&surface, &sprite, ret);
+        return ret;
+    }
+
+    original_owner = pet_display_jieli_get_owner();
+    if (original_owner == PET_DISPLAY_OWNER_NONE) {
+        ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
+        if (ret != PET_RESULT_OK) {
+            pet2d_boundary_record_resource_sprite_result(&surface, &sprite, ret);
+            return ret;
+        }
+        acquired_here = PET_TRUE;
+    } else if (original_owner != PET_DISPLAY_OWNER_PET2D) {
+        g_pet2d_resource_sprite_stats.resource_sprite_probe_fail_count++;
+        pet2d_boundary_record_resource_sprite_result(&surface, &sprite, PET_RESULT_BUSY);
+        return PET_RESULT_BUSY;
+    }
+
+    g_pet2d_resource_sprite_stats.resource_sprite_probe_attempt_count++;
+    x = ((int)PET_JIELI_DISPLAY_WIDTH - (int)surface.width) / 2;
+    y = ((int)PET_JIELI_DISPLAY_HEIGHT - (int)surface.height) / 2;
+    ret = pet_display_jieli_real_flush_poc_rect(x, y,
+                                                surface.width,
+                                                surface.height,
+                                                surface.pixels,
+                                                surface.pitch_pixels);
+    if (ret == PET_RESULT_OK) {
+        g_pet2d_resource_sprite_stats.resource_sprite_probe_success_count++;
+    } else {
+        g_pet2d_resource_sprite_stats.resource_sprite_probe_fail_count++;
+    }
+    pet2d_boundary_record_resource_sprite_result(&surface, &sprite, ret);
+
+    if (acquired_here == PET_TRUE) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
+    }
+    return ret;
+#else
+    return PET_RESULT_UNSUPPORTED;
+#endif
+}
+
+pet_result_t pet2d_boundary_resource_sprite_gate_self_test(void)
+{
+    pet2d_boundary_resource_sprite_stats_t stats;
+    pet_result_t ret;
+
+    ret = pet2d_resource_sprite_poc_self_test();
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    if (pet2d_boundary_reset_resource_sprite_stats() != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_boundary_get_resource_sprite_stats(&stats) != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (stats.resource_sprite_probe_attempt_count != 0u) {
+        return PET_RESULT_ERROR;
+    }
+
+    ret = pet2d_boundary_resource_sprite_flush_probe();
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    if ((ret != PET_RESULT_OK) && (ret != PET_RESULT_BUSY)) {
+        return ret;
+    }
+    return PET_RESULT_UNSUPPORTED;
+#else
+    if (ret != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_boundary_get_resource_sprite_stats(&stats) != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (stats.resource_sprite_probe_attempt_count != 0u) {
         return PET_RESULT_ERROR;
     }
     return PET_RESULT_UNSUPPORTED;
