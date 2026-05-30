@@ -1,9 +1,9 @@
 #include "pet_display_profile.h"
+#include "pet2d_boundary.h"
+#include "pet2d_minimal_visual.h"
 #include "pet_platform.h"
 #include "pet_platform_jieli.h"
 #include "pet_protocol_jieli.h"
-
-pet_result_t pet2d_boundary_self_test(void);
 
 PET_STATIC_ASSERT(jieli_platform_pointer_size,
                   sizeof(pet_platform_jieli_get()) == sizeof(const pet_platform_t *));
@@ -57,6 +57,12 @@ pet_result_t pet_platform_jieli_compile_check_self_tests(void)
         return PET_RESULT_ERROR;
     }
     if (pet_display_jieli_tiny_flush_poc() != PET_RESULT_UNSUPPORTED) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_minimal_visual_self_test() != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_boundary_minimal_real_flush_probe() != PET_RESULT_UNSUPPORTED) {
         return PET_RESULT_ERROR;
     }
     if (input_ret != PET_RESULT_OK) {

@@ -267,3 +267,29 @@ P10 still does not:
 - keep a Debug UI entry for tiny flush in the committed default;
 - enable Pet2D runtime, HOME/Observe rendering, dirty rect rendering or full framebuffer allocation;
 - write VM/Flash/syscfg or connect BLE/NFC.
+
+## P11 Pet2D Minimal Real Flush POC Status
+
+Status: implemented as a minimal Pet2D-boundary visual surface and manual real-flush probe gate. Committed
+source still keeps `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0.
+
+- `apps/watch/pet2d_boundary/pet2d_minimal_visual.*` can fill a caller-owned 16x16 RGB565 surface with a
+  white border, red/green/blue/black quadrants and yellow/magenta diagonals for visual direction and
+  byte-order smoke testing.
+- `pet2d_boundary_minimal_real_flush_probe()` is a manual-only boundary entry. With the committed macro
+  off it returns `PET_RESULT_UNSUPPORTED`; with a local macro-enabled board build it acquires PET2D owner,
+  draws the 16x16 pattern at screen center through the P10 rectangle flush API, and releases the owner.
+- Board-test note: a temporary local build with the macro enabled and a non-committed Debug `P11` trigger
+  successfully displayed the small center pattern on hardware and logged `[P11_MINIMAL_VISUAL] debug
+  trigger ret=0`; the committed source keeps the macro disabled and does not keep that Debug UI entry.
+- The self-test aggregator now has a minimal visual gate case and capability bit. run-all validates the
+  pattern helper but skips the real panel write path.
+
+P11 still does not:
+- enable the complete Pet2D runtime, HOME/Observe, background scrolling, sprite animation or dirty-rect
+  scheduling;
+- load formal resources or parse runtime image/JSON formats;
+- allocate a full framebuffer;
+- replace LVGL flush or change MVP-A default page behavior;
+- write VM/Flash/syscfg or connect BLE/NFC.

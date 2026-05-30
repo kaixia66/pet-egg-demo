@@ -134,6 +134,17 @@ Do not replace the LVGL flush callback, change `lv_port_disp.c` default behavior
 allocate a full framebuffer, or render HOME/Observe scenes in P10. Manual board tests must first confirm
 owner state and use only a tiny caller-owned RGB565 rectangle.
 
+## PetEgg P11 Pet2D Minimal Real Flush POC Rule
+
+P11 is a Pet2D-boundary minimal visual POC phase, not the Pet2D runtime. It may generate a small
+caller-owned RGB565 test surface, such as 16x16, and expose a manual boundary probe that uses the P10
+gated real-flush path only when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is explicitly enabled for a local
+board test. The committed default must keep that macro at 0.
+
+Do not render HOME/Observe, load formal resources, parse PNG/JPG/GIF/JSON, allocate a full framebuffer,
+replace the LVGL flush callback, or change MVP-A default pages in P11. Temporary Debug UI triggers for
+manual board tests must be removed before commit, and build byproducts must stay out of commits.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

@@ -222,3 +222,21 @@ real LCD writes.
   restoring or invalidating LVGL content after an out-of-band tiny rectangle write.
 - Entering later Pet2D runtime or broader dirty-rect rendering should depend on successful tiny flush board
   testing and an explicit owner/flush recovery plan.
+
+## P11 Pet2D Minimal Real Flush POC Risks
+
+Status: P11 adds a 16x16 RGB565 minimal visual helper and manual Pet2D-boundary flush probe gate. A
+temporary macro-enabled board test displayed the center pattern with `ret=0`, while the committed default
+still skips real LCD writes and does not enable Pet2D runtime.
+
+- The minimal pattern is only a smoke-test surface. It does not prove HOME/Observe rendering, sprite
+  animation, resource streaming, dirty-rect scheduling or frame pacing.
+- RGB565 byte order can be visually inspected with the quadrant/diagonal pattern, but it still needs repeat
+  confirmation before larger rendering phases.
+- Dirty-rect alignment, even coordinate constraints, row stride and larger 32x32 or repeated flush behavior
+  remain untested.
+- LVGL recovery after out-of-band Pet2D-boundary writes still needs a final policy for invalidation,
+  owner handoff and page restoration.
+- The resource-to-surface path is not connected. P11 generates pixels procedurally and does not load
+  sprites from the P5 manifest adapter or formal Jieli resource tools.
+- Any temporary Debug UI trigger used for board testing must remain local and must not be committed.

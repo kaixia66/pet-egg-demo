@@ -1,4 +1,5 @@
 #include "pet2d_boundary.h"
+#include "pet2d_minimal_visual.h"
 #include "pet_platform_jieli_internal.h"
 #include "pet_resource_jieli.h"
 
@@ -127,6 +128,60 @@ pet_result_t pet2d_boundary_tiny_visual_probe(void)
     }
 
     ret = pet_display_jieli_tiny_flush_poc();
+    if (acquired_here == PET_TRUE) {
+        (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
+    }
+    return ret;
+#else
+    return PET_RESULT_UNSUPPORTED;
+#endif
+}
+
+pet_result_t pet2d_boundary_minimal_real_flush_probe(void)
+{
+#if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
+    const pet_platform_t *platform = pet_platform_jieli_get();
+    pet_display_owner_t original_owner;
+    pet_result_t ret;
+    pet_bool_t acquired_here = PET_FALSE;
+    static pet_u16_t pixels[PET2D_MINIMAL_VISUAL_WIDTH * PET2D_MINIMAL_VISUAL_HEIGHT];
+    pet2d_minimal_surface_t surface;
+    int x;
+    int y;
+
+    if ((platform == 0) || (platform->display_acquire == 0) ||
+        (platform->display_release == 0)) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+
+    surface.width = PET2D_MINIMAL_VISUAL_WIDTH;
+    surface.height = PET2D_MINIMAL_VISUAL_HEIGHT;
+    surface.pitch_pixels = PET2D_MINIMAL_VISUAL_WIDTH;
+    surface.pixels = pixels;
+
+    ret = pet2d_minimal_visual_fill_test_pattern(&surface);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
+    original_owner = pet_display_jieli_get_owner();
+    if (original_owner == PET_DISPLAY_OWNER_NONE) {
+        ret = platform->display_acquire(platform->ctx, PET_DISPLAY_OWNER_PET2D, 0u);
+        if (ret != PET_RESULT_OK) {
+            return ret;
+        }
+        acquired_here = PET_TRUE;
+    } else if (original_owner != PET_DISPLAY_OWNER_PET2D) {
+        return PET_RESULT_BUSY;
+    }
+
+    x = ((int)PET_JIELI_DISPLAY_WIDTH - (int)PET2D_MINIMAL_VISUAL_WIDTH) / 2;
+    y = ((int)PET_JIELI_DISPLAY_HEIGHT - (int)PET2D_MINIMAL_VISUAL_HEIGHT) / 2;
+    ret = pet_display_jieli_real_flush_poc_rect(x, y,
+                                                PET2D_MINIMAL_VISUAL_WIDTH,
+                                                PET2D_MINIMAL_VISUAL_HEIGHT,
+                                                pixels,
+                                                PET2D_MINIMAL_VISUAL_WIDTH);
     if (acquired_here == PET_TRUE) {
         (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
     }

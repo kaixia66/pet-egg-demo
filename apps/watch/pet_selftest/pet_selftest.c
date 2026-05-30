@@ -1,6 +1,7 @@
 #include "pet_selftest.h"
 
 #include "pet2d_boundary.h"
+#include "pet2d_minimal_visual.h"
 #include "pet_protocol_jieli.h"
 #include "pet_resource_jieli.h"
 #include "pet_save_jieli.h"
@@ -68,6 +69,21 @@ static pet_result_t pet_selftest_display_tiny_flush_poc_gate(void)
     return PET_RESULT_UNSUPPORTED;
 }
 
+static pet_result_t pet_selftest_pet2d_minimal_real_flush_gate(void)
+{
+    pet_result_t ret = pet2d_minimal_visual_self_test();
+
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    /*
+     * The minimal real-flush probe is a manual board-test entry. The
+     * aggregator validates the 16x16 pattern helper, then records the real
+     * panel path as skipped so run_all cannot write the LCD.
+     */
+    return PET_RESULT_UNSUPPORTED;
+}
+
 static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
 {
     static const pet_selftest_fn_t k_tests[PET_SELFTEST_MAX] = {
@@ -79,6 +95,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_selftest_display_tiny_flush_poc_gate,
         pet_platform_jieli_input_self_test,
         pet2d_boundary_self_test,
+        pet_selftest_pet2d_minimal_real_flush_gate,
         pet_resource_jieli_self_test,
         pet2d_boundary_resource_probe_self_test,
         pet_save_jieli_self_test,
@@ -106,6 +123,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "display_tiny_flush_poc",
         "input_mapping",
         "render_owner_boundary",
+        "pet2d_minimal_real_flush_gate",
         "resource_manifest",
         "pet2d_resource_probe",
         "save_transaction",
@@ -182,6 +200,7 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->has_tiny_lcd_flush_poc_gate = 1u;
     out_snapshot->has_input_mapping = 1u;
     out_snapshot->has_render_owner_boundary = 1u;
+    out_snapshot->has_pet2d_minimal_visual_probe_gate = 1u;
     out_snapshot->has_resource_manifest_adapter = 1u;
     out_snapshot->has_save_transaction_adapter = 1u;
     out_snapshot->has_protocol_helper = 1u;

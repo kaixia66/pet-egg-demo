@@ -225,6 +225,24 @@ P10 keeps the committed default real LCD path disabled while adding the manual-o
 - `SOURCE/10_engineering_reports/p10_tiny_real_lcd_flush_poc.md`: records the second LCD API audit, manual
   enablement steps, acceptance criteria and rollback instructions.
 
+## P11 Pet2D Minimal Real Flush POC Addendum
+
+P11 adds a minimal Pet2D-boundary RGB565 visual surface while keeping the committed real LCD path
+disabled:
+
+- `apps/watch/pet2d_boundary/pet2d_minimal_visual.h` and `.c`: define a caller-owned 16x16 RGB565 surface
+  helper and self-test. The pattern has a white border, quadrant colors and diagonal lines so direction
+  and RGB565 byte-order issues are easier to spot on hardware.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h` and `.c`: add
+  `pet2d_boundary_minimal_real_flush_probe()`, a manual probe that acquires PET2D owner and calls the P10
+  real-flush rectangle API only when the real-flush macro is enabled for a local board build.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the minimal helper and manual
+  probe without touching hardware in the committed default.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add a minimal visual gate case and capability bit.
+  run-all validates the 16x16 pattern helper but reports the real panel path as skipped.
+- `SOURCE/10_engineering_reports/p11_pet2d_minimal_real_flush_poc.md`: records helper design, test pattern,
+  manual probe gate, safety boundaries and manual board-test plan.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 
