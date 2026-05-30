@@ -413,3 +413,41 @@ P15 still does not:
 - enable full Pet2D runtime, HOME/Observe, background scrolling, formal resources or external Flash;
 - allocate a full framebuffer, replace LVGL flush or change MVP-A default page behavior;
 - write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.
+
+## P16 Real Resource Package / External Flash Read POC Status
+
+Status: implemented as a read-only SDK resource path audit and adapter skeleton. It does not generate or
+download a production PetEgg resource package.
+
+Current capability:
+- The SDK audit identifies two safe read candidates: `res_fopen/res_fread/res_flen/res_fclose` for
+  ordinary resource-file reads, and `ui_res_flash_info_get`/`flash_file_info` for UI/IMB flash mapping
+  when a packaged UI resource already exists.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_real.*` provides a read-only real package probe. The
+  default path is `storage/virfat_flash/C/petegg/manifest.bin`; it reads only the manifest header and
+  validates magic/version/table bounds before reporting availability.
+- If the package is absent, the adapter returns `PET_RESULT_NOT_FOUND` and the self-test aggregator marks
+  `PET_SELFTEST_RESOURCE_PACKAGE_PROBE` as skipped rather than failing the platform snapshot.
+- No `manifest.bin`, `sprites.pak` or `anim_table.bin` package was found in the current committed source
+  or generated `download/watch` output. A later generator/download task is still required before real
+  PetEgg package bytes can be validated.
+- A temporary board-only Debug action triggered the read-only package probe on COM3. It returned
+  `PET_RESULT_NOT_FOUND` (`12`) for both probe info and package probe, did not write Flash, and did not
+  show panic/assert/WDT/HardFault/exception during the watch window.
+- The temporary Debug action was removed from source after the board probe. A restored final-safe package
+  was generated, but the SDK reported the device offline during that last package/download step; no
+  further download attempt was made by user instruction.
+
+Committed safety state:
+- `real_resource_package_available = 0` unless a real package is already present on a board.
+- `external_flash_resource_enabled = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `pet2d_runtime_enabled = 0`.
+
+P16 still does not:
+- write external Flash, VM, syscfg or files;
+- change resource packaging/download defaults;
+- parse PNG/JPG/GIF/JSON or decode SDK image resources into PetEgg sprites;
+- enable full Pet2D runtime, HOME/Observe, background scrolling or a full framebuffer;
+- replace LVGL flush or keep a Debug UI trigger;
+- connect real NFC/audio/BLE hardware.

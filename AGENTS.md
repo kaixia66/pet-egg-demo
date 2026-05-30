@@ -197,6 +197,21 @@ must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` a
 `pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
 hardware.
 
+## PetEgg P16 Real Resource Package / External Flash Read POC Rule
+
+P16 is a read-only real resource package and external-Flash resource-path POC. It may audit Jieli SDK
+resource APIs and add a read-only adapter that probes an existing `manifest.bin` or equivalent resource
+entry through the SDK resource file path, but it must not write external Flash, VM, syscfg or files and
+must not modify resource download/packaging tool defaults.
+
+P16 must not enable the full Pet2D runtime, HOME/Observe, background scrolling, image decoding,
+full-framebuffer allocation, LVGL flush replacement, NFC, audio or real BLE. If a resource package is
+not present, the adapter must return `NOT_FOUND`/`NOT_READY` rather than hardcoding an address or faking
+bytes. Any temporary Debug UI trigger used for board probing must be removed before commit. The committed
+source must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
+hardware.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

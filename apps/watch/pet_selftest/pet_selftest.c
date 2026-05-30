@@ -8,6 +8,7 @@
 #include "pet_protocol_jieli.h"
 #include "pet_key_calibration_jieli.h"
 #include "pet_resource_jieli.h"
+#include "pet_resource_jieli_real.h"
 #include "pet_save_jieli.h"
 #include "pet_platform_jieli.h"
 
@@ -108,6 +109,16 @@ static pet_result_t pet_selftest_resource_sprite_surface_gate(void)
     return pet2d_boundary_resource_sprite_gate_self_test();
 }
 
+static pet_result_t pet_selftest_resource_package_probe(void)
+{
+    pet_result_t ret = pet_resource_jieli_real_self_test();
+
+    if ((ret == PET_RESULT_NOT_FOUND) || (ret == PET_RESULT_NOT_READY)) {
+        return PET_RESULT_UNSUPPORTED;
+    }
+    return ret;
+}
+
 static pet_result_t pet_selftest_minimal_movement_gate(void)
 {
     pet_result_t ret = pet2d_movement_poc_self_test();
@@ -155,6 +166,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_resource_jieli_self_test,
         pet2d_boundary_resource_probe_self_test,
         pet_selftest_resource_sprite_surface_gate,
+        pet_selftest_resource_package_probe,
         pet_key_calibration_jieli_self_test,
         pet_selftest_minimal_movement_gate,
         pet_selftest_key_latency_movement_gate,
@@ -188,6 +200,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "resource_manifest",
         "pet2d_resource_probe",
         "resource_sprite_surface",
+        "resource_package_probe",
         "key_calibration",
         "minimal_movement_poc",
         "key_latency_movement_gate",
@@ -268,6 +281,7 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->has_pet2d_minimal_visual_probe_gate = 1u;
     out_snapshot->has_dirty_rect_poc_gate = 1u;
     out_snapshot->has_resource_sprite_surface_probe_gate = 1u;
+    out_snapshot->has_real_resource_read_probe = 1u;
     out_snapshot->has_key_calibration = 1u;
     out_snapshot->has_minimal_sprite_movement_probe_gate = 1u;
     out_snapshot->has_movement_stats = 1u;
@@ -282,6 +296,9 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->real_lcd_flush_enabled = 0u;
     out_snapshot->real_key_queue_enabled = 0u;
     out_snapshot->real_flash_storage_enabled = 0u;
+    out_snapshot->real_resource_package_available =
+        (pet_resource_jieli_real_package_probe() == PET_RESULT_OK) ? 1u : 0u;
+    out_snapshot->external_flash_resource_enabled = 0u;
     out_snapshot->real_ble_enabled = 0u;
     out_snapshot->real_nfc_enabled = 0u;
     out_snapshot->pet2d_runtime_enabled = 0u;

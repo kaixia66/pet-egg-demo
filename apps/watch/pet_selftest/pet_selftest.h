@@ -21,6 +21,7 @@ typedef enum {
     PET_SELFTEST_RESOURCE_MANIFEST,
     PET_SELFTEST_PET2D_RESOURCE_PROBE,
     PET_SELFTEST_RESOURCE_SPRITE_SURFACE,
+    PET_SELFTEST_RESOURCE_PACKAGE_PROBE,
     PET_SELFTEST_KEY_CALIBRATION,
     PET_SELFTEST_MINIMAL_MOVEMENT_POC,
     PET_SELFTEST_KEY_LATENCY_MOVEMENT_GATE,
@@ -53,6 +54,7 @@ typedef struct {
     pet_u8_t has_pet2d_minimal_visual_probe_gate;
     pet_u8_t has_dirty_rect_poc_gate;
     pet_u8_t has_resource_sprite_surface_probe_gate;
+    pet_u8_t has_real_resource_read_probe;
     pet_u8_t has_key_calibration;
     pet_u8_t has_minimal_sprite_movement_probe_gate;
     pet_u8_t has_movement_stats;
@@ -67,6 +69,8 @@ typedef struct {
     pet_u8_t real_lcd_flush_enabled;
     pet_u8_t real_key_queue_enabled;
     pet_u8_t real_flash_storage_enabled;
+    pet_u8_t real_resource_package_available;
+    pet_u8_t external_flash_resource_enabled;
     pet_u8_t real_ble_enabled;
     pet_u8_t real_nfc_enabled;
     pet_u8_t pet2d_runtime_enabled;

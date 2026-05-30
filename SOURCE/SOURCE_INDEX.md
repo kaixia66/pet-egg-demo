@@ -317,6 +317,24 @@ committed real LCD path and full Pet2D runtime disabled:
 - `SOURCE/10_engineering_reports/p15_key_latency_movement_stats.md`: records stats fields, latency
   method, dirty-rect union strategy, repeated-probe behavior and P15 board-test plan/results.
 
+## P16 Real Resource Package / External Flash Read POC Addendum
+
+P16 audits the SDK resource/read path and adds a read-only real resource package probe while keeping
+resource generation, external-Flash writes, full Pet2D runtime and real LCD writes disabled:
+
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_real.h` and `.c`: add a read-only real package
+  adapter. The default probe tries `storage/virfat_flash/C/petegg/manifest.bin` through `res_fopen`,
+  reads only metadata/header bytes, exposes bounded reads, and returns `NOT_FOUND` when no package is
+  present.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_compile_check.c`: references the real read probe
+  API without requiring a package to exist.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add `PET_SELFTEST_RESOURCE_PACKAGE_PROBE`,
+  `has_real_resource_read_probe`, `real_resource_package_available` and
+  `external_flash_resource_enabled`. run-all reports a missing package as skipped.
+- `Makefile`: compiles `pet_resource_jieli_real.c`.
+- `SOURCE/10_engineering_reports/p16_real_resource_package_read_poc.md`: records the SDK resource path
+  audit, adapter design, package probe result, safety boundaries and follow-up plan.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 

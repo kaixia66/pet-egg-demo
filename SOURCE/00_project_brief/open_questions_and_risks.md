@@ -344,3 +344,32 @@ Open items:
   reading are still not implemented.
 - The existing winmk post-build/resource packaging failure remains independent of P15. P15 must not modify
   toolchain paths, resource scripts or download packaging to mask that environment issue.
+
+## P16 Real Resource Package / External Flash Read POC Risks
+
+Status: P16 adds a read-only adapter skeleton and SDK resource-path audit. It does not prove that a
+formal PetEgg package is generated, downloaded or present on external Flash.
+
+Open items:
+- The generation and download route for `manifest.bin`, `sprites.pak` and `anim_table.bin` is still
+  unconfirmed. Current SDK scripts package `.sty/.res/.str/.view/.json` UI outputs, not the PetEgg P1
+  manifest ABI.
+- External Flash base address, size, CRC table ownership and update/rollback policy for a PetEgg package
+  are still unconfirmed. P16 does not hardcode addresses or call raw SFC/NOR reads.
+- `res_fopen/res_fread` appears suitable for a small ordinary resource-file probe once a package file is
+  present, but `ui_res_flash_info_get`/`flash_file_info` is still a future candidate for IMB-readable raw
+  regions and must be validated with a real packaged file.
+- A temporary COM3 board probe confirmed that absent `petegg/manifest.bin` returns
+  `PET_RESULT_NOT_FOUND` without a matched panic/assert/WDT/HardFault/exception. It did not validate a
+  present resource package because no package is generated or downloaded yet.
+- After the board probe, source was restored to no Debug UI entry. The restored final-safe package was
+  generated, but the board was offline during that last download attempt; the temporary test image may
+  remain on the physical board until a later explicit download.
+- `open_image_by_id` remains an SDK image-resource helper and is not treated as a raw PetEgg package
+  reader.
+- Sprite metadata, transparency, RLE/compression policy, byte order and alignment remain undefined for
+  formal production assets.
+- The shared `pet_result_t` ABI currently has no dedicated `OUT_OF_RANGE`; the P16 adapter maps bounded
+  read range failures to `PET_RESULT_INVALID_ARGUMENT` until a future ABI bump explicitly adds one.
+- Current hardware still has no NFC and no speaker, and only one board is available. Real NFC, real audio
+  and real BLE two-board validation remain Future Scope.
