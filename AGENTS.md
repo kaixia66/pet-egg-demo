@@ -285,6 +285,20 @@ real BLE. The retained Debug entry must be manual-only and safe when `PET_JIELI_
 is 0; the committed source must keep that macro at 0, `real_lcd_flush_enabled` at 0 and
 `pet2d_runtime_enabled` at 0.
 
+## PetEgg P23 MVP-A Scene State / Placeholder Action Loop Rule
+
+P23 may extend the P22 MVP-A Pet2D scene skeleton with a small reusable scene state and placeholder
+action loop contract. It may define explicit idle, move-left, move-right, action, exiting and error
+states, placeholder poses, input-to-state transitions, tick-driven action completion, and a
+renderer-facing draw command for later HOME/Observe work.
+
+P23 is still not HOME/Observe and must not mark the full Pet2D runtime as enabled. It must keep the
+Debug scene entry manual-only, use only the existing dirty-rect/small-buffer path, avoid full
+framebuffers, and keep formal resources, animation tables, transparency/RLE/compression policy,
+external Flash / virfat / raw NOR, download/watch changes, pet-state persistence, NFC, audio and real
+BLE out of scope. Capability snapshots must remain side-effect free and keep `home_observe_enabled`,
+`full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
+
 ## PetEgg P21 Internal Save / syscfg A-B POC Rule
 
 P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a

@@ -514,3 +514,25 @@ Open items:
   treated as the production pet save schema.
 - HOME/Observe remains incomplete and `pet2d_runtime_enabled` remains 0.
 - External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P23 MVP-A Scene State / Placeholder Action Loop Risks
+
+Status: P23 adds an explicit state/action-loop contract on top of the P22 skeleton. It improves the
+renderer-facing model for later HOME/Observe work, but it is still not product gameplay.
+
+Open items:
+
+- The action loop uses placeholder poses and generated colors only. There is no final pet action state
+  machine, formal animation table, transparency policy, RLE/compression handling or resource binding.
+- The draw command is a small renderer-facing contract, not a complete scene graph or Pet2D runtime API.
+- Dirty rect remains old/new pet union inside a 96x64 bounded patch. Arbitrary full-scene background
+  restoration and occlusion handling remain future work.
+- The action durations are fixed POC constants. Final animation timing, frame pacing and UX tuning are
+  still open.
+- P23 self-test is side-effect free and validates transitions without proving real-board visual timing.
+  Real-board testing can be done with a temporary real-flush build, then the macro must return to 0.
+- P23 does not persist scene state. P21 syscfg item IDs 206/207 remain test save slots and must not be
+  reused for production pet state without a later schema decision.
+- HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
+  `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.

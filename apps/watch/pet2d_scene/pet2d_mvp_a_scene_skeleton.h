@@ -14,11 +14,16 @@ extern "C" {
 #define PET2D_MVP_A_SCENE_STAGE_W 96u
 #define PET2D_MVP_A_SCENE_STAGE_H 64u
 #define PET2D_MVP_A_SCENE_STEP_PIXELS 8u
+#define PET2D_MVP_A_SCENE_MOVE_ACTION_MS 160u
+#define PET2D_MVP_A_SCENE_POSE_ACTION_MS 300u
 
 typedef enum {
-    PET2D_MVP_A_SCENE_STATE_IDLE = 0,
-    PET2D_MVP_A_SCENE_STATE_ENTERING,
-    PET2D_MVP_A_SCENE_STATE_RUNNING,
+    PET2D_MVP_A_SCENE_STATE_NONE = 0,
+    PET2D_MVP_A_SCENE_STATE_ENTER,
+    PET2D_MVP_A_SCENE_STATE_IDLE,
+    PET2D_MVP_A_SCENE_STATE_MOVE_LEFT,
+    PET2D_MVP_A_SCENE_STATE_MOVE_RIGHT,
+    PET2D_MVP_A_SCENE_STATE_ACTION,
     PET2D_MVP_A_SCENE_STATE_EXITING,
     PET2D_MVP_A_SCENE_STATE_DONE,
     PET2D_MVP_A_SCENE_STATE_ERROR
@@ -35,8 +40,35 @@ typedef enum {
     PET2D_MVP_A_SCENE_POSE_IDLE = 0,
     PET2D_MVP_A_SCENE_POSE_HAPPY,
     PET2D_MVP_A_SCENE_POSE_BLINK,
+    PET2D_MVP_A_SCENE_POSE_STEP,
     PET2D_MVP_A_SCENE_POSE_MAX
 } pet2d_mvp_a_scene_pose_t;
+
+typedef struct {
+    pet_i16_t x;
+    pet_i16_t y;
+    pet_u16_t w;
+    pet_u16_t h;
+    pet_u8_t pose;
+    pet_u8_t pattern_id;
+    pet_u8_t flags;
+    pet_u8_t reserved;
+} pet2d_mvp_a_scene_draw_cmd_t;
+
+typedef struct {
+    pet2d_mvp_a_scene_state_t state;
+    pet2d_mvp_a_scene_pose_t pose;
+    pet_i16_t pet_x;
+    pet_i16_t pet_y;
+    pet_i16_t prev_x;
+    pet_i16_t prev_y;
+    pet_u32_t frame_index;
+    pet_u32_t action_started_ms;
+    pet_u32_t action_duration_ms;
+    pet_u32_t enter_ms;
+    pet_u32_t timeout_ms;
+    pet2d_mvp_a_scene_exit_reason_t exit_reason;
+} pet2d_mvp_a_scene_model_t;
 
 typedef struct {
     pet_u32_t enter_count;
@@ -45,6 +77,7 @@ typedef struct {
     pet_u32_t tick_count;
     pet_u32_t key_event_count;
     pet_u32_t action_toggle_count;
+    pet_u32_t action_done_count;
     pet_u32_t frame_count;
     pet_u32_t render_count;
     pet_u32_t flush_success_count;
@@ -82,8 +115,12 @@ pet_result_t pet2d_mvp_a_scene_skeleton_handle_key(const pet_key_event_t *event)
 pet_result_t pet2d_mvp_a_scene_skeleton_exit(void);
 pet_bool_t pet2d_mvp_a_scene_skeleton_is_active(void);
 pet_result_t pet2d_mvp_a_scene_skeleton_get_state(pet2d_mvp_a_scene_state_t *out_state);
+pet_result_t pet2d_mvp_a_scene_skeleton_get_model(pet2d_mvp_a_scene_model_t *out_model);
+pet_result_t pet2d_mvp_a_scene_skeleton_get_draw_cmd(
+    pet2d_mvp_a_scene_draw_cmd_t *out_cmd);
 pet_result_t pet2d_mvp_a_scene_skeleton_get_stats(pet2d_mvp_a_scene_stats_t *out_stats);
 pet_result_t pet2d_mvp_a_scene_skeleton_reset_stats(void);
+pet_result_t pet2d_mvp_a_scene_action_loop_self_test(void);
 pet_result_t pet2d_mvp_a_scene_skeleton_self_test(void);
 
 #ifdef __cplusplus

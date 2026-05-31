@@ -31,6 +31,9 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
         (snapshot.has_mvp_a_scene_skeleton == 0u) ||
         (snapshot.mvp_a_scene_skeleton_debug_entry == 0u) ||
         (snapshot.mvp_a_scene_skeleton_real_board_verified != 0u) ||
+        (snapshot.has_mvp_a_scene_action_loop == 0u) ||
+        (snapshot.mvp_a_scene_action_loop_selftest == 0u) ||
+        (snapshot.mvp_a_scene_action_loop_debug_entry == 0u) ||
         (snapshot.home_observe_enabled != 0u) ||
         (snapshot.full_pet2d_runtime_enabled != 0u) ||
         (snapshot.has_internal_save_syscfg_backend == 0u) ||
@@ -50,5 +53,5 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
 
 const char *pet_selftest_compile_check_name(void)
 {
-    return pet_selftest_case_name(PET_SELFTEST_MVP_A_SCENE_SKELETON);
+    return pet_selftest_case_name(PET_SELFTEST_MVP_A_SCENE_ACTION_LOOP);
 }

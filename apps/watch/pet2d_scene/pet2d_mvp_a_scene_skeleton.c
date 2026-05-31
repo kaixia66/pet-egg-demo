@@ -10,18 +10,14 @@ void mvp_a_lvgl_shell_request_refresh(void);
 typedef struct {
     pet_i16_t stage_x;
     pet_i16_t stage_y;
-    pet_i16_t pet_x;
-    pet_i16_t pet_y;
-    pet_i16_t prev_pet_x;
-    pet_i16_t prev_pet_y;
-    pet2d_mvp_a_scene_pose_t pose;
-    pet_u32_t enter_ms;
     pet_u32_t last_render_ms;
     pet_u8_t full_patch_pending;
+    pet_u8_t pose_cycle;
 } pet2d_mvp_a_scene_context_t;
 
-static pet2d_mvp_a_scene_state_t g_mvp_a_scene_state = PET2D_MVP_A_SCENE_STATE_IDLE;
 static pet2d_mvp_a_scene_context_t g_mvp_a_scene_ctx;
+static pet2d_mvp_a_scene_model_t g_mvp_a_scene_model;
+static pet2d_mvp_a_scene_draw_cmd_t g_mvp_a_scene_draw_cmd;
 static pet2d_mvp_a_scene_stats_t g_mvp_a_scene_stats;
 
 #if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
@@ -52,9 +48,66 @@ static pet_u32_t pet2d_mvp_a_scene_elapsed_ms(pet_u32_t end_ms, pet_u32_t start_
     return (pet_u32_t)(end_ms - start_ms);
 }
 
+static pet_bool_t pet2d_mvp_a_scene_state_is_active(pet2d_mvp_a_scene_state_t state)
+{
+    return (state == PET2D_MVP_A_SCENE_STATE_ENTER) ||
+           (state == PET2D_MVP_A_SCENE_STATE_IDLE) ||
+           (state == PET2D_MVP_A_SCENE_STATE_MOVE_LEFT) ||
+           (state == PET2D_MVP_A_SCENE_STATE_MOVE_RIGHT) ||
+           (state == PET2D_MVP_A_SCENE_STATE_ACTION) ||
+           (state == PET2D_MVP_A_SCENE_STATE_EXITING);
+}
+
+static pet_bool_t pet2d_mvp_a_scene_state_is_action(pet2d_mvp_a_scene_state_t state)
+{
+    return (state == PET2D_MVP_A_SCENE_STATE_MOVE_LEFT) ||
+           (state == PET2D_MVP_A_SCENE_STATE_MOVE_RIGHT) ||
+           (state == PET2D_MVP_A_SCENE_STATE_ACTION);
+}
+
+static const char *pet2d_mvp_a_scene_state_name(pet2d_mvp_a_scene_state_t state)
+{
+    switch (state) {
+    case PET2D_MVP_A_SCENE_STATE_ENTER:
+        return "ENTER";
+    case PET2D_MVP_A_SCENE_STATE_IDLE:
+        return "IDLE";
+    case PET2D_MVP_A_SCENE_STATE_MOVE_LEFT:
+        return "MOVE_LEFT";
+    case PET2D_MVP_A_SCENE_STATE_MOVE_RIGHT:
+        return "MOVE_RIGHT";
+    case PET2D_MVP_A_SCENE_STATE_ACTION:
+        return "ACTION";
+    case PET2D_MVP_A_SCENE_STATE_EXITING:
+        return "EXITING";
+    case PET2D_MVP_A_SCENE_STATE_DONE:
+        return "DONE";
+    case PET2D_MVP_A_SCENE_STATE_ERROR:
+        return "ERROR";
+    case PET2D_MVP_A_SCENE_STATE_NONE:
+    default:
+        return "NONE";
+    }
+}
+
+static const char *pet2d_mvp_a_scene_pose_name(pet2d_mvp_a_scene_pose_t pose)
+{
+    switch (pose) {
+    case PET2D_MVP_A_SCENE_POSE_HAPPY:
+        return "HAPPY";
+    case PET2D_MVP_A_SCENE_POSE_BLINK:
+        return "BLINK";
+    case PET2D_MVP_A_SCENE_POSE_STEP:
+        return "STEP";
+    case PET2D_MVP_A_SCENE_POSE_IDLE:
+    default:
+        return "IDLE";
+    }
+}
+
 static void pet2d_mvp_a_scene_set_state(pet2d_mvp_a_scene_state_t state)
 {
-    g_mvp_a_scene_state = state;
+    g_mvp_a_scene_model.state = state;
     g_mvp_a_scene_stats.last_state = (pet_u8_t)state;
 }
 
@@ -92,30 +145,62 @@ static pet_u16_t pet2d_mvp_a_scene_pet_pixel(pet_u16_t x,
         return ((((x >> 2) + (y >> 2) + (pet_u16_t)frame) & 0x01u) != 0u) ?
                0xfbe0u : 0x07ffu;
     }
+    if (pose == PET2D_MVP_A_SCENE_POSE_STEP) {
+        return ((((x >> 1) + (pet_u16_t)frame) & 0x01u) != 0u) ?
+               0xffe0u : 0x001fu;
+    }
     return ((((x >> 3) + (y >> 3) + (pet_u16_t)frame) & 0x01u) != 0u) ?
            0xf81fu : 0x07e0u;
 }
 
+static void pet2d_mvp_a_scene_update_draw_cmd(void)
+{
+    g_mvp_a_scene_draw_cmd.x = g_mvp_a_scene_model.pet_x;
+    g_mvp_a_scene_draw_cmd.y = g_mvp_a_scene_model.pet_y;
+    g_mvp_a_scene_draw_cmd.w = PET2D_MVP_A_SCENE_SPRITE_SIZE;
+    g_mvp_a_scene_draw_cmd.h = PET2D_MVP_A_SCENE_SPRITE_SIZE;
+    g_mvp_a_scene_draw_cmd.pose = (pet_u8_t)g_mvp_a_scene_model.pose;
+    g_mvp_a_scene_draw_cmd.pattern_id = (pet_u8_t)g_mvp_a_scene_model.pose;
+    g_mvp_a_scene_draw_cmd.flags =
+        (pet_u8_t)((g_mvp_a_scene_model.state == PET2D_MVP_A_SCENE_STATE_ACTION) ? 1u : 0u);
+    g_mvp_a_scene_draw_cmd.reserved = 0u;
+}
+
 static void pet2d_mvp_a_scene_init_context(pet_u32_t now_ms)
 {
+    pet_i16_t start_x;
+    pet_i16_t start_y;
+
     g_mvp_a_scene_ctx.stage_x =
         (pet_i16_t)(PET_JIELI_DISPLAY_SAFE_X +
                     ((PET_JIELI_DISPLAY_SAFE_W - PET2D_MVP_A_SCENE_STAGE_W) / 2u));
     g_mvp_a_scene_ctx.stage_y =
         (pet_i16_t)(PET_JIELI_DISPLAY_SAFE_Y +
                     ((PET_JIELI_DISPLAY_SAFE_H - PET2D_MVP_A_SCENE_STAGE_H) / 2u));
-    g_mvp_a_scene_ctx.pet_x =
+    start_x =
         (pet_i16_t)(g_mvp_a_scene_ctx.stage_x +
                     ((PET2D_MVP_A_SCENE_STAGE_W - PET2D_MVP_A_SCENE_SPRITE_SIZE) / 2u));
-    g_mvp_a_scene_ctx.pet_y =
+    start_y =
         (pet_i16_t)(g_mvp_a_scene_ctx.stage_y +
                     ((PET2D_MVP_A_SCENE_STAGE_H - PET2D_MVP_A_SCENE_SPRITE_SIZE) / 2u));
-    g_mvp_a_scene_ctx.prev_pet_x = g_mvp_a_scene_ctx.pet_x;
-    g_mvp_a_scene_ctx.prev_pet_y = g_mvp_a_scene_ctx.pet_y;
-    g_mvp_a_scene_ctx.pose = PET2D_MVP_A_SCENE_POSE_IDLE;
-    g_mvp_a_scene_ctx.enter_ms = now_ms;
+
+    g_mvp_a_scene_model.state = PET2D_MVP_A_SCENE_STATE_ENTER;
+    g_mvp_a_scene_model.pose = PET2D_MVP_A_SCENE_POSE_IDLE;
+    g_mvp_a_scene_model.pet_x = start_x;
+    g_mvp_a_scene_model.pet_y = start_y;
+    g_mvp_a_scene_model.prev_x = start_x;
+    g_mvp_a_scene_model.prev_y = start_y;
+    g_mvp_a_scene_model.frame_index = 0u;
+    g_mvp_a_scene_model.action_started_ms = 0u;
+    g_mvp_a_scene_model.action_duration_ms = 0u;
+    g_mvp_a_scene_model.enter_ms = now_ms;
+    g_mvp_a_scene_model.timeout_ms = now_ms + PET2D_MVP_A_SCENE_TIMEOUT_MS;
+    g_mvp_a_scene_model.exit_reason = PET2D_MVP_A_SCENE_EXIT_NONE;
+
     g_mvp_a_scene_ctx.last_render_ms = now_ms;
     g_mvp_a_scene_ctx.full_patch_pending = 1u;
+    g_mvp_a_scene_ctx.pose_cycle = 0u;
+    pet2d_mvp_a_scene_update_draw_cmd();
 }
 
 static void pet2d_mvp_a_scene_clamp_pet(void)
@@ -125,12 +210,24 @@ static void pet2d_mvp_a_scene_clamp_pet(void)
                                   PET2D_MVP_A_SCENE_STAGE_W -
                                   PET2D_MVP_A_SCENE_SPRITE_SIZE);
 
-    if (g_mvp_a_scene_ctx.pet_x < min_x) {
-        g_mvp_a_scene_ctx.pet_x = min_x;
+    if (g_mvp_a_scene_model.pet_x < min_x) {
+        g_mvp_a_scene_model.pet_x = min_x;
     }
-    if (g_mvp_a_scene_ctx.pet_x > max_x) {
-        g_mvp_a_scene_ctx.pet_x = max_x;
+    if (g_mvp_a_scene_model.pet_x > max_x) {
+        g_mvp_a_scene_model.pet_x = max_x;
     }
+}
+
+static void pet2d_mvp_a_scene_begin_action(pet2d_mvp_a_scene_state_t state,
+                                           pet2d_mvp_a_scene_pose_t pose,
+                                           pet_u32_t now_ms,
+                                           pet_u32_t duration_ms)
+{
+    pet2d_mvp_a_scene_set_state(state);
+    g_mvp_a_scene_model.pose = pose;
+    g_mvp_a_scene_model.action_started_ms = now_ms;
+    g_mvp_a_scene_model.action_duration_ms = duration_ms;
+    pet2d_mvp_a_scene_update_draw_cmd();
 }
 
 static pet_result_t pet2d_mvp_a_scene_compute_dirty(pet_i16_t *out_x,
@@ -155,14 +252,14 @@ static pet_result_t pet2d_mvp_a_scene_compute_dirty(pet_i16_t *out_x,
         return PET_RESULT_OK;
     }
 
-    min_x = (g_mvp_a_scene_ctx.prev_pet_x < g_mvp_a_scene_ctx.pet_x) ?
-            g_mvp_a_scene_ctx.prev_pet_x : g_mvp_a_scene_ctx.pet_x;
-    min_y = (g_mvp_a_scene_ctx.prev_pet_y < g_mvp_a_scene_ctx.pet_y) ?
-            g_mvp_a_scene_ctx.prev_pet_y : g_mvp_a_scene_ctx.pet_y;
-    max_x = (g_mvp_a_scene_ctx.prev_pet_x > g_mvp_a_scene_ctx.pet_x) ?
-            g_mvp_a_scene_ctx.prev_pet_x : g_mvp_a_scene_ctx.pet_x;
-    max_y = (g_mvp_a_scene_ctx.prev_pet_y > g_mvp_a_scene_ctx.pet_y) ?
-            g_mvp_a_scene_ctx.prev_pet_y : g_mvp_a_scene_ctx.pet_y;
+    min_x = (g_mvp_a_scene_model.prev_x < g_mvp_a_scene_model.pet_x) ?
+            g_mvp_a_scene_model.prev_x : g_mvp_a_scene_model.pet_x;
+    min_y = (g_mvp_a_scene_model.prev_y < g_mvp_a_scene_model.pet_y) ?
+            g_mvp_a_scene_model.prev_y : g_mvp_a_scene_model.pet_y;
+    max_x = (g_mvp_a_scene_model.prev_x > g_mvp_a_scene_model.pet_x) ?
+            g_mvp_a_scene_model.prev_x : g_mvp_a_scene_model.pet_x;
+    max_y = (g_mvp_a_scene_model.prev_y > g_mvp_a_scene_model.pet_y) ?
+            g_mvp_a_scene_model.prev_y : g_mvp_a_scene_model.pet_y;
     *out_x = min_x;
     *out_y = min_y;
     *out_w = (pet_u16_t)((max_x - min_x) + PET2D_MVP_A_SCENE_SPRITE_SIZE);
@@ -190,16 +287,16 @@ static void pet2d_mvp_a_scene_fill_dirty_surface(pet_u16_t *pixels,
             pet_i16_t abs_y = (pet_i16_t)(dirty_y + (pet_i16_t)y);
             pet_u16_t pixel = pet2d_mvp_a_scene_background_pixel(abs_x, abs_y);
 
-            if ((abs_x >= g_mvp_a_scene_ctx.pet_x) &&
-                (abs_y >= g_mvp_a_scene_ctx.pet_y) &&
-                (abs_x < (pet_i16_t)(g_mvp_a_scene_ctx.pet_x +
+            if ((abs_x >= g_mvp_a_scene_model.pet_x) &&
+                (abs_y >= g_mvp_a_scene_model.pet_y) &&
+                (abs_x < (pet_i16_t)(g_mvp_a_scene_model.pet_x +
                                       PET2D_MVP_A_SCENE_SPRITE_SIZE)) &&
-                (abs_y < (pet_i16_t)(g_mvp_a_scene_ctx.pet_y +
+                (abs_y < (pet_i16_t)(g_mvp_a_scene_model.pet_y +
                                       PET2D_MVP_A_SCENE_SPRITE_SIZE))) {
                 pixel = pet2d_mvp_a_scene_pet_pixel(
-                    (pet_u16_t)(abs_x - g_mvp_a_scene_ctx.pet_x),
-                    (pet_u16_t)(abs_y - g_mvp_a_scene_ctx.pet_y),
-                    g_mvp_a_scene_ctx.pose,
+                    (pet_u16_t)(abs_x - g_mvp_a_scene_model.pet_x),
+                    (pet_u16_t)(abs_y - g_mvp_a_scene_model.pet_y),
+                    g_mvp_a_scene_model.pose,
                     g_mvp_a_scene_stats.frame_count);
             }
             pixels[((pet_u32_t)y * (pet_u32_t)dirty_w) + (pet_u32_t)x] = pixel;
@@ -226,6 +323,7 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
 
     frame_start_ms = pet2d_mvp_a_scene_now_ms();
     logic_start_ms = frame_start_ms;
+    pet2d_mvp_a_scene_update_draw_cmd();
     ret = pet2d_mvp_a_scene_compute_dirty(&dirty_x, &dirty_y, &dirty_w, &dirty_h);
     logic_end_ms = pet2d_mvp_a_scene_now_ms();
     if (ret != PET_RESULT_OK) {
@@ -254,13 +352,14 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
 
     g_mvp_a_scene_stats.frame_count++;
     g_mvp_a_scene_stats.render_count++;
+    g_mvp_a_scene_model.frame_index = g_mvp_a_scene_stats.frame_count;
     g_mvp_a_scene_stats.last_dirty_x = (pet_u16_t)dirty_x;
     g_mvp_a_scene_stats.last_dirty_y = (pet_u16_t)dirty_y;
     g_mvp_a_scene_stats.last_dirty_w = dirty_w;
     g_mvp_a_scene_stats.last_dirty_h = dirty_h;
-    g_mvp_a_scene_stats.last_pet_x = (pet_u16_t)g_mvp_a_scene_ctx.pet_x;
-    g_mvp_a_scene_stats.last_pet_y = (pet_u16_t)g_mvp_a_scene_ctx.pet_y;
-    g_mvp_a_scene_stats.last_pose = (pet_u8_t)g_mvp_a_scene_ctx.pose;
+    g_mvp_a_scene_stats.last_pet_x = (pet_u16_t)g_mvp_a_scene_model.pet_x;
+    g_mvp_a_scene_stats.last_pet_y = (pet_u16_t)g_mvp_a_scene_model.pet_y;
+    g_mvp_a_scene_stats.last_pose = (pet_u8_t)g_mvp_a_scene_model.pose;
 
     g_mvp_a_scene_stats.logic_total_ms +=
         pet2d_mvp_a_scene_elapsed_ms(logic_end_ms, logic_start_ms);
@@ -292,13 +391,14 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
         g_mvp_a_scene_stats.flush_fail_count++;
     }
     g_mvp_a_scene_stats.last_result = (pet_u8_t)ret;
-    g_mvp_a_scene_ctx.prev_pet_x = g_mvp_a_scene_ctx.pet_x;
-    g_mvp_a_scene_ctx.prev_pet_y = g_mvp_a_scene_ctx.pet_y;
+    g_mvp_a_scene_model.prev_x = g_mvp_a_scene_model.pet_x;
+    g_mvp_a_scene_model.prev_y = g_mvp_a_scene_model.pet_y;
     g_mvp_a_scene_ctx.full_patch_pending = 0u;
 
-    printf("[PET2D_MVP_A_SCENE] frame=%lu pose=%u pet=%u,%u dirty=%ux%u ret=%d owner=%d\n",
+    printf("[PET2D_MVP_A_SCENE] frame=%lu state=%s pose=%s pet=%u,%u dirty=%ux%u ret=%d owner=%d\n",
            (unsigned long)g_mvp_a_scene_stats.frame_count,
-           g_mvp_a_scene_stats.last_pose,
+           pet2d_mvp_a_scene_state_name(g_mvp_a_scene_model.state),
+           pet2d_mvp_a_scene_pose_name(g_mvp_a_scene_model.pose),
            g_mvp_a_scene_stats.last_pet_x,
            g_mvp_a_scene_stats.last_pet_y,
            g_mvp_a_scene_stats.last_dirty_w,
@@ -306,6 +406,42 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
            ret,
            pet_display_jieli_get_owner());
     return ret;
+}
+
+static pet_result_t pet2d_mvp_a_scene_finish_action_if_due(pet_u32_t now_ms,
+                                                           pet_u8_t render_on_done)
+{
+    pet_result_t ret;
+
+    if (pet2d_mvp_a_scene_state_is_action(g_mvp_a_scene_model.state) == PET_FALSE) {
+        return PET_RESULT_OK;
+    }
+    if (pet2d_mvp_a_scene_elapsed_ms(now_ms, g_mvp_a_scene_model.action_started_ms) <
+        g_mvp_a_scene_model.action_duration_ms) {
+        return PET_RESULT_OK;
+    }
+
+    g_mvp_a_scene_model.prev_x = g_mvp_a_scene_model.pet_x;
+    g_mvp_a_scene_model.prev_y = g_mvp_a_scene_model.pet_y;
+    g_mvp_a_scene_model.pose = PET2D_MVP_A_SCENE_POSE_IDLE;
+    g_mvp_a_scene_model.action_duration_ms = 0u;
+    pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_IDLE);
+    g_mvp_a_scene_stats.action_done_count++;
+    pet2d_mvp_a_scene_update_draw_cmd();
+
+    printf("[PET2D_MVP_A_ACTION] state=IDLE action_done=1 pose=%s pet=%d,%d\n",
+           pet2d_mvp_a_scene_pose_name(g_mvp_a_scene_model.pose),
+           g_mvp_a_scene_model.pet_x,
+           g_mvp_a_scene_model.pet_y);
+    if (render_on_done == 0u) {
+        return PET_RESULT_OK;
+    }
+    ret = pet2d_mvp_a_scene_render_once();
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    g_mvp_a_scene_ctx.last_render_ms = now_ms;
+    return PET_RESULT_OK;
 }
 
 static pet_result_t pet2d_mvp_a_scene_exit_with_reason(
@@ -317,9 +453,8 @@ static pet_result_t pet2d_mvp_a_scene_exit_with_reason(
     pet_result_t release_ret = PET_RESULT_OK;
     pet_u32_t duration_ms;
 
-    if ((g_mvp_a_scene_state != PET2D_MVP_A_SCENE_STATE_RUNNING) &&
-        (g_mvp_a_scene_state != PET2D_MVP_A_SCENE_STATE_ENTERING) &&
-        (g_mvp_a_scene_state != PET2D_MVP_A_SCENE_STATE_ERROR)) {
+    if ((pet2d_mvp_a_scene_state_is_active(g_mvp_a_scene_model.state) == PET_FALSE) &&
+        (g_mvp_a_scene_model.state != PET2D_MVP_A_SCENE_STATE_ERROR)) {
         return PET_RESULT_OK;
     }
 
@@ -331,13 +466,14 @@ static pet_result_t pet2d_mvp_a_scene_exit_with_reason(
         release_ret = platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
     }
 
-    duration_ms = pet2d_mvp_a_scene_elapsed_ms(now_ms, g_mvp_a_scene_ctx.enter_ms);
+    duration_ms = pet2d_mvp_a_scene_elapsed_ms(now_ms, g_mvp_a_scene_model.enter_ms);
     g_mvp_a_scene_stats.exit_count++;
     g_mvp_a_scene_stats.last_exit_ms = now_ms;
     g_mvp_a_scene_stats.last_duration_ms = duration_ms;
     if (duration_ms > g_mvp_a_scene_stats.max_duration_ms) {
         g_mvp_a_scene_stats.max_duration_ms = duration_ms;
     }
+    g_mvp_a_scene_model.exit_reason = reason;
     g_mvp_a_scene_stats.last_exit_reason = (pet_u8_t)reason;
     if ((reason == PET2D_MVP_A_SCENE_EXIT_ERROR) ||
         (release_ret != PET_RESULT_OK)) {
@@ -348,9 +484,10 @@ static pet_result_t pet2d_mvp_a_scene_exit_with_reason(
     }
 
     mvp_a_lvgl_shell_request_refresh();
-    printf("[PET2D_MVP_A_SCENE] exit reason=%d release_ret=%d duration=%lu "
+    printf("[PET2D_MVP_A_ACTION] exit reason=%d state=%s release_ret=%d duration=%lu "
            "frames=%lu keys=%lu owner=%d\n",
            reason,
+           pet2d_mvp_a_scene_state_name(g_mvp_a_scene_model.state),
            release_ret,
            (unsigned long)duration_ms,
            (unsigned long)g_mvp_a_scene_stats.frame_count,
@@ -365,20 +502,19 @@ pet_result_t pet2d_mvp_a_scene_skeleton_enter(void)
     pet_result_t ret;
     pet_u32_t now_ms;
 
-    if ((g_mvp_a_scene_state == PET2D_MVP_A_SCENE_STATE_ENTERING) ||
-        (g_mvp_a_scene_state == PET2D_MVP_A_SCENE_STATE_RUNNING)) {
+    if (pet2d_mvp_a_scene_state_is_active(g_mvp_a_scene_model.state) != PET_FALSE) {
         return PET_RESULT_BUSY;
     }
     if ((platform == 0) || (platform->display_acquire == 0)) {
         return PET_RESULT_INVALID_ARGUMENT;
     }
 
-    pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_ENTERING);
     now_ms = pet2d_mvp_a_scene_now_ms();
     pet2d_mvp_a_scene_init_context(now_ms);
     g_mvp_a_scene_stats.enter_count++;
     g_mvp_a_scene_stats.last_enter_ms = now_ms;
     g_mvp_a_scene_stats.last_exit_reason = PET2D_MVP_A_SCENE_EXIT_NONE;
+    pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_ENTER);
 
     printf("[PET2D_MVP_A_SCENE] enter start owner=%d\n", pet_display_jieli_get_owner());
     mvp_a_lvgl_shell_release_display_owner();
@@ -392,7 +528,7 @@ pet_result_t pet2d_mvp_a_scene_skeleton_enter(void)
         return ret;
     }
 
-    pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_RUNNING);
+    pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_IDLE);
     ret = pet2d_mvp_a_scene_render_once();
     if (ret != PET_RESULT_OK) {
         (void)pet2d_mvp_a_scene_exit_with_reason(PET2D_MVP_A_SCENE_EXIT_ERROR, now_ms);
@@ -404,6 +540,9 @@ pet_result_t pet2d_mvp_a_scene_skeleton_enter(void)
            (unsigned long)PET2D_MVP_A_SCENE_TIMEOUT_MS,
            PET2D_MVP_A_SCENE_STAGE_W,
            PET2D_MVP_A_SCENE_STAGE_H);
+    printf("[PET2D_MVP_A_ACTION] state=IDLE pose=IDLE pet=%d,%d\n",
+           g_mvp_a_scene_model.pet_x,
+           g_mvp_a_scene_model.pet_y);
     return PET_RESULT_OK;
 }
 
@@ -412,15 +551,24 @@ pet_result_t pet2d_mvp_a_scene_skeleton_tick(pet_u32_t now_ms)
     pet_result_t ret;
     pet_u32_t elapsed_ms;
 
-    if (g_mvp_a_scene_state != PET2D_MVP_A_SCENE_STATE_RUNNING) {
+    if (pet2d_mvp_a_scene_state_is_active(g_mvp_a_scene_model.state) == PET_FALSE) {
+        return PET_RESULT_OK;
+    }
+    if (g_mvp_a_scene_model.state == PET2D_MVP_A_SCENE_STATE_EXITING) {
         return PET_RESULT_OK;
     }
 
     now_ms = pet2d_mvp_a_scene_resolve_now(now_ms);
     g_mvp_a_scene_stats.tick_count++;
-    elapsed_ms = pet2d_mvp_a_scene_elapsed_ms(now_ms, g_mvp_a_scene_ctx.enter_ms);
+    elapsed_ms = pet2d_mvp_a_scene_elapsed_ms(now_ms, g_mvp_a_scene_model.enter_ms);
     if (elapsed_ms >= PET2D_MVP_A_SCENE_TIMEOUT_MS) {
         return pet2d_mvp_a_scene_exit_with_reason(PET2D_MVP_A_SCENE_EXIT_TIMEOUT,
+                                                  now_ms);
+    }
+
+    ret = pet2d_mvp_a_scene_finish_action_if_due(now_ms, 1u);
+    if (ret != PET_RESULT_OK) {
+        return pet2d_mvp_a_scene_exit_with_reason(PET2D_MVP_A_SCENE_EXIT_ERROR,
                                                   now_ms);
     }
 
@@ -439,11 +587,18 @@ pet_result_t pet2d_mvp_a_scene_skeleton_tick(pet_u32_t now_ms)
 pet_result_t pet2d_mvp_a_scene_skeleton_handle_key(const pet_key_event_t *event)
 {
     pet_result_t ret;
+    pet_u32_t now_ms;
+    pet_i16_t old_x;
+    pet_i16_t old_y;
+    pet2d_mvp_a_scene_pose_t old_pose;
 
     if (event == 0) {
         return PET_RESULT_INVALID_ARGUMENT;
     }
-    if (g_mvp_a_scene_state != PET2D_MVP_A_SCENE_STATE_RUNNING) {
+    if (pet2d_mvp_a_scene_state_is_active(g_mvp_a_scene_model.state) == PET_FALSE) {
+        return PET_RESULT_NOT_READY;
+    }
+    if (g_mvp_a_scene_model.state == PET2D_MVP_A_SCENE_STATE_EXITING) {
         return PET_RESULT_NOT_READY;
     }
 
@@ -452,46 +607,73 @@ pet_result_t pet2d_mvp_a_scene_skeleton_handle_key(const pet_key_event_t *event)
         return PET_RESULT_OK;
     }
 
+    now_ms = pet2d_mvp_a_scene_resolve_now(event->timestamp_ms);
     if (event->key == PET_KEY_CANCEL) {
-        return pet2d_mvp_a_scene_exit_with_reason(
-            PET2D_MVP_A_SCENE_EXIT_CANCEL,
-            pet2d_mvp_a_scene_resolve_now(event->timestamp_ms));
+        pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_EXITING);
+        g_mvp_a_scene_model.exit_reason = PET2D_MVP_A_SCENE_EXIT_CANCEL;
+        return pet2d_mvp_a_scene_exit_with_reason(PET2D_MVP_A_SCENE_EXIT_CANCEL,
+                                                  now_ms);
     }
 
-    g_mvp_a_scene_ctx.prev_pet_x = g_mvp_a_scene_ctx.pet_x;
-    g_mvp_a_scene_ctx.prev_pet_y = g_mvp_a_scene_ctx.pet_y;
+    ret = pet2d_mvp_a_scene_finish_action_if_due(now_ms, 0u);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
+    old_x = g_mvp_a_scene_model.pet_x;
+    old_y = g_mvp_a_scene_model.pet_y;
+    old_pose = g_mvp_a_scene_model.pose;
+    g_mvp_a_scene_model.prev_x = g_mvp_a_scene_model.pet_x;
+    g_mvp_a_scene_model.prev_y = g_mvp_a_scene_model.pet_y;
+
     if (event->key == PET_KEY_LEFT_UP) {
-        g_mvp_a_scene_ctx.pet_x =
-            (pet_i16_t)(g_mvp_a_scene_ctx.pet_x - PET2D_MVP_A_SCENE_STEP_PIXELS);
+        g_mvp_a_scene_model.pet_x =
+            (pet_i16_t)(g_mvp_a_scene_model.pet_x - PET2D_MVP_A_SCENE_STEP_PIXELS);
         pet2d_mvp_a_scene_clamp_pet();
+        pet2d_mvp_a_scene_begin_action(PET2D_MVP_A_SCENE_STATE_MOVE_LEFT,
+                                       PET2D_MVP_A_SCENE_POSE_STEP,
+                                       now_ms,
+                                       PET2D_MVP_A_SCENE_MOVE_ACTION_MS);
+        printf("[PET2D_MVP_A_ACTION] input=LEFT_UP state=MOVE_LEFT old=%d,%d new=%d,%d\n",
+               old_x, old_y, g_mvp_a_scene_model.pet_x, g_mvp_a_scene_model.pet_y);
     } else if (event->key == PET_KEY_RIGHT_DOWN) {
-        g_mvp_a_scene_ctx.pet_x =
-            (pet_i16_t)(g_mvp_a_scene_ctx.pet_x + PET2D_MVP_A_SCENE_STEP_PIXELS);
+        g_mvp_a_scene_model.pet_x =
+            (pet_i16_t)(g_mvp_a_scene_model.pet_x + PET2D_MVP_A_SCENE_STEP_PIXELS);
         pet2d_mvp_a_scene_clamp_pet();
+        pet2d_mvp_a_scene_begin_action(PET2D_MVP_A_SCENE_STATE_MOVE_RIGHT,
+                                       PET2D_MVP_A_SCENE_POSE_STEP,
+                                       now_ms,
+                                       PET2D_MVP_A_SCENE_MOVE_ACTION_MS);
+        printf("[PET2D_MVP_A_ACTION] input=RIGHT_DOWN state=MOVE_RIGHT old=%d,%d new=%d,%d\n",
+               old_x, old_y, g_mvp_a_scene_model.pet_x, g_mvp_a_scene_model.pet_y);
     } else if (event->key == PET_KEY_OK) {
-        g_mvp_a_scene_ctx.pose =
-            (pet2d_mvp_a_scene_pose_t)(g_mvp_a_scene_ctx.pose + 1);
-        if (g_mvp_a_scene_ctx.pose >= PET2D_MVP_A_SCENE_POSE_MAX) {
-            g_mvp_a_scene_ctx.pose = PET2D_MVP_A_SCENE_POSE_IDLE;
+        g_mvp_a_scene_ctx.pose_cycle =
+            (pet_u8_t)((g_mvp_a_scene_ctx.pose_cycle + 1u) % 3u);
+        if (g_mvp_a_scene_ctx.pose_cycle == 1u) {
+            g_mvp_a_scene_model.pose = PET2D_MVP_A_SCENE_POSE_HAPPY;
+        } else if (g_mvp_a_scene_ctx.pose_cycle == 2u) {
+            g_mvp_a_scene_model.pose = PET2D_MVP_A_SCENE_POSE_BLINK;
+        } else {
+            g_mvp_a_scene_model.pose = PET2D_MVP_A_SCENE_POSE_IDLE;
         }
+        pet2d_mvp_a_scene_begin_action(PET2D_MVP_A_SCENE_STATE_ACTION,
+                                       g_mvp_a_scene_model.pose,
+                                       now_ms,
+                                       PET2D_MVP_A_SCENE_POSE_ACTION_MS);
         g_mvp_a_scene_stats.action_toggle_count++;
+        printf("[PET2D_MVP_A_ACTION] input=OK state=ACTION old_pose=%s new_pose=%s\n",
+               pet2d_mvp_a_scene_pose_name(old_pose),
+               pet2d_mvp_a_scene_pose_name(g_mvp_a_scene_model.pose));
     } else {
         return PET_RESULT_OK;
     }
 
-    printf("[PET2D_MVP_A_SCENE] key=%d pose=%d pet=%d,%d owner=%d\n",
-           event->key,
-           g_mvp_a_scene_ctx.pose,
-           g_mvp_a_scene_ctx.pet_x,
-           g_mvp_a_scene_ctx.pet_y,
-           pet_display_jieli_get_owner());
     ret = pet2d_mvp_a_scene_render_once();
     if (ret != PET_RESULT_OK) {
-        return pet2d_mvp_a_scene_exit_with_reason(
-            PET2D_MVP_A_SCENE_EXIT_ERROR,
-            pet2d_mvp_a_scene_resolve_now(event->timestamp_ms));
+        return pet2d_mvp_a_scene_exit_with_reason(PET2D_MVP_A_SCENE_EXIT_ERROR,
+                                                  now_ms);
     }
-    g_mvp_a_scene_ctx.last_render_ms = pet2d_mvp_a_scene_now_ms();
+    g_mvp_a_scene_ctx.last_render_ms = now_ms;
     return PET_RESULT_OK;
 }
 
@@ -503,9 +685,7 @@ pet_result_t pet2d_mvp_a_scene_skeleton_exit(void)
 
 pet_bool_t pet2d_mvp_a_scene_skeleton_is_active(void)
 {
-    return (g_mvp_a_scene_state == PET2D_MVP_A_SCENE_STATE_ENTERING) ||
-           (g_mvp_a_scene_state == PET2D_MVP_A_SCENE_STATE_RUNNING) ||
-           (g_mvp_a_scene_state == PET2D_MVP_A_SCENE_STATE_EXITING);
+    return pet2d_mvp_a_scene_state_is_active(g_mvp_a_scene_model.state);
 }
 
 pet_result_t pet2d_mvp_a_scene_skeleton_get_state(pet2d_mvp_a_scene_state_t *out_state)
@@ -513,7 +693,27 @@ pet_result_t pet2d_mvp_a_scene_skeleton_get_state(pet2d_mvp_a_scene_state_t *out
     if (out_state == 0) {
         return PET_RESULT_INVALID_ARGUMENT;
     }
-    *out_state = g_mvp_a_scene_state;
+    *out_state = g_mvp_a_scene_model.state;
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_mvp_a_scene_skeleton_get_model(
+    pet2d_mvp_a_scene_model_t *out_model)
+{
+    if (out_model == 0) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    *out_model = g_mvp_a_scene_model;
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_mvp_a_scene_skeleton_get_draw_cmd(
+    pet2d_mvp_a_scene_draw_cmd_t *out_cmd)
+{
+    if (out_cmd == 0) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    *out_cmd = g_mvp_a_scene_draw_cmd;
     return PET_RESULT_OK;
 }
 
@@ -529,23 +729,170 @@ pet_result_t pet2d_mvp_a_scene_skeleton_get_stats(
 
 pet_result_t pet2d_mvp_a_scene_skeleton_reset_stats(void)
 {
-    pet_u8_t *bytes = (pet_u8_t *)&g_mvp_a_scene_stats;
+    pet_u8_t *stats_bytes = (pet_u8_t *)&g_mvp_a_scene_stats;
+    pet_u8_t *model_bytes = (pet_u8_t *)&g_mvp_a_scene_model;
+    pet_u8_t *cmd_bytes = (pet_u8_t *)&g_mvp_a_scene_draw_cmd;
     pet_u32_t i;
 
     for (i = 0u; i < (pet_u32_t)sizeof(g_mvp_a_scene_stats); i++) {
-        bytes[i] = 0u;
+        stats_bytes[i] = 0u;
     }
-    pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_IDLE);
+    for (i = 0u; i < (pet_u32_t)sizeof(g_mvp_a_scene_model); i++) {
+        model_bytes[i] = 0u;
+    }
+    for (i = 0u; i < (pet_u32_t)sizeof(g_mvp_a_scene_draw_cmd); i++) {
+        cmd_bytes[i] = 0u;
+    }
+    pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_NONE);
     return PET_RESULT_OK;
 }
 
-pet_result_t pet2d_mvp_a_scene_skeleton_self_test(void)
+static pet_result_t pet2d_mvp_a_scene_action_loop_core_self_test(void)
+{
+    pet_key_event_t event;
+    pet2d_mvp_a_scene_model_t model;
+    pet2d_mvp_a_scene_draw_cmd_t draw_cmd;
+    pet2d_mvp_a_scene_stats_t stats;
+    pet_i16_t start_x;
+    pet_result_t ret;
+
+    ret = pet2d_mvp_a_scene_skeleton_enter();
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    if ((model.state != PET2D_MVP_A_SCENE_STATE_IDLE) ||
+        (model.pose != PET2D_MVP_A_SCENE_POSE_IDLE)) {
+        return PET_RESULT_ERROR;
+    }
+    start_x = model.pet_x;
+
+    event.type = PET_KEY_EVENT_CLICK;
+    event.timestamp_ms = model.enter_ms + 10u;
+    event.hold_ms = 0u;
+    event.repeat_count = 0u;
+    event.raw_code = 0u;
+
+    event.key = PET_KEY_LEFT_UP;
+    ret = pet2d_mvp_a_scene_skeleton_handle_key(&event);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    if ((model.state != PET2D_MVP_A_SCENE_STATE_MOVE_LEFT) ||
+        (model.pose != PET2D_MVP_A_SCENE_POSE_STEP) ||
+        (model.pet_x != (pet_i16_t)(start_x - PET2D_MVP_A_SCENE_STEP_PIXELS))) {
+        return PET_RESULT_ERROR;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_stats(&stats);
+    if ((ret != PET_RESULT_OK) ||
+        (stats.last_dirty_w !=
+         (PET2D_MVP_A_SCENE_SPRITE_SIZE + PET2D_MVP_A_SCENE_STEP_PIXELS)) ||
+        (stats.last_dirty_h != PET2D_MVP_A_SCENE_SPRITE_SIZE)) {
+        return PET_RESULT_ERROR;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_tick(
+        model.action_started_ms + model.action_duration_ms + 1u);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if ((ret != PET_RESULT_OK) ||
+        (model.state != PET2D_MVP_A_SCENE_STATE_IDLE) ||
+        (model.pose != PET2D_MVP_A_SCENE_POSE_IDLE)) {
+        return PET_RESULT_ERROR;
+    }
+
+    event.key = PET_KEY_RIGHT_DOWN;
+    event.timestamp_ms = model.enter_ms + 300u;
+    ret = pet2d_mvp_a_scene_skeleton_handle_key(&event);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if ((ret != PET_RESULT_OK) ||
+        (model.state != PET2D_MVP_A_SCENE_STATE_MOVE_RIGHT) ||
+        (model.pet_x != start_x)) {
+        return PET_RESULT_ERROR;
+    }
+
+    event.key = PET_KEY_OK;
+    event.timestamp_ms = model.enter_ms + 500u;
+    ret = pet2d_mvp_a_scene_skeleton_handle_key(&event);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if ((ret != PET_RESULT_OK) ||
+        (model.state != PET2D_MVP_A_SCENE_STATE_ACTION) ||
+        (model.pose == PET2D_MVP_A_SCENE_POSE_IDLE)) {
+        return PET_RESULT_ERROR;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_draw_cmd(&draw_cmd);
+    if ((ret != PET_RESULT_OK) ||
+        (draw_cmd.x != model.pet_x) ||
+        (draw_cmd.y != model.pet_y) ||
+        (draw_cmd.w != PET2D_MVP_A_SCENE_SPRITE_SIZE) ||
+        (draw_cmd.h != PET2D_MVP_A_SCENE_SPRITE_SIZE) ||
+        (draw_cmd.pose != (pet_u8_t)model.pose)) {
+        return PET_RESULT_ERROR;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_tick(
+        model.action_started_ms + model.action_duration_ms + 1u);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if ((ret != PET_RESULT_OK) ||
+        (model.state != PET2D_MVP_A_SCENE_STATE_IDLE)) {
+        return PET_RESULT_ERROR;
+    }
+
+    event.key = PET_KEY_CANCEL;
+    event.timestamp_ms = model.enter_ms + 800u;
+    ret = pet2d_mvp_a_scene_skeleton_handle_key(&event);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if ((ret != PET_RESULT_OK) ||
+        (model.exit_reason != PET2D_MVP_A_SCENE_EXIT_CANCEL) ||
+        (model.state != PET2D_MVP_A_SCENE_STATE_DONE)) {
+        return PET_RESULT_ERROR;
+    }
+
+    ret = pet2d_mvp_a_scene_skeleton_enter();
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_tick(
+        model.enter_ms + PET2D_MVP_A_SCENE_TIMEOUT_MS + 1u);
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+    ret = pet2d_mvp_a_scene_skeleton_get_model(&model);
+    if ((ret != PET_RESULT_OK) ||
+        (model.exit_reason != PET2D_MVP_A_SCENE_EXIT_TIMEOUT) ||
+        (model.state != PET2D_MVP_A_SCENE_STATE_DONE)) {
+        return PET_RESULT_ERROR;
+    }
+    return PET_RESULT_OK;
+}
+
+pet_result_t pet2d_mvp_a_scene_action_loop_self_test(void)
 {
     const pet_platform_t *platform = pet_platform_jieli_get();
     pet_display_owner_t original_owner;
-    pet_key_event_t event;
-    pet2d_mvp_a_scene_state_t state;
-    pet2d_mvp_a_scene_stats_t stats;
     pet_result_t ret;
 
     if ((platform == 0) || (platform->display_acquire == 0) ||
@@ -559,76 +906,22 @@ pet_result_t pet2d_mvp_a_scene_skeleton_self_test(void)
     }
 
     ret = pet2d_mvp_a_scene_skeleton_reset_stats();
-    if (ret != PET_RESULT_OK) {
-        return ret;
+    if (ret == PET_RESULT_OK) {
+        ret = pet2d_mvp_a_scene_action_loop_core_self_test();
     }
-    ret = pet2d_mvp_a_scene_skeleton_enter();
-    if (ret != PET_RESULT_OK) {
-        return ret;
-    }
-    if (pet2d_mvp_a_scene_skeleton_get_state(&state) != PET_RESULT_OK) {
-        return PET_RESULT_ERROR;
-    }
-    if (state != PET2D_MVP_A_SCENE_STATE_RUNNING) {
-        return PET_RESULT_ERROR;
-    }
-
-    event.key = PET_KEY_RIGHT_DOWN;
-    event.type = PET_KEY_EVENT_CLICK;
-    event.timestamp_ms = 0u;
-    event.hold_ms = 0u;
-    event.repeat_count = 0u;
-    event.raw_code = 0u;
-    ret = pet2d_mvp_a_scene_skeleton_handle_key(&event);
-    if (ret != PET_RESULT_OK) {
-        return ret;
-    }
-    event.key = PET_KEY_OK;
-    event.timestamp_ms = 0u;
-    ret = pet2d_mvp_a_scene_skeleton_handle_key(&event);
-    if (ret != PET_RESULT_OK) {
-        return ret;
-    }
-    event.key = PET_KEY_CANCEL;
-    event.timestamp_ms = 0u;
-    ret = pet2d_mvp_a_scene_skeleton_handle_key(&event);
-    if (ret != PET_RESULT_OK) {
-        return ret;
-    }
-    if (pet2d_mvp_a_scene_skeleton_get_state(&state) != PET_RESULT_OK) {
-        return PET_RESULT_ERROR;
-    }
-    if (state != PET2D_MVP_A_SCENE_STATE_DONE) {
-        return PET_RESULT_ERROR;
-    }
-
-    ret = pet2d_mvp_a_scene_skeleton_enter();
-    if (ret != PET_RESULT_OK) {
-        return ret;
-    }
-    ret = pet2d_mvp_a_scene_skeleton_tick(
-        g_mvp_a_scene_ctx.enter_ms + PET2D_MVP_A_SCENE_TIMEOUT_MS + 1u);
-    if (ret != PET_RESULT_OK) {
-        return ret;
-    }
-    if (pet2d_mvp_a_scene_skeleton_get_stats(&stats) != PET_RESULT_OK) {
-        return PET_RESULT_ERROR;
-    }
-    if ((stats.enter_count != 2u) ||
-        (stats.exit_count != 2u) ||
-        (stats.key_event_count < 3u) ||
-        (stats.action_toggle_count == 0u) ||
-        (stats.frame_count == 0u) ||
-        (stats.last_exit_reason != (pet_u8_t)PET2D_MVP_A_SCENE_EXIT_TIMEOUT)) {
-        return PET_RESULT_ERROR;
-    }
-
     if (pet_display_jieli_get_owner() == PET_DISPLAY_OWNER_PET2D) {
         (void)platform->display_release(platform->ctx, PET_DISPLAY_OWNER_PET2D);
     }
     if (original_owner != PET_DISPLAY_OWNER_NONE) {
         (void)platform->display_acquire(platform->ctx, original_owner, 0u);
     }
-    pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_DONE);
-    return PET_RESULT_OK;
+    if (ret == PET_RESULT_OK) {
+        pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_DONE);
+    }
+    return ret;
+}
+
+pet_result_t pet2d_mvp_a_scene_skeleton_self_test(void)
+{
+    return pet2d_mvp_a_scene_action_loop_self_test();
 }

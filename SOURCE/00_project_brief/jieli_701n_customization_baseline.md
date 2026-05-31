@@ -669,3 +669,46 @@ P22 still does not:
 - allocate a full framebuffer, use IMB acceleration or replace the LVGL flush callback;
 - write real pet-state saves, use P21 item 206/207 as production save slots or add low-battery veto logic;
 - connect real NFC/audio/BLE hardware.
+
+## P23 MVP-A Scene State / Placeholder Action Loop Status
+
+Status: implemented in source as an action-loop extension of the P22 skeleton on baseline
+`84e14c814229ec28ae1eda99c46025477e218df2 feat(petegg): add mvp a pet2d scene skeleton`. P23 is still
+not HOME/Observe and is not the full Pet2D runtime.
+
+Current P23 capability:
+
+- The scene model now exposes explicit `NONE`, `ENTER`, `IDLE`, `MOVE_LEFT`, `MOVE_RIGHT`, `ACTION`,
+  `EXITING`, `DONE` and `ERROR` states.
+- Placeholder poses include `IDLE`, `HAPPY`, `BLINK` and `STEP`.
+- LEFT_UP enters `MOVE_LEFT`, moves the placeholder pet 8 pixels left, clamps within the 96x64 stage,
+  renders the old/new dirty union, and returns to `IDLE` from tick-driven action completion.
+- RIGHT_DOWN enters `MOVE_RIGHT`, moves 8 pixels right, clamps, renders the old/new dirty union, and
+  returns to `IDLE`.
+- OK enters `ACTION`, cycles the placeholder pose, renders the 32x32 pet rect, and returns to `IDLE`
+  when the short action duration expires.
+- CANCEL exits with `PET2D_MVP_A_SCENE_EXIT_CANCEL`; timeout exits with
+  `PET2D_MVP_A_SCENE_EXIT_TIMEOUT`.
+- The renderer-facing contract is `pet2d_mvp_a_scene_draw_cmd_t`, which exposes x/y/w/h, pose,
+  pattern id and flags without requiring formal resources.
+- Self-test adds `PET_SELFTEST_MVP_A_SCENE_ACTION_LOOP` and validates state transitions, draw command
+  fields, dirty rect union, cancel exit and timeout exit without requiring real LCD writes.
+- Capability snapshot adds `has_mvp_a_scene_action_loop = 1`,
+  `mvp_a_scene_action_loop_selftest = 1` and `mvp_a_scene_action_loop_debug_entry = 1`.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `home_observe_enabled = 0`.
+- `full_pet2d_runtime_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P23 is a reusable action-loop contract, not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P23 still does not:
+
+- implement HOME/Observe product gameplay, growth state, formal animation tables or production art;
+- add transparency, RLE, compression policy or IMB acceleration;
+- write real pet-state saves or use P21 syscfg item 206/207 as production save slots;
+- restore arbitrary full-scene background pixels outside the bounded test patch;
+- connect real NFC/audio/BLE hardware.

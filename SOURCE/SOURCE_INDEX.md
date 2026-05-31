@@ -1037,3 +1037,28 @@ Tracked for P22:
 P22 still uses compiled/generated fixture pixels only. It does not reopen external Flash / virfat / raw
 NOR resources, does not write pet-state saves, does not allocate a full framebuffer and does not replace
 the LVGL flush callback.
+
+## P23 MVP-A Scene State / Placeholder Action Loop Addendum
+
+P23 extends the P22 skeleton with an explicit scene state/action-loop contract. It still reuses the
+same Debug-page `P22 Scene` entry and owner handoff; no HOME/Observe default route, full Pet2D runtime
+enablement or formal resource path is added.
+
+Tracked for P23:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.h`: adds explicit scene states, placeholder poses,
+  a `pet2d_mvp_a_scene_model_t`, and a renderer-facing `pet2d_mvp_a_scene_draw_cmd_t`.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.c`: advances LEFT_UP / RIGHT_DOWN / OK into short
+  MOVE_LEFT, MOVE_RIGHT and ACTION states, then returns to IDLE from tick-driven action completion.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_action_loop_compile_check.c`: compile-time reference for
+  the P23 action-loop contract.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton_compile_check.c`: references the model and draw
+  command getters.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds `PET_SELFTEST_MVP_A_SCENE_ACTION_LOOP` and snapshot
+  bits for action-loop support while keeping HOME/Observe and full runtime disabled.
+- `SOURCE/10_engineering_reports/p23_mvp_a_scene_state_action_loop.md`: engineering report for the P23
+  state/action-loop POC.
+
+P23 remains a renderer-facing contract and placeholder action-loop POC. It does not persist pet state,
+does not use P21 syscfg item 206/207 as production slots, and does not reopen external Flash / virfat /
+raw NOR.

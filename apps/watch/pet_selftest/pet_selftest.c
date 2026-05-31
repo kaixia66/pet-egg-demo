@@ -169,6 +169,11 @@ static pet_result_t pet_selftest_mvp_a_scene_skeleton(void)
     return pet2d_mvp_a_scene_skeleton_self_test();
 }
 
+static pet_result_t pet_selftest_mvp_a_scene_action_loop(void)
+{
+    return pet2d_mvp_a_scene_action_loop_self_test();
+}
+
 static pet_result_t pet_selftest_save_ab_internal(void)
 {
     return pet_save_jieli_syscfg_self_test();
@@ -197,6 +202,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_selftest_pet2d_scene_handoff,
         pet_selftest_pet2d_perf_poc,
         pet_selftest_mvp_a_scene_skeleton,
+        pet_selftest_mvp_a_scene_action_loop,
         pet_save_jieli_self_test,
         pet_selftest_save_ab_internal,
         pet_protocol_jieli_self_test,
@@ -235,6 +241,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "pet2d_scene_handoff",
         "pet2d_perf_poc",
         "mvp_a_scene_skeleton",
+        "mvp_a_scene_action_loop",
         "save_transaction",
         "save_ab_internal",
         "protocol_packet",
@@ -323,6 +330,9 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->has_mvp_a_scene_skeleton = 1u;
     out_snapshot->mvp_a_scene_skeleton_debug_entry = 1u;
     out_snapshot->mvp_a_scene_skeleton_real_board_verified = 0u;
+    out_snapshot->has_mvp_a_scene_action_loop = 1u;
+    out_snapshot->mvp_a_scene_action_loop_selftest = 1u;
+    out_snapshot->mvp_a_scene_action_loop_debug_entry = 1u;
     out_snapshot->home_observe_enabled = 0u;
     out_snapshot->full_pet2d_runtime_enabled = 0u;
     out_snapshot->has_resource_manifest_adapter = 1u;
