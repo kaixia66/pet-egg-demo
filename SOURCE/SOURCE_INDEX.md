@@ -1088,3 +1088,28 @@ Tracked for P24:
 P24 is still not HOME/Observe, not the formal renderer and not the full Pet2D runtime. It does not
 persist pet state, does not use P21 syscfg item 206/207 as production slots, and does not reopen external
 Flash / virfat / raw NOR.
+
+## P25 Simulator Bring-up / Shared Core Consistency Harness Addendum
+
+P25 adds a minimal host-side consistency harness under `tools/sim_consistency`. It is a replay/log
+scaffold for P22-P24 scene/action/render contracts, not a complete PC simulator, SDL window or
+HOME/Observe implementation.
+
+Tracked for P25:
+
+- `tools/sim_consistency/README.md`: harness scope, build notes and golden-output location.
+- `tools/sim_consistency/sim_consistency_replay.h/.c`: host replay model for ENTER, LEFT_UP, RIGHT_DOWN,
+  OK, CANCEL and timeout, plus screen/key/save/packet fixtures.
+- `tools/sim_consistency/sim_consistency_golden.h/.c`: embedded golden replay text.
+- `tools/sim_consistency/sim_consistency_main.c`: host executable entry that compares replay output to
+  the embedded golden text.
+- `tools/sim_consistency/sim_consistency_build_check.c`: compile-check entry point for the host harness.
+- `tools/sim_consistency/build_sim_consistency.bat`: host compiler discovery script for clang/gcc/MSVC.
+- `tools/sim_consistency/golden/p25_scene_replay_expected.txt`: committed tiny text golden fixture.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds snapshot bits for the P25 consistency harness while
+  keeping full PC simulator, SDL simulator, HOME/Observe and full Pet2D runtime disabled.
+- `SOURCE/10_engineering_reports/p25_simulator_shared_core_consistency_harness.md`: engineering report for
+  the P25 harness.
+
+P25 does not include a host executable artifact. If a normal host compiler is missing, the source is
+verified with syntax-only checks and the report records that executable verification is pending.

@@ -752,3 +752,42 @@ P24 still does not:
 - write real pet-state saves or use P21 syscfg item 206/207 as production save slots;
 - prove shared core completion or PC simulator parity;
 - connect real NFC/audio/BLE hardware.
+
+## P25 Simulator Bring-up / Shared Core Consistency Harness Status
+
+Status: implemented as a host-side harness skeleton on baseline
+`4565e7d2b9fbed148d421b290df49fc5ed36e30b feat(petegg): add mvp a placeholder renderer contract`.
+P25 is not a complete PC simulator, not SDL rendering, not HOME/Observe and not shared-core completion.
+
+Current P25 capability:
+
+- `tools/sim_consistency` builds a minimal replay model around the P22-P24 scene/action/render contract.
+- The replay covers ENTER, TICK idle skip, LEFT_UP, left action completion, RIGHT_DOWN, OK pose action,
+  OK action completion, CANCEL and timeout.
+- Golden output records state, pose, pet position, dirty rect, command count, first command, skipped
+  flush count and exit reason.
+- Renderer consistency checks cover enter `96x64` stage patch, movement `40x32` dirty union, pose-only
+  `32x32` dirty, idle no-change skip, cancel and timeout exit.
+- Fixtures cover screen profile, key event mapping, save slot header and protocol packet ABI without
+  touching syscfg, BLE, NFC, files or external Flash.
+- Capability snapshot adds `has_sim_consistency_harness = 1`, scene replay, renderer, screen, key, save
+  and packet fixture bits, while keeping `full_pc_simulator_enabled = 0` and `sdl_simulator_enabled = 0`.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `home_observe_enabled = 0`.
+- `full_pet2d_runtime_enabled = 0`.
+- `pet2d_runtime_enabled = 0`.
+- `full_pc_simulator_enabled = 0`.
+- `sdl_simulator_enabled = 0`.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P25 still does not:
+
+- provide a complete Windows/Mac simulator executable, UI loop or SDL window;
+- implement HOME/Observe product gameplay;
+- prove shared-core parity or PC simulator completion;
+- write real pet-state saves or use P21 syscfg item 206/207 as production save slots;
+- connect real NFC/audio/BLE hardware.

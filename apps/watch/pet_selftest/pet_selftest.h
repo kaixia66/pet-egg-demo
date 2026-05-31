@@ -77,6 +77,15 @@ typedef struct {
     pet_u8_t mvp_a_renderer_contract_selftest;
     pet_u8_t mvp_a_renderer_contract_debug_entry;
     pet_u8_t mvp_a_renderer_contract_used_by_scene_debug_entry;
+    pet_u8_t has_sim_consistency_harness;
+    pet_u8_t sim_consistency_scene_replay;
+    pet_u8_t sim_consistency_renderer_contract;
+    pet_u8_t sim_consistency_screen_profile_fixture;
+    pet_u8_t sim_consistency_key_replay_fixture;
+    pet_u8_t sim_consistency_save_slot_fixture;
+    pet_u8_t sim_consistency_packet_fixture;
+    pet_u8_t full_pc_simulator_enabled;
+    pet_u8_t sdl_simulator_enabled;
     pet_u8_t home_observe_enabled;
     pet_u8_t full_pet2d_runtime_enabled;
     pet_u8_t has_resource_manifest_adapter;

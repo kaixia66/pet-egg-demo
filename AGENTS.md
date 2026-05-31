@@ -313,6 +313,19 @@ distinguish the renderer contract from a production renderer and keep `home_obse
 `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0. The Debug entry remains the manual
 engineering scene entry and must be safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is 0.
 
+## PetEgg P25 Simulator Bring-up / Shared Core Consistency Harness Rule
+
+P25 may add a host-side consistency harness under `tools/` to replay the P22-P24 scene/action/render
+contract with fixed inputs and golden text output. It may compile against the shared PetEgg headers and
+the P24 renderer contract, but it must not depend on Jieli SDK private headers, real display ownership,
+syscfg, BLE, NFC, audio or resource/package paths.
+
+P25 is not a complete PC simulator, not SDL rendering, not HOME/Observe and not shared-core completion.
+It must not enable the full Pet2D runtime, formal resources, external Flash / virfat / raw NOR, pet-state
+persistence, NFC, audio or real BLE. Capability snapshots may mark the consistency harness and fixtures
+present, but must keep `full_pc_simulator_enabled`, `sdl_simulator_enabled`, `home_observe_enabled`,
+`full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
+
 ## PetEgg P21 Internal Save / syscfg A-B POC Rule
 
 P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a

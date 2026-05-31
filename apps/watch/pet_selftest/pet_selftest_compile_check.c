@@ -38,6 +38,15 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
         (snapshot.mvp_a_renderer_contract_selftest == 0u) ||
         (snapshot.mvp_a_renderer_contract_debug_entry != 0u) ||
         (snapshot.mvp_a_renderer_contract_used_by_scene_debug_entry == 0u) ||
+        (snapshot.has_sim_consistency_harness == 0u) ||
+        (snapshot.sim_consistency_scene_replay == 0u) ||
+        (snapshot.sim_consistency_renderer_contract == 0u) ||
+        (snapshot.sim_consistency_screen_profile_fixture == 0u) ||
+        (snapshot.sim_consistency_key_replay_fixture == 0u) ||
+        (snapshot.sim_consistency_save_slot_fixture == 0u) ||
+        (snapshot.sim_consistency_packet_fixture == 0u) ||
+        (snapshot.full_pc_simulator_enabled != 0u) ||
+        (snapshot.sdl_simulator_enabled != 0u) ||
         (snapshot.home_observe_enabled != 0u) ||
         (snapshot.full_pet2d_runtime_enabled != 0u) ||
         (snapshot.has_internal_save_syscfg_backend == 0u) ||

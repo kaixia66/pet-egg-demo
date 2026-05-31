@@ -537,6 +537,27 @@ Open items:
   `pet2d_runtime_enabled` remain 0.
 - External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
 
+## P25 Simulator Bring-up / Shared Core Consistency Harness Risks
+
+Status: P25 adds a host-side replay/golden harness for the P22-P24 scene/action/render contract. It is a
+consistency scaffold, not a complete PC simulator.
+
+Open items:
+
+- A normal host C compiler was not available in `PATH` on the current machine, so executable verification
+  may remain pending even when syntax-only checks pass.
+- The replay model is intentionally small and mirrors the placeholder contract; it does not prove full
+  HOME/Observe timing, renderer performance, SDL output or simulator input plumbing.
+- The screen/key/save/packet fixtures are minimal ABI sentinels, not full simulator storage, BLE, NFC or
+  protocol stacks.
+- The harness uses the Jieli-side P24 contract as the current source of truth. A later task still needs
+  to reconcile it with the PC simulator/shared core implementation.
+- No host executable, object file or log should be committed. Only source and tiny text golden fixtures
+  are source-controlled.
+- HOME/Observe remains incomplete, and `full_pc_simulator_enabled`, `sdl_simulator_enabled`,
+  `home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
 ## P24 MVP-A Placeholder Renderer Contract Risks
 
 Status: P24 refines the P23 placeholder draw command into a side-effect-free renderer-facing contract.

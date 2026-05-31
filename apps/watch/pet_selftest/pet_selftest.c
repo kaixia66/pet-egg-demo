@@ -344,6 +344,15 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->mvp_a_renderer_contract_selftest = 1u;
     out_snapshot->mvp_a_renderer_contract_debug_entry = 0u;
     out_snapshot->mvp_a_renderer_contract_used_by_scene_debug_entry = 1u;
+    out_snapshot->has_sim_consistency_harness = 1u;
+    out_snapshot->sim_consistency_scene_replay = 1u;
+    out_snapshot->sim_consistency_renderer_contract = 1u;
+    out_snapshot->sim_consistency_screen_profile_fixture = 1u;
+    out_snapshot->sim_consistency_key_replay_fixture = 1u;
+    out_snapshot->sim_consistency_save_slot_fixture = 1u;
+    out_snapshot->sim_consistency_packet_fixture = 1u;
+    out_snapshot->full_pc_simulator_enabled = 0u;
+    out_snapshot->sdl_simulator_enabled = 0u;
     out_snapshot->home_observe_enabled = 0u;
     out_snapshot->full_pet2d_runtime_enabled = 0u;
     out_snapshot->has_resource_manifest_adapter = 1u;
