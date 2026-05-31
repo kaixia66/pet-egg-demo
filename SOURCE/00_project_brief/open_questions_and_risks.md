@@ -446,3 +446,25 @@ Open items:
 - External Flash / virfat / raw NOR resources remain paused, so P19 uses generated/compiled fixtures only.
 - Current hardware still has no NFC and no speaker, and only one board is available. Real NFC, real audio
   and real BLE two-board validation remain Future Scope.
+
+## P20 Engineering Integration Snapshot Risks
+
+Status: P20 records the P1-P19 capability matrix and current engineering entry model. It is a
+documentation-first integration snapshot, not a new runtime feature and not a production engineering
+menu implementation.
+
+Open items:
+- The current integration status is split across documents, `pet_selftest` capability bits and manual
+  Debug entries. P20 records the model, but it does not add a polished on-device engineering test menu.
+- P18/P19 Debug actions remain engineering POC entries. Whether they stay as production diagnostics,
+  move behind a stricter engineering menu, or are removed before release is still undecided.
+- The self-test aggregator is intentionally conservative: it should not trigger real LCD flush, external
+  Flash access, real BLE/NFC, audio playback or storage writes during run-all.
+- HOME/Observe is still not implemented. P18/P19 prove handoff and dirty-rect performance only.
+- IMB/hardware acceleration, formal assets, transparency/RLE/compression policy, background restore and
+  full scene composition are still future renderer work.
+- External Flash / virfat / raw NOR resources remain paused because P17 observed transformed payloads and
+  a direct raw NOR read soft reset. Do not reopen `download/watch`, `fat_comm`, external package or raw
+  NOR work without a new explicit task.
+- Real NFC, real audio/speaker and real BLE two-board validation remain Future Scope on the current
+  hardware.

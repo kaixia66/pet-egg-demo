@@ -553,3 +553,35 @@ P19 still does not:
 - parse PNG/JPG/GIF/JSON;
 - allocate a full framebuffer or replace the LVGL flush callback;
 - write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.
+
+## P20 Engineering Test Menu / Integration Report Status
+
+Status: implemented as a documentation-first integration snapshot on baseline
+`5ddab34 feat(petegg): add high res motion performance poc`. P20 does not add gameplay, does not add a
+new default UI path, and does not change the existing P18/P19 Debug entries.
+
+Current engineering integration model:
+- The primary machine-readable status source remains `apps/watch/pet_selftest/`: `pet_selftest_run_all`,
+  `pet_selftest_run_case` and `pet_selftest_get_capability_snapshot`.
+- Manual board-only entries remain in the MVP-A Debug page: `P18 Scene`, `P19 Perf32`, `P19 Perf64` and
+  `P19 Perf96`. They are not boot actions and are not normal HOME/Observe paths.
+- The P20 report classifies P1-P19 capabilities as compile-time verified, selftest verified, manual Debug
+  verified, real-board verified, stub/fake only or Future Scope.
+- Real-board verified Pet2D/LCD capabilities currently include tiny gated LCD flush, repeated dirty rect
+  flush, resource-sprite fixture blit, minimal movement/latency stats, P18 scene handoff and P19
+  32x32/64x64/96x96 performance probes.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P20 is an integration report and does not enable the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P20 still does not:
+- implement HOME/Observe or a production engineering menu;
+- add new automatic real-LCD flush paths;
+- use external Flash, formal resource packages or SDK `.res` images as PetEgg sprites;
+- parse PNG/JPG/GIF/JSON;
+- allocate a full framebuffer or replace the LVGL flush callback;
+- write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.

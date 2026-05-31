@@ -256,6 +256,20 @@ keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 a
 `pet2d_runtime_enabled` at 0. Any P19 Debug entries are engineering-only, manual-triggered, finite, and
 safe when the real flush gate is disabled.
 
+## PetEgg P20 Engineering Test Menu / Integration Report Rule
+
+P20 is an integration snapshot phase. It may document and summarize the P1-P19 engineering capabilities,
+existing Debug/manual entries, self-test cases and capability bits, but it must not introduce new
+gameplay or mark POC features as production runtime. Prefer a low-risk documentation/report update unless
+a later task explicitly asks for a new engineering menu UI.
+
+P20 must not enable HOME/Observe, the full Pet2D runtime, external Flash / virfat / raw NOR resource
+work, formal resource packages, PNG/JPG/GIF/JSON decoding, full-framebuffer allocation, LVGL flush
+callback replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. The committed source must keep
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. P18/P19 Debug entries remain manual engineering entries only; build
+byproducts and local caches must not be committed.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。

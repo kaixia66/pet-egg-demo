@@ -968,3 +968,20 @@ Tracked for P19:
   `has_pet2d_perf_poc` while keeping `pet2d_runtime_enabled = 0`.
 - `SOURCE/10_engineering_reports/p19_high_res_motion_performance_poc.md`: records mode design, stats,
   safety boundaries, build status and the board-test plan/results.
+
+## P20 Engineering Test Menu / Integration Report Addendum
+
+P20 is a documentation-first engineering integration snapshot. It does not add a new runtime path; it
+records how the existing P1-P19 self-tests, capability snapshot and manual Debug entries should be read
+before the next implementation phase.
+
+Tracked for P20:
+- `SOURCE/10_engineering_reports/p20_engineering_test_menu_integration_report.md`: P1-P19 capability
+  matrix, real-board / compile-only / selftest / stub / Future Scope classification, safe macro state,
+  current engineering entry model, V0.2 gaps and P21/P22 route.
+- Existing engineering entries remain `P18 Scene`, `P19 Perf32`, `P19 Perf64` and `P19 Perf96` under the
+  Debug page only. P20 does not add boot-time, HOME/Observe or automatic Pet2D execution.
+- Existing self-test/capability APIs remain the integration status source: `pet_selftest_run_all`,
+  `pet_selftest_run_case` and `pet_selftest_get_capability_snapshot`.
+- External Flash / virfat / raw NOR resources, real NFC, real audio and real BLE two-board validation
+  remain Future Scope.
