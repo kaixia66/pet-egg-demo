@@ -967,7 +967,9 @@ c_SRC_FILES := \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_compile_check.c \
 	apps/watch/pet_save_jieli/pet_save_jieli.c \
 	apps/watch/pet_save_jieli/pet_save_jieli_memory_backend.c \
+	apps/watch/pet_save_jieli/pet_save_jieli_syscfg_backend.c \
 	apps/watch/pet_save_jieli/pet_save_jieli_compile_check.c \
+	apps/watch/pet_save_jieli/pet_save_jieli_syscfg_compile_check.c \
 	apps/watch/pet_protocol_jieli/pet_protocol_jieli.c \
 	apps/watch/pet_protocol_jieli/pet_protocol_jieli_compile_check.c \
 	apps/watch/pet_selftest/pet_selftest.c \

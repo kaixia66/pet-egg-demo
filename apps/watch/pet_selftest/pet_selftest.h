@@ -28,6 +28,7 @@ typedef enum {
     PET_SELFTEST_PET2D_SCENE_HANDOFF,
     PET_SELFTEST_PET2D_PERF_POC,
     PET_SELFTEST_SAVE_TRANSACTION,
+    PET_SELFTEST_SAVE_AB_INTERNAL,
     PET_SELFTEST_PROTOCOL_PACKET,
     PET_SELFTEST_BLE_LOOPBACK,
     PET_SELFTEST_NFC_FAKE,
@@ -65,6 +66,13 @@ typedef struct {
     pet_u8_t has_pet2d_perf_poc;
     pet_u8_t has_resource_manifest_adapter;
     pet_u8_t has_save_transaction_adapter;
+    pet_u8_t has_internal_save_syscfg_backend;
+    pet_u8_t internal_save_ab_supported;
+    pet_u8_t internal_save_crc_supported;
+    pet_u8_t internal_save_rollback_supported;
+    pet_u8_t internal_save_real_write_verified;
+    pet_u8_t internal_save_low_battery_guard_supported;
+    pet_u8_t internal_save_low_battery_guard_planned;
     pet_u8_t has_protocol_helper;
     pet_u8_t has_ble_loopback_test;
     pet_u8_t has_nfc_fake_test;

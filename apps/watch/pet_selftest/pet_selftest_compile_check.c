@@ -28,6 +28,13 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
         (snapshot.has_key_latency_probe_gate == 0u) ||
         (snapshot.has_pet2d_scene_handoff == 0u) ||
         (snapshot.has_pet2d_perf_poc == 0u) ||
+        (snapshot.has_internal_save_syscfg_backend == 0u) ||
+        (snapshot.internal_save_ab_supported == 0u) ||
+        (snapshot.internal_save_crc_supported == 0u) ||
+        (snapshot.internal_save_rollback_supported == 0u) ||
+        (snapshot.internal_save_real_write_verified != 0u) ||
+        (snapshot.internal_save_low_battery_guard_supported != 0u) ||
+        (snapshot.internal_save_low_battery_guard_planned == 0u) ||
         (snapshot.real_lcd_flush_enabled != 0u) ||
         (snapshot.external_flash_resource_enabled != 0u) ||
         (snapshot.pet2d_runtime_enabled != 0u)) {
@@ -38,5 +45,5 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
 
 const char *pet_selftest_compile_check_name(void)
 {
-    return pet_selftest_case_name(PET_SELFTEST_PET2D_PERF_POC);
+    return pet_selftest_case_name(PET_SELFTEST_SAVE_AB_INTERNAL);
 }

@@ -585,3 +585,45 @@ P20 still does not:
 - parse PNG/JPG/GIF/JSON;
 - allocate a full framebuffer or replace the LVGL flush callback;
 - write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.
+
+## P21 Internal Save / syscfg A-B POC Status
+
+Status: implemented in source as a bounded internal-save syscfg POC on baseline
+`8654e77 docs(petegg): add engineering integration report`. P21 is not the full pet growth save system.
+
+Current capability:
+- `apps/watch/pet_save_jieli/pet_save_jieli_syscfg_backend.*` provides a syscfg-backed A/B slot adapter
+  using the existing P6 save header and transaction rules.
+- The backend reserves PetEgg test namespace item IDs `206` and `207` for slot A and slot B. These are
+  outside the known watch setting IDs listed through `205` in `apps/watch/include/user_cfg_id.h`.
+- Slot capacity is 160 bytes. The committed POC payload limit is 96 bytes after the 64-byte P1/P6 header.
+- Writes are non-destructive to existing watch settings: only the two PetEgg test item IDs are touched.
+- `PET_STORAGE_AREA_SAVE` at offset 0 now maps to the syscfg A/B backend through
+  `pet_storage_jieli_read()` / `pet_storage_jieli_write_atomic()`. Other storage areas remain
+  unsupported.
+- Self-test adds `PET_SELFTEST_SAVE_AB_INTERNAL`. It writes payload 1, writes payload 2, corrupts the
+  latest PetEgg test slot, verifies fallback to the previous valid slot, then writes payload 3 to leave a
+  valid latest slot.
+- Capability snapshot adds internal-save fields for backend presence, A/B support, CRC support,
+  rollback support, real-write verification and low-battery guard status. `internal_save_real_write_verified`
+  remains 0 in the snapshot because reading the snapshot must not perform a syscfg write.
+  `internal_save_low_battery_guard_supported=0` and `internal_save_low_battery_guard_planned=1`; P21 has
+  not wired a real battery/power veto before `syscfg_write`.
+- The Debug-page manual `P21 Save` entry runs `PET_SELFTEST_SAVE_AB_INTERNAL` on demand and reports
+  explicit `result=PASS`, `backend=syscfg`, item IDs `206/207`, slot status, selected slot, counter,
+  payload length, CRC and write/readback/fallback pass/fail counts. This manual self-test is separate
+  from the side-effect-free capability snapshot.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `pet2d_runtime_enabled = 0`.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P21 still does not:
+- implement complete pet payload schema, growth history, card inventory or power-fail certification;
+- prove SDK syscfg item-level atomicity under reset or low battery;
+- add HOME/Observe, full Pet2D runtime or new LCD behavior;
+- use external Flash, files, raw NOR, SD card or resource packages;
+- connect real NFC/audio/BLE hardware.

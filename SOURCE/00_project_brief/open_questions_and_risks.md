@@ -468,3 +468,27 @@ Open items:
   NOR work without a new explicit task.
 - Real NFC, real audio/speaker and real BLE two-board validation remain Future Scope on the current
   hardware.
+
+## P21 Internal Save / syscfg A-B Risks
+
+Status: P21 adds a small internal-save POC using SDK `syscfg_read` / `syscfg_write` through PetEgg-owned
+test item IDs. The Debug-page `P21 Save` action has verified the real syscfg backend manually; capability
+snapshots remain side-effect-free and therefore keep `internal_save_real_write_verified=0`.
+
+Open items:
+- The POC reserves syscfg item IDs `206` and `207` for PetEgg save slot A/B after auditing
+  `apps/watch/include/user_cfg_id.h`, where known watch/FMNA IDs currently run through `205`. This should
+  be rechecked if the SDK increases or reassigns VM IDs.
+- The POC assumes an individual `syscfg_write` item update is the SDK's safe persistent write wrapper.
+  Reset-during-write, low-battery behavior, erase wear and item compaction policy still need vendor or
+  long-run validation.
+- `snapshot_internal_save_real_write_verified` remains 0 because snapshot reads must be side-effect free.
+  Manual Debug self-test real-write evidence is reported separately as
+  `manual_selftest_real_write_verified`.
+- Low-battery guard is planned, not supported in P21. The current syscfg backend does not call a real
+  battery/power veto before `syscfg_write`.
+- The current self-test intentionally corrupts only the PetEgg test namespace, then writes a recovery
+  payload. It must not be redirected to system watch settings.
+- P21 does not define the final pet growth payload, inventory/card data, save migration policy or schema
+  upgrade flow.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.

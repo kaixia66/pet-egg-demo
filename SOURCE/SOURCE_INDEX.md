@@ -985,3 +985,29 @@ Tracked for P20:
   `pet_selftest_run_case` and `pet_selftest_get_capability_snapshot`.
 - External Flash / virfat / raw NOR resources, real NFC, real audio and real BLE two-board validation
   remain Future Scope.
+
+## P21 Internal Save / syscfg A-B POC Addendum
+
+P21 adds a bounded internal-save syscfg backend proof under the existing P6 save adapter. It uses two
+PetEgg-owned syscfg item IDs as A/B slots and keeps the P1/P6 save header, counter, CRC and fallback
+rules intact.
+
+Tracked for P21:
+- `apps/watch/pet_save_jieli/pet_save_jieli_syscfg_backend.h`: syscfg backend constants, item IDs
+  206/207, max payload, stats and public load/write/self-test APIs.
+- `apps/watch/pet_save_jieli/pet_save_jieli_syscfg_backend.c`: fake-syscfg test backend for compile
+  checks, real `syscfg_read` / `syscfg_write` isolation for board builds, A/B load/write/readback verify
+  and fallback self-test.
+- `apps/watch/pet_save_jieli/pet_save_jieli_syscfg_compile_check.c`: syntax-only reference for the P21
+  backend.
+- `apps/watch/pet_platform_jieli/pet_storage_jieli.c`: maps `PET_STORAGE_AREA_SAVE` at offset 0 to the
+  P21 syscfg A/B backend; other areas remain unsupported.
+- `apps/watch/pet_selftest/*`: adds `PET_SELFTEST_SAVE_AB_INTERNAL` and internal-save capability bits.
+- `apps/watch/mvp_a/core/mvp_a_debug.c/.h`: adds the manual Debug-page `P21 Save` entry. It is not run
+  at boot and prints explicit PASS/FAIL summary fields for real board syscfg validation.
+- `SOURCE/10_engineering_reports/p21_internal_save_syscfg_ab_poc.md`: records backend choice, A/B format,
+  atomicity assumptions, self-test behavior, safety boundaries and remaining risks.
+
+P21 does not write external Flash, files, raw NOR or existing watch setting IDs. Snapshot
+`internal_save_real_write_verified` remains 0 because snapshots are side-effect free; manual Debug
+self-test real-write evidence is recorded separately. Low-battery write veto is planned, not supported.

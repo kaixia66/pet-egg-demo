@@ -12,6 +12,7 @@
 #include "pet_resource_jieli.h"
 #include "pet_resource_jieli_real.h"
 #include "pet_save_jieli.h"
+#include "pet_save_jieli_syscfg_backend.h"
 #include "pet_platform_jieli.h"
 
 typedef pet_result_t (*pet_selftest_fn_t)(void);
@@ -162,6 +163,11 @@ static pet_result_t pet_selftest_pet2d_perf_poc(void)
     return pet2d_perf_poc_self_test();
 }
 
+static pet_result_t pet_selftest_save_ab_internal(void)
+{
+    return pet_save_jieli_syscfg_self_test();
+}
+
 static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
 {
     static const pet_selftest_fn_t k_tests[PET_SELFTEST_MAX] = {
@@ -185,6 +191,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_selftest_pet2d_scene_handoff,
         pet_selftest_pet2d_perf_poc,
         pet_save_jieli_self_test,
+        pet_selftest_save_ab_internal,
         pet_protocol_jieli_self_test,
         pet_ble_jieli_self_test,
         pet_nfc_jieli_self_test,
@@ -221,6 +228,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "pet2d_scene_handoff",
         "pet2d_perf_poc",
         "save_transaction",
+        "save_ab_internal",
         "protocol_packet",
         "ble_loopback",
         "nfc_fake",
@@ -306,6 +314,13 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->has_pet2d_perf_poc = 1u;
     out_snapshot->has_resource_manifest_adapter = 1u;
     out_snapshot->has_save_transaction_adapter = 1u;
+    out_snapshot->has_internal_save_syscfg_backend = 1u;
+    out_snapshot->internal_save_ab_supported = 1u;
+    out_snapshot->internal_save_crc_supported = 1u;
+    out_snapshot->internal_save_rollback_supported = 1u;
+    out_snapshot->internal_save_real_write_verified = 0u;
+    out_snapshot->internal_save_low_battery_guard_supported = 0u;
+    out_snapshot->internal_save_low_battery_guard_planned = 1u;
     out_snapshot->has_protocol_helper = 1u;
     out_snapshot->has_ble_loopback_test = 1u;
     out_snapshot->has_nfc_fake_test = 1u;

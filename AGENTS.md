@@ -270,6 +270,23 @@ callback replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. The commit
 `pet2d_runtime_enabled` at 0. P18/P19 Debug entries remain manual engineering entries only; build
 byproducts and local caches must not be committed.
 
+## PetEgg P21 Internal Save / syscfg A-B POC Rule
+
+P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a
+PetEgg-owned test namespace. The only allowed persistent write path is the bounded A/B save slot proof
+under `apps/watch/pet_save_jieli/`, using the frozen P1/P6 save header, CRC, counter and fallback rules.
+It must not overwrite existing watch settings, product syscfg items, external Flash, files or raw NOR.
+
+P21 is not the complete pet growth save system. It must keep payloads small, non-destructive, manually
+verified or self-test gated, and clearly distinguish compile/fake-syscfg checks from real board syscfg
+writes. Capability snapshots must remain side-effect free, so real syscfg write verification belongs in
+manual Debug/self-test logs rather than snapshot fields. Low-battery write veto must not be marked
+supported unless a real battery/power-policy hook blocks the syscfg write path. P21 must not enable
+HOME/Observe, the full Pet2D runtime, external Flash / virfat / raw NOR resources, LVGL flush callback
+replacement, NFC, audio or real BLE. The committed source must keep
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。
