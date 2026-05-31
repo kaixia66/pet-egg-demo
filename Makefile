@@ -215,6 +215,14 @@ INCLUDES := \
 	-Iapps/watch/mvp_a/ui/pages/boss \
 	-Iapps/watch/mvp_a/ui/pages/diary \
 	-Iapps/watch/mvp_a/ui/pages/debug \
+	-Iapps/watch/pet_shared/include \
+	-Iapps/watch/pet_platform_jieli \
+	-Iapps/watch/pet2d_boundary \
+	-Iapps/watch/pet2d_scene \
+	-Iapps/watch/pet_resource_jieli \
+	-Iapps/watch/pet_save_jieli \
+	-Iapps/watch/pet_protocol_jieli \
+	-Iapps/watch/pet_selftest \
 	-Iapps/common \
 	-Iapps/common/device \
 	-Iapps/common/audio \
@@ -931,6 +939,46 @@ c_SRC_FILES := \
 	apps/watch/mvp_a/core/mvp_a_app.c \
 	apps/watch/mvp_a/core/mvp_a_debug.c \
 	apps/watch/mvp_a/core/mvp_a_save.c \
+	apps/watch/pet_shared/pet_shared_compile_check.c \
+	apps/watch/pet_platform_jieli/pet_platform_jieli.c \
+	apps/watch/pet_platform_jieli/pet_display_jieli.c \
+	apps/watch/pet_platform_jieli/pet_input_jieli.c \
+	apps/watch/pet_platform_jieli/pet_storage_jieli.c \
+	apps/watch/pet_platform_jieli/pet_audio_jieli.c \
+	apps/watch/pet_platform_jieli/pet_ble_jieli.c \
+	apps/watch/pet_platform_jieli/pet_nfc_jieli.c \
+	apps/watch/pet_platform_jieli/pet_power_jieli.c \
+	apps/watch/pet_platform_jieli/pet_debug_jieli.c \
+	apps/watch/pet_platform_jieli/pet_key_calibration_jieli.c \
+	apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c \
+	apps/watch/pet2d_boundary/pet2d_boundary.c \
+	apps/watch/pet2d_boundary/pet2d_minimal_visual.c \
+	apps/watch/pet2d_boundary/pet2d_dirty_rect_poc.c \
+	apps/watch/pet2d_boundary/pet2d_resource_sprite_poc.c \
+	apps/watch/pet2d_boundary/pet2d_movement_poc.c \
+	apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c \
+	apps/watch/pet2d_scene/pet2d_scene.c \
+	apps/watch/pet2d_scene/pet2d_scene_compile_check.c \
+	apps/watch/pet2d_scene/pet2d_perf_poc.c \
+	apps/watch/pet2d_scene/pet2d_perf_poc_compile_check.c \
+	apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract.c \
+	apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract_compile_check.c \
+	apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.c \
+	apps/watch/pet2d_scene/pet2d_mvp_a_scene_action_loop_compile_check.c \
+	apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton_compile_check.c \
+	apps/watch/pet_resource_jieli/pet_resource_jieli.c \
+	apps/watch/pet_resource_jieli/pet_resource_jieli_real.c \
+	apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.c \
+	apps/watch/pet_resource_jieli/pet_resource_jieli_compile_check.c \
+	apps/watch/pet_save_jieli/pet_save_jieli.c \
+	apps/watch/pet_save_jieli/pet_save_jieli_memory_backend.c \
+	apps/watch/pet_save_jieli/pet_save_jieli_syscfg_backend.c \
+	apps/watch/pet_save_jieli/pet_save_jieli_compile_check.c \
+	apps/watch/pet_save_jieli/pet_save_jieli_syscfg_compile_check.c \
+	apps/watch/pet_protocol_jieli/pet_protocol_jieli.c \
+	apps/watch/pet_protocol_jieli/pet_protocol_jieli_compile_check.c \
+	apps/watch/pet_selftest/pet_selftest.c \
+	apps/watch/pet_selftest/pet_selftest_compile_check.c \
 	apps/watch/mvp_a/domain/mvp_a_boss.c \
 	apps/watch/mvp_a/domain/mvp_a_card.c \
 	apps/watch/mvp_a/domain/mvp_a_diary.c \

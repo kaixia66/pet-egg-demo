@@ -1,5 +1,340 @@
 # SOURCE_INDEX.md
 
+## P1 Shared Interface Pack Addendum
+
+The P1 shared interface files live under `apps/watch/pet_shared/include/` and are indexed here because
+they define the simulator/Jieli contract boundary while `source/` remains documentation-only.
+The simulator reference used for ABI alignment is `D:/0-jieli_sdk/simulator/shared_portable/include`.
+
+Interface files:
+- `apps/watch/pet_shared/include/pet_types.h`: fixed-width aliases, bool compatibility, shared result
+  codes, version macros, static assert and packed layout helpers.
+- `apps/watch/pet_shared/include/pet_display_profile.h`: screen shape, RGB565 display profile,
+  display owner, flush mode, safe area and rotation fields.
+- `apps/watch/pet_shared/include/pet_key.h`: four-key logical input, key actions, event timestamps,
+  hold/repeat/raw fields and input snapshots.
+- `apps/watch/pet_shared/include/pet_protocol.h`: BLE-independent packet framing and NFC pair payload.
+- `apps/watch/pet_shared/include/pet_save_format.h`: packed A/B save slot header, counters, payload
+  length, CRC32 and transaction/status fields.
+- `apps/watch/pet_shared/include/pet_resource_format.h`: packed resource manifest/header entries,
+  resource type enum, CRC fields and canonical resource file names.
+- `apps/watch/pet_shared/include/pet_platform.h`: callback table for time, identity, display, input,
+  storage, audio, BLE packet, NFC scan/poll and power APIs.
+- `apps/watch/pet_shared/pet_shared_compile_check.c`: minimal compile-only include check for the
+  shared interface pack.
+
+Simulator name mapping:
+- `pet_key.h` maps simulator `pet_input.h`.
+- `pet_protocol.h` maps simulator `pet_packet.h` and `pet_nfc_pair_payload.h`.
+- `pet_resource_format.h` maps simulator `pet_resource_manifest.h`.
+- `pet_platform.h` extends simulator `PetPlatformCallbacks` for future Jieli port callbacks.
+
+Related P1 docs:
+- `source/00_project_brief/jieli_701n_customization_baseline.md`
+- `source/00_project_brief/open_questions_and_risks.md`
+
+## P2 Jieli Platform HAL Skeleton Addendum
+
+`apps/watch/pet_platform_jieli/` is the Jieli-specific adapter directory for the P1 shared ABI. It is
+compiled into the SDK for boundary checking, but P2 keeps all real hardware paths disabled.
+
+P2 files:
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: public getter/init entry for the Jieli platform
+  callback table.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: internal prototypes and P2 version
+  constants for the Jieli adapter modules.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.c`: owns `g_pet_platform_jieli`, fills every
+  `pet_platform_t` callback, and provides millis/device identity stubs.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: display profile and owner acquire/release stub;
+  does not touch the real LCD or LVGL flush path.
+- `apps/watch/pet_platform_jieli/pet_input_jieli.c`: key event and snapshot stub; does not alter MVP-A
+  key handling.
+- `apps/watch/pet_platform_jieli/pet_storage_jieli.c`: storage read/write stub; does not write VM,
+  Flash, files or MVP-A save data.
+- `apps/watch/pet_platform_jieli/pet_audio_jieli.c`: SFX/audio state stub.
+- `apps/watch/pet_platform_jieli/pet_ble_jieli.c`: packet send/poll stub; no real BLE GATT or loopback.
+- `apps/watch/pet_platform_jieli/pet_nfc_jieli.c`: card/pair scan stub; no real NFC or fake injection.
+- `apps/watch/pet_platform_jieli/pet_power_jieli.c`: fixed test battery values and power TODOs.
+- `apps/watch/pet_platform_jieli/pet_debug_jieli.c`: `PET_DEBUG`-guarded injection stubs.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: minimal compile-only use of
+  `pet_platform_jieli_get()`.
+
+## P3 Display Profile + Input Mapping POC Addendum
+
+P3 stays inside `apps/watch/pet_platform_jieli/` and keeps real hardware paths disabled. It refines the
+P2 display/profile and input stubs into auditable POC code:
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: now declares
+  `pet_platform_jieli_display_self_test()` and `pet_platform_jieli_input_self_test()`.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: declares P3 display constants
+  (`PET_JIELI_DISPLAY_*`), placeholder raw key/event constants, and the raw-event mapping helper.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: returns the named 454x454 RGB565 profile,
+  validates safe area/owner behavior in display self-test, and still never writes to the LCD.
+- `apps/watch/pet_platform_jieli/pet_input_jieli.c`: maps placeholder IO raw codes/events to
+  `PetKeyEvent`, owns a small private POC queue, returns `PET_RESULT_AGAIN` when no event is queued,
+  and provides input self-test coverage.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references both self-test
+  entry points without performing real hardware calls.
+- `SOURCE/10_engineering_reports/p3_display_input_poc.md`: records display and key-source audit
+  findings, mapping table, self-test expectations, and P3 hardware boundaries.
+
+## P4 Render Owner Boundary Addendum
+
+P4 adds the LVGL/Pet2D display-owner boundary while keeping all real rendering hardware paths disabled:
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: declares `pet_display_jieli_get_owner()` and
+  `pet_display_jieli_owner_self_test()` for controlled owner-state checks.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: exposes the owner getter internally for
+  Jieli boundary modules.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: factors owner validation into
+  `pet_display_jieli_owner_self_test()` and documents the same-owner re-acquire stub policy.
+- `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c`: acquires the LVGL display owner at shell create/render time,
+  verifies owner before rendering, and provides `mvp_a_lvgl_shell_release_display_owner()` for future
+  handoff. It does not change LVGL flush or page creation logic.
+- `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.h`: declares the controlled LVGL owner release hook.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h`: public placeholder boundary API for future Pet2D entry,
+  exit and self-test.
+- `apps/watch/pet2d_boundary/pet2d_boundary.c`: validates PET2D owner acquisition/release without
+  allocating a framebuffer or calling LCD flush.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: compile-only reference for the boundary.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references display-owner and
+  Pet2D boundary self-tests without hardware calls.
+- `SOURCE/10_engineering_reports/p4_render_owner_boundary.md`: records owner state machine, LVGL hook
+  points, placeholder behavior and P4 boundaries.
+
+## P5 Resource Manifest Adapter Addendum
+
+P5 adds a read-only resource manifest parser and fixture backend while keeping real Flash/resource
+loading disabled:
+- `apps/watch/pet_resource_jieli/pet_resource_jieli.h`: public read-only blob parser API, manifest info
+  struct, lookup/read helpers and self-test declaration.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli.c`: parses the P1/simulator manifest ABI from a
+  little-endian memory blob, validates magic/version/header size/entry size/table CRC/entry CRC and
+  performs lookup without malloc, file IO or Flash IO.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.h`: fixture IDs and test blob export.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.c`: small P5-only manifest fixture with
+  three entries and fixed CRCs; not a production art/resource route.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_compile_check.c`: compile-only reference for the
+  resource parser and self-test.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h`: declares `pet2d_boundary_resource_probe_self_test()`.
+- `apps/watch/pet2d_boundary/pet2d_boundary.c`: lightly probes the resource self-test without loading
+  sprites, entering Pet2D runtime or writing the display.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: includes the resource probe in the
+  boundary compile/self-test path.
+- `SOURCE/10_engineering_reports/p5_resource_manifest_adapter.md`: records SDK resource audit,
+  manifest ABI alignment, test blob contents, parser API and P5 boundaries.
+
+## P6 Save Transaction Adapter Addendum
+
+P6 adds an isolated A/B save adapter under `apps/watch/pet_save_jieli/`. It is compiled for
+ABI/transaction checking, but it does not replace MVP-A syscfg save and does not write real VM/Flash:
+- `apps/watch/pet_save_jieli/pet_save_jieli.h`: public A/B save adapter API for opening the memory
+  backend, loading the latest slot, transaction writes, slot validation, latest-slot selection, CRC32
+  and self-test.
+- `apps/watch/pet_save_jieli/pet_save_jieli.c`: validates the P1/simulator 64-byte save slot header,
+  computes payload CRC32, chooses the higher-counter valid slot, writes inactive slots through a
+  staged header, verifies writes and exercises rollback self-tests.
+- `apps/watch/pet_save_jieli/pet_save_jieli_backend.h`: shared backend fault enum for P6 failure
+  simulation.
+- `apps/watch/pet_save_jieli/pet_save_jieli_memory_backend.h`: caller-owned A/B slot buffers and
+  test-only write-fault / low-battery flags.
+- `apps/watch/pet_save_jieli/pet_save_jieli_memory_backend.c`: no-malloc memory backend init, clear and
+  test fault controls.
+- `apps/watch/pet_save_jieli/pet_save_jieli_compile_check.c`: compile-only reference for the save
+  adapter and self-test.
+- `SOURCE/10_engineering_reports/p6_save_transaction_adapter.md`: records MVP-A save audit, ABI
+  alignment, transaction/rollback behavior, memory backend fault injection and P6 storage boundaries.
+
+## P7 Protocol Debug Adapter Addendum
+
+P7 adds packet/NFC-pair helpers and test-only BLE/NFC/debug injection paths while keeping real BLE/NFC
+hardware disabled:
+- `apps/watch/pet_protocol_jieli/pet_protocol_jieli.h`: packet and NFC pair helper API for CRC16,
+  build/finalize/validate and self-test.
+- `apps/watch/pet_protocol_jieli/pet_protocol_jieli.c`: C99, no-malloc helper implementation aligned
+  with simulator packet and 24-byte NFC pair payload semantics.
+- `apps/watch/pet_protocol_jieli/pet_protocol_jieli_compile_check.c`: compile-only reference for
+  packet and NFC pair ABI checks.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: declares P7 BLE/NFC/debug self-tests and
+  `PET_DEBUG` / `PET_PLATFORM_JIELI_TEST` debug injection controls.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: declares test-mode BLE loopback,
+  fake NFC injection and fake debug state helpers.
+- `apps/watch/pet_platform_jieli/pet_ble_jieli.c`: adds a fixed-size packet loopback queue that is
+  available only in test/debug mode; default sends/polls still return `NOT_READY`.
+- `apps/watch/pet_platform_jieli/pet_nfc_jieli.c`: adds fake NFC card and NFC pair queues only in
+  test/debug mode; real scans remain disabled.
+- `apps/watch/pet_platform_jieli/pet_debug_jieli.c`: adds macro-isolated fake time, fake battery,
+  BLE packet injection, NFC card injection and NFC pair payload injection.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.c`: reads fake debug time only when test/debug
+  mode is compiled.
+- `apps/watch/pet_platform_jieli/pet_power_jieli.c`: reads fake debug battery only when test/debug
+  mode is compiled.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references protocol, BLE, NFC
+  and debug self-tests without real hardware calls.
+- `SOURCE/10_engineering_reports/p7_protocol_debug_adapter.md`: records BLE/NFC path audit, ABI
+  alignment, loopback/fake queue design, debug injection boundaries and P7 risks.
+
+## P8 Platform Self-Test Snapshot Addendum
+
+P8 adds a unified self-test aggregator under `apps/watch/pet_selftest/`. It only summarizes and calls
+existing P1-P7 boundary tests; it does not enable real LCD, Pet2D, storage, BLE or NFC hardware:
+- `apps/watch/pet_selftest/pet_selftest.h`: public case enum, summary struct and capability snapshot
+  API.
+- `apps/watch/pet_selftest/pet_selftest.c`: aggregates shared ABI, platform HAL, display profile,
+  display owner, input mapping, render owner, resource manifest, Pet2D resource probe, save
+  transaction, protocol packet, BLE loopback, NFC fake and debug injection self-tests.
+- `apps/watch/pet_selftest/pet_selftest_compile_check.c`: compile-only reference for `run_all`, case
+  naming and capability snapshot APIs.
+- `SOURCE/10_engineering_reports/p8_platform_selftest_snapshot.md`: records the P1-P7 capability matrix,
+  aggregator design, capability snapshot and remaining real-hardware gaps.
+
+## P9 Display Flush Owner POC Addendum
+
+P9 keeps the active LVGL flush callback untouched and adds a guarded PetEgg display flush diagnostic
+path:
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: declares
+  `pet_display_jieli_flush_stats_t`, flush stats reset/get APIs, `pet_display_jieli_flush_self_test()`
+  and the tiny flush POC entry.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: defines
+  `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` defaulting to 0.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: validates RGB565 flush rectangles, enforces
+  display owner guard, records diagnostic stats and keeps real LCD writes disabled by default.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references flush stats and
+  flush owner self-test.
+- `apps/watch/pet_selftest/pet_selftest.h`: adds `PET_SELFTEST_DISPLAY_FLUSH_OWNER` and
+  `has_display_flush_owner_guard`.
+- `apps/watch/pet_selftest/pet_selftest.c`: aggregates the display flush owner self-test while keeping
+  `real_lcd_flush_enabled` at 0.
+- `SOURCE/10_engineering_reports/p9_display_flush_owner_poc.md`: records LVGL/LCD flush audit,
+  diagnostic stats, wait/busy semantics, macro state and remaining hardware risks.
+
+## P10 Tiny Real LCD Flush POC Addendum
+
+P10 keeps the committed default real LCD path disabled while adding the manual-only tiny flush gate:
+
+- `apps/watch/pet_platform_jieli/pet_platform_jieli.h`: extends display flush diagnostic stats with
+  real-attempt counters, driver status, duration and tiny POC gate state; declares the tiny/manual POC APIs.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_internal.h`: keeps
+  `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` defaulting to 0 and declares P10 internal APIs.
+- `apps/watch/pet_platform_jieli/pet_display_jieli.c`: adds manual-armed, owner-guarded tiny RGB565 flush
+  POC plumbing. The committed default does not call LCD driver APIs.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h` and `.c`: add `pet2d_boundary_tiny_visual_probe()` as a
+  manual boundary probe; it returns `UNSUPPORTED` while the real-flush macro is off.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the visual probe without touching
+  hardware.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add the tiny flush POC case and capability bit; run-all
+  reports this case as skipped so it never performs a real panel write.
+- `SOURCE/10_engineering_reports/p10_tiny_real_lcd_flush_poc.md`: records the second LCD API audit, manual
+  enablement steps, acceptance criteria and rollback instructions.
+
+## P11 Pet2D Minimal Real Flush POC Addendum
+
+P11 adds a minimal Pet2D-boundary RGB565 visual surface while keeping the committed real LCD path
+disabled:
+
+- `apps/watch/pet2d_boundary/pet2d_minimal_visual.h` and `.c`: define a caller-owned 16x16 RGB565 surface
+  helper and self-test. The pattern has a white border, quadrant colors and diagonal lines so direction
+  and RGB565 byte-order issues are easier to spot on hardware.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h` and `.c`: add
+  `pet2d_boundary_minimal_real_flush_probe()`, a manual probe that acquires PET2D owner and calls the P10
+  real-flush rectangle API only when the real-flush macro is enabled for a local board build.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the minimal helper and manual
+  probe without touching hardware in the committed default.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add a minimal visual gate case and capability bit.
+  run-all validates the 16x16 pattern helper but reports the real panel path as skipped.
+- `SOURCE/10_engineering_reports/p11_pet2d_minimal_real_flush_poc.md`: records helper design, test pattern,
+  manual probe gate, safety boundaries and manual board-test plan.
+
+## P12 Repeated Tiny Flush + Dirty Rect Alignment POC Addendum
+
+P12 adds small dirty-rect pattern generation and a finite repeated-flush probe while keeping the committed
+real LCD path disabled:
+
+- `apps/watch/pet2d_boundary/pet2d_dirty_rect_poc.h` and `.c`: define 16x16, 32x32 and 64x64 RGB565 test
+  patterns, center/odd/near-edge/out-of-bounds rect cases, bounds validation and compile self-test.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h` and `.c`: add repeated flush configuration, stats,
+  reset/get APIs and a manual repeated probe that only reaches the P10 real-flush path when the real-flush
+  macro is enabled for a local board build.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the dirty-rect helper and repeated
+  probe gate without touching hardware in the committed default.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add the repeated flush gate case and dirty-rect
+  capability bit. run-all validates pattern/bounds helpers but skips real panel writes.
+- `SOURCE/10_engineering_reports/p12_repeated_flush_dirty_rect_poc.md`: records the hardware scope change,
+  dirty-rect helper design, repeated-probe behavior, safety boundaries and board-test plan/results.
+
+## P13 Resource Sprite To Minimal Surface POC Addendum
+
+P13 connects the P5 test resource fixture to the Pet2D boundary's small RGB565 surfaces while keeping
+formal resources, external Flash and full Pet2D runtime disabled:
+
+- `apps/watch/pet2d_boundary/pet2d_resource_sprite_poc.h` and `.c`: open P5 fixture resources 1001 and
+  2001, validate their RGB565 sprite metadata, expose a sprite view, and blit raw pixels into a
+  caller-owned minimal surface with clipping.
+- `apps/watch/pet2d_boundary/pet2d_boundary.h` and `.c`: add resource-sprite visual probe stats and a
+  manual resource-derived flush probe. With the committed real-flush macro off, the probe returns
+  `UNSUPPORTED` before touching LCD hardware.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the sprite view helper, blit
+  self-test and manual probe gate.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: includes the P13 helper in the
+  platform compile-check path without enabling real hardware.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add the resource-sprite surface case and capability
+  bit. run-all validates resource lookup and blit behavior, then skips the real panel write gate.
+- `SOURCE/10_engineering_reports/p13_resource_sprite_minimal_surface_poc.md`: records fixture IDs,
+  resource->surface behavior, manual board-test plan and P13 boundaries.
+
+## P14 Minimal Sprite Movement + Raw Key Calibration POC Addendum
+
+P14 adds passive raw-key calibration storage and a minimal resource-sprite movement gate while keeping
+MVP-A's default input path and full Pet2D runtime disabled:
+
+- `apps/watch/pet_platform_jieli/pet_key_calibration_jieli.h` and `.c`: record recent raw/sdk key
+  observations, convert the audited SDK key values back to placeholder raw codes, map through the P3
+  PetKey helper, and self-test the calibration buffer without reading the real key queue.
+- `apps/watch/pet2d_boundary/pet2d_movement_poc.h` and `.c`: maintain a tiny 32x32 sprite movement
+  state, handle `PET_KEY_LEFT_UP`, `PET_KEY_RIGHT_DOWN`, `PET_KEY_OK` and `PET_KEY_CANCEL`, compute a
+  dirty bounding rect, and expose a manual gated render step.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the key-independent movement
+  self-test and macro-off movement gate.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references the key calibration
+  self-test and movement self-test without enabling real hardware.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add key-calibration and minimal-movement cases plus
+  capability bits; run-all still skips real LCD movement writes.
+- `SOURCE/10_engineering_reports/p14_minimal_sprite_movement_key_calibration.md`: records key-source
+  audit, calibration strategy, mapping status, movement POC behavior and P14 board-test plan/results.
+
+## P15 Key Latency + Movement Repeated Flush Stats POC Addendum
+
+P15 extends the P14 movement POC with coarse timing and repeated-step statistics while keeping the
+committed real LCD path and full Pet2D runtime disabled:
+
+- `apps/watch/pet2d_boundary/pet2d_movement_poc.h` and `.c`: extend movement stats with key event,
+  logic, render and flush timestamps, key-to-flush min/max/average counters, old/new sprite positions,
+  dirty-rect union data and bounded repeated movement steps.
+- `apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c`: references the repeated movement gate and
+  repeat-count limit without touching real LCD hardware.
+- `apps/watch/pet_platform_jieli/pet_platform_jieli_compile_check.c`: references the repeated movement
+  gate in the platform compile-check path while the real-flush macro remains off.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add the key-latency/movement-stats case and
+  capability bits; run-all still skips real movement panel writes.
+- `SOURCE/10_engineering_reports/p15_key_latency_movement_stats.md`: records stats fields, latency
+  method, dirty-rect union strategy, repeated-probe behavior and P15 board-test plan/results.
+
+## P16 Real Resource Package / External Flash Read POC Addendum
+
+P16 audits the SDK resource/read path and adds a read-only real resource package probe while keeping
+resource generation, external-Flash writes, full Pet2D runtime and real LCD writes disabled:
+
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_real.h` and `.c`: add a read-only real package
+  adapter. The default probe tries `storage/virfat_flash/C/petegg/manifest.bin` through `res_fopen`,
+  reads only metadata/header bytes, exposes bounded reads, and returns `NOT_FOUND` when no package is
+  present.
+- `apps/watch/pet_resource_jieli/pet_resource_jieli_compile_check.c`: references the real read probe
+  API without requiring a package to exist.
+- `apps/watch/pet_selftest/pet_selftest.h` and `.c`: add `PET_SELFTEST_RESOURCE_PACKAGE_PROBE`,
+  `has_real_resource_read_probe`, `real_resource_package_available` and
+  `external_flash_resource_enabled`. run-all reports a missing package as skipped.
+- `Makefile`: compiles `pet_resource_jieli_real.c`.
+- `SOURCE/10_engineering_reports/p16_real_resource_package_read_poc.md`: records the SDK resource path
+  audit, adapter design, package probe result, safety boundaries and follow-up plan.
+
 > 本文件说明 `SOURCE/` 目录中各类文件的用途、阅读顺序和适用任务。
 > CodeX 每次任务开始前应先读 `CODEX_CONTEXT.md`，再读本索引，并按任务类型选择专题文件。
 
@@ -577,3 +912,204 @@ docs(source): update MVP-A scope
 docs(source): record PRD conflict resolution
 docs(source): add UI source index
 ```
+
+---
+
+## P17S External Flash Resource Pause Addendum
+
+P17 attempted a minimal PetEgg resource package generator and external Flash download integration, then
+was stopped after board testing showed the file could be opened with the expected size but the payload
+read at runtime did not match the local plain `MRTP` package header. External Flash / virfat / raw NOR
+PetEgg resource work is now Future Scope.
+
+Tracked for P17S:
+- `SOURCE/10_engineering_reports/p17_external_flash_resource_blocked.md`: records the generator/download
+  attempt, transformed runtime header, direct raw NOR soft-reset risk, and the decision to continue
+  near-term work in the 2M internal Flash environment.
+- No PetEgg package generator, external Flash package artifact, `download/watch` integration, temporary
+  Debug UI action, or external Flash self-test case enters the current mainline from P17.
+- Follow-up work should prefer Pet2D scene handoff, internal/compiled small resources, internal save or
+  engineering test menu tasks unless a later task explicitly reopens the external Flash resource route.
+
+## P18 Pet2D Scene Mode / LVGL Handoff POC Addendum
+
+P18 adds a bounded Pet2D test-scene handoff POC that uses only the existing compiled P13/P15 resource
+fixture and movement surface. It does not reopen external Flash and does not mark the full Pet2D runtime
+as enabled.
+
+Tracked for P18:
+- `apps/watch/pet2d_scene/pet2d_scene.h`: scene state, exit reasons, stats and public handoff APIs.
+- `apps/watch/pet2d_scene/pet2d_scene.c`: manual test-scene state machine, LVGL release / PET2D acquire,
+  bounded tick/timeout, key handling and LVGL refresh request on exit.
+- `apps/watch/pet2d_scene/pet2d_scene_compile_check.c`: compile-time scene API check.
+- `apps/watch/mvp_a/core/mvp_a_debug.*`: retained manual-only Debug action named `P18 Scene`.
+- `apps/watch/mvp_a/core/mvp_a_app.c` and `apps/watch/mvp_a/ui/mvp_a_lvgl_shell.c`: route keys/ticks to
+  the active scene and keep LVGL repaint owner-guarded.
+- `apps/watch/pet_selftest/*`: adds `PET_SELFTEST_PET2D_SCENE_HANDOFF` and capability bit
+  `has_pet2d_scene_handoff` while keeping `pet2d_runtime_enabled = 0`.
+- `SOURCE/10_engineering_reports/p18_pet2d_scene_handoff_poc.md`: records design, safety boundaries,
+  verification and remaining risks.
+
+## P19 High-res Motion / Performance POC Addendum
+
+P19 adds a bounded high-res dirty-rect motion/performance probe on top of the P18 scene handoff. It uses
+only generated RGB565 test patterns in a small static scratch buffer; it does not reopen external Flash,
+formal packages or HOME/Observe.
+
+Tracked for P19:
+- `apps/watch/pet2d_scene/pet2d_perf_poc.h`: public perf mode enum, stats struct and bounded run APIs.
+- `apps/watch/pet2d_scene/pet2d_perf_poc.c`: 32x32, 64x64 and 96x96 finite-frame movement probe, owner
+  handoff, coarse timing stats, and gate behavior. 128x128 remains an optional unsupported mode because
+  moving it would exceed the 128x128 maximum scratch-buffer limit.
+- `apps/watch/pet2d_scene/pet2d_perf_poc_compile_check.c`: compile-time perf API checks.
+- `apps/watch/mvp_a/core/mvp_a_debug.*`: retained manual-only Debug actions `P19 Perf32`, `P19 Perf64`
+  and `P19 Perf96`.
+- `apps/watch/pet_selftest/*`: adds `PET_SELFTEST_PET2D_PERF_POC` and capability bit
+  `has_pet2d_perf_poc` while keeping `pet2d_runtime_enabled = 0`.
+- `SOURCE/10_engineering_reports/p19_high_res_motion_performance_poc.md`: records mode design, stats,
+  safety boundaries, build status and the board-test plan/results.
+
+## P20 Engineering Test Menu / Integration Report Addendum
+
+P20 is a documentation-first engineering integration snapshot. It does not add a new runtime path; it
+records how the existing P1-P19 self-tests, capability snapshot and manual Debug entries should be read
+before the next implementation phase.
+
+Tracked for P20:
+- `SOURCE/10_engineering_reports/p20_engineering_test_menu_integration_report.md`: P1-P19 capability
+  matrix, real-board / compile-only / selftest / stub / Future Scope classification, safe macro state,
+  current engineering entry model, V0.2 gaps and P21/P22 route.
+- Existing engineering entries remain `P18 Scene`, `P19 Perf32`, `P19 Perf64` and `P19 Perf96` under the
+  Debug page only. P20 does not add boot-time, HOME/Observe or automatic Pet2D execution.
+- Existing self-test/capability APIs remain the integration status source: `pet_selftest_run_all`,
+  `pet_selftest_run_case` and `pet_selftest_get_capability_snapshot`.
+- External Flash / virfat / raw NOR resources, real NFC, real audio and real BLE two-board validation
+  remain Future Scope.
+
+## P21 Internal Save / syscfg A-B POC Addendum
+
+P21 adds a bounded internal-save syscfg backend proof under the existing P6 save adapter. It uses two
+PetEgg-owned syscfg item IDs as A/B slots and keeps the P1/P6 save header, counter, CRC and fallback
+rules intact.
+
+Tracked for P21:
+- `apps/watch/pet_save_jieli/pet_save_jieli_syscfg_backend.h`: syscfg backend constants, item IDs
+  206/207, max payload, stats and public load/write/self-test APIs.
+- `apps/watch/pet_save_jieli/pet_save_jieli_syscfg_backend.c`: fake-syscfg test backend for compile
+  checks, real `syscfg_read` / `syscfg_write` isolation for board builds, A/B load/write/readback verify
+  and fallback self-test.
+- `apps/watch/pet_save_jieli/pet_save_jieli_syscfg_compile_check.c`: syntax-only reference for the P21
+  backend.
+- `apps/watch/pet_platform_jieli/pet_storage_jieli.c`: maps `PET_STORAGE_AREA_SAVE` at offset 0 to the
+  P21 syscfg A/B backend; other areas remain unsupported.
+- `apps/watch/pet_selftest/*`: adds `PET_SELFTEST_SAVE_AB_INTERNAL` and internal-save capability bits.
+- `apps/watch/mvp_a/core/mvp_a_debug.c/.h`: adds the manual Debug-page `P21 Save` entry. It is not run
+  at boot and prints explicit PASS/FAIL summary fields for real board syscfg validation.
+- `SOURCE/10_engineering_reports/p21_internal_save_syscfg_ab_poc.md`: records backend choice, A/B format,
+  atomicity assumptions, self-test behavior, safety boundaries and remaining risks.
+
+P21 does not write external Flash, files, raw NOR or existing watch setting IDs. Snapshot
+`internal_save_real_write_verified` remains 0 because snapshots are side-effect free; manual Debug
+self-test real-write evidence is recorded separately. Low-battery write veto is planned, not supported.
+
+## P22 MVP-A Pet2D Scene Skeleton Addendum
+
+P22 adds a reusable MVP-A Pet2D scene skeleton on top of the P18/P19 owner handoff and dirty-rect
+experience. It remains a Debug-only POC entry and does not mark HOME/Observe or the full Pet2D runtime
+as enabled.
+
+Tracked for P22:
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.h`: scene state, placeholder pose enum, stats,
+  timeout/tick constants and public skeleton APIs.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.c`: manual skeleton state machine, LVGL release /
+  PET2D acquire, 96x64 bounded patch, 32x32 placeholder pet, LEFT_UP/RIGHT_DOWN/OK/CANCEL handling,
+  timeout exit, dirty-rect render and stats logging.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton_compile_check.c`: syntax-only skeleton API check.
+- `apps/watch/mvp_a/core/mvp_a_debug.c/.h`: adds the manual Debug-page `P22 Scene` entry. It is not run
+  at boot and is safe when the real LCD flush gate is disabled.
+- `apps/watch/mvp_a/core/mvp_a_app.c`: routes ticks and keys to the skeleton only while it is active.
+- `apps/watch/pet_selftest/*`: adds `PET_SELFTEST_MVP_A_SCENE_SKELETON` and snapshot fields for
+  skeleton support, Debug-entry presence, real-board verification status, HOME/Observe disabled and full
+  Pet2D runtime disabled.
+- `SOURCE/10_engineering_reports/p22_mvp_a_pet2d_scene_skeleton.md`: records skeleton design, handoff,
+  input behavior, dirty-rect strategy, safety boundaries and remaining risks.
+
+P22 still uses compiled/generated fixture pixels only. It does not reopen external Flash / virfat / raw
+NOR resources, does not write pet-state saves, does not allocate a full framebuffer and does not replace
+the LVGL flush callback.
+
+## P23 MVP-A Scene State / Placeholder Action Loop Addendum
+
+P23 extends the P22 skeleton with an explicit scene state/action-loop contract. It still reuses the
+same Debug-page `P22 Scene` entry and owner handoff; no HOME/Observe default route, full Pet2D runtime
+enablement or formal resource path is added.
+
+Tracked for P23:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.h`: adds explicit scene states, placeholder poses,
+  a `pet2d_mvp_a_scene_model_t`, and a renderer-facing `pet2d_mvp_a_scene_draw_cmd_t`.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.c`: advances LEFT_UP / RIGHT_DOWN / OK into short
+  MOVE_LEFT, MOVE_RIGHT and ACTION states, then returns to IDLE from tick-driven action completion.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_action_loop_compile_check.c`: compile-time reference for
+  the P23 action-loop contract.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton_compile_check.c`: references the model and draw
+  command getters.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds `PET_SELFTEST_MVP_A_SCENE_ACTION_LOOP` and snapshot
+  bits for action-loop support while keeping HOME/Observe and full runtime disabled.
+- `SOURCE/10_engineering_reports/p23_mvp_a_scene_state_action_loop.md`: engineering report for the P23
+  state/action-loop POC.
+
+P23 remains a renderer-facing contract and placeholder action-loop POC. It does not persist pet state,
+does not use P21 syscfg item 206/207 as production slots, and does not reopen external Flash / virfat /
+raw NOR.
+
+## P24 MVP-A Placeholder Renderer Contract Addendum
+
+P24 refines the P23 placeholder draw command into an explicit renderer-facing contract. It keeps the
+existing Debug-page `P22 Scene` entry and owner handoff, but moves rect math, render-plan generation,
+command metadata and idle no-change skip behavior into a side-effect-free contract layer.
+
+Tracked for P24:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract.h`: declares render command types, render
+  patterns, `pet2d_mvp_a_rect_t`, `pet2d_mvp_a_render_cmd_t`, `pet2d_mvp_a_render_plan_t`, render stats
+  and rect/helper APIs.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract.c`: implements stage patch, pet placeholder,
+  dirty union, clamp, idle skip and side-effect-free renderer-contract self-test.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract_compile_check.c`: compile-time reference for
+  the P24 contract.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.c/.h`: consumes the render plan for scene drawing,
+  keeps the Debug entry manual-only, exposes the latest render plan and logs P24 render command summary.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds `PET_SELFTEST_MVP_A_RENDERER_CONTRACT` and snapshot
+  bits for renderer-contract support while keeping HOME/Observe and full runtime disabled.
+- `SOURCE/10_engineering_reports/p24_mvp_a_placeholder_renderer_contract.md`: engineering report for the
+  P24 placeholder renderer-contract refinement.
+
+P24 is still not HOME/Observe, not the formal renderer and not the full Pet2D runtime. It does not
+persist pet state, does not use P21 syscfg item 206/207 as production slots, and does not reopen external
+Flash / virfat / raw NOR.
+
+## P25 Simulator Bring-up / Shared Core Consistency Harness Addendum
+
+P25 adds a minimal host-side consistency harness under `tools/sim_consistency`. It is a replay/log
+scaffold for P22-P24 scene/action/render contracts, not a complete PC simulator, SDL window or
+HOME/Observe implementation.
+
+Tracked for P25:
+
+- `tools/sim_consistency/README.md`: harness scope, build notes and golden-output location.
+- `tools/sim_consistency/sim_consistency_replay.h/.c`: host replay model for ENTER, LEFT_UP, RIGHT_DOWN,
+  OK, CANCEL and timeout, plus screen/key/save/packet fixtures.
+- `tools/sim_consistency/sim_consistency_golden.h/.c`: embedded golden replay text.
+- `tools/sim_consistency/sim_consistency_main.c`: host executable entry that compares replay output to
+  the embedded golden text.
+- `tools/sim_consistency/sim_consistency_build_check.c`: compile-check entry point for the host harness.
+- `tools/sim_consistency/build_sim_consistency.bat`: host compiler discovery script for clang/gcc/MSVC.
+- `tools/sim_consistency/golden/p25_scene_replay_expected.txt`: committed tiny text golden fixture.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds snapshot bits for the P25 consistency harness while
+  keeping full PC simulator, SDL simulator, HOME/Observe and full Pet2D runtime disabled.
+- `SOURCE/10_engineering_reports/p25_simulator_shared_core_consistency_harness.md`: engineering report for
+  the P25 harness.
+
+P25 does not include a host executable artifact. If a normal host compiler is missing, the source is
+verified with syntax-only checks and the report records that executable verification is pending.

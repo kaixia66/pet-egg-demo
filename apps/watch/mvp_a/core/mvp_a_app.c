@@ -5,11 +5,52 @@
 #include "mvp_a_pet.h"
 #include "mvp_a_save.h"
 #include "mvp_a_training.h"
+#include "pet2d_mvp_a_scene_skeleton.h"
+#include "pet2d_scene.h"
 
 static u8 mvp_a_inited;
 static u8 mvp_a_active;
 static mvp_a_scene_t mvp_a_scene = MVP_A_SCENE_HOME;
 static mvp_a_result_t mvp_a_last_result = MVP_A_RESULT_OK;
+
+static pet_key_t mvp_a_app_map_pet_key(mvp_a_key_t key)
+{
+    switch (key) {
+    case MVP_A_KEY_UP:
+        return PET_KEY_LEFT_UP;
+    case MVP_A_KEY_DOWN:
+        return PET_KEY_RIGHT_DOWN;
+    case MVP_A_KEY_CONFIRM:
+        return PET_KEY_OK;
+    case MVP_A_KEY_BACK:
+        return PET_KEY_CANCEL;
+    default:
+        break;
+    }
+    return PET_KEY_MAX;
+}
+
+static mvp_a_result_t mvp_a_app_pet_result_to_mvp(pet_result_t ret)
+{
+    switch (ret) {
+    case PET_RESULT_OK:
+    case PET_RESULT_UNSUPPORTED:
+        return MVP_A_RESULT_OK;
+    case PET_RESULT_BUSY:
+        return MVP_A_RESULT_BUSY;
+    case PET_RESULT_NOT_READY:
+        return MVP_A_RESULT_NOT_READY;
+    case PET_RESULT_NOT_FOUND:
+        return MVP_A_RESULT_NOT_FOUND;
+    case PET_RESULT_INVALID_ARGUMENT:
+        return MVP_A_RESULT_INVALID_PARAM;
+    case PET_RESULT_TIMEOUT:
+        return MVP_A_RESULT_TIMEOUT;
+    default:
+        break;
+    }
+    return MVP_A_RESULT_ERROR;
+}
 
 static const char *mvp_a_scene_name(mvp_a_scene_t scene)
 {
@@ -96,8 +137,18 @@ void mvp_a_app_deinit(void)
 
 void mvp_a_app_tick(void)
 {
+    pet_result_t ret;
+
     if (!mvp_a_inited) {
         return;
+    }
+    ret = pet2d_scene_tick(mvp_a_platform_get_ms());
+    if (ret != PET_RESULT_OK) {
+        mvp_a_last_result = mvp_a_app_pet_result_to_mvp(ret);
+    }
+    ret = pet2d_mvp_a_scene_skeleton_tick(mvp_a_platform_get_ms());
+    if (ret != PET_RESULT_OK) {
+        mvp_a_last_result = mvp_a_app_pet_result_to_mvp(ret);
     }
 }
 
@@ -114,6 +165,8 @@ void mvp_a_app_set_active(mvp_a_bool_t active)
 mvp_a_result_t mvp_a_app_key_event(mvp_a_key_t key, mvp_a_key_event_t event)
 {
     mvp_a_result_t ret;
+    pet_key_event_t pet_event;
+    pet_result_t pet_ret;
 
     if (!mvp_a_inited) {
         mvp_a_app_init();
@@ -121,6 +174,38 @@ mvp_a_result_t mvp_a_app_key_event(mvp_a_key_t key, mvp_a_key_event_t event)
 
     if ((key >= MVP_A_KEY_MAX) || (event >= MVP_A_KEY_EVENT_MAX)) {
         return MVP_A_RESULT_INVALID_PARAM;
+    }
+
+    if (pet2d_scene_is_active()) {
+        pet_event.key = mvp_a_app_map_pet_key(key);
+        pet_event.type = (event == MVP_A_KEY_EVENT_CLICK) ? PET_KEY_EVENT_CLICK : PET_KEY_EVENT_UP;
+        pet_event.timestamp_ms = mvp_a_platform_get_ms();
+        pet_event.hold_ms = 0u;
+        pet_event.repeat_count = 0u;
+        pet_event.raw_code = 0u;
+        if (pet_event.key == PET_KEY_MAX) {
+            return MVP_A_RESULT_INVALID_PARAM;
+        }
+        pet_ret = pet2d_scene_handle_key(&pet_event);
+        ret = mvp_a_app_pet_result_to_mvp(pet_ret);
+        mvp_a_last_result = ret;
+        return ret;
+    }
+
+    if (pet2d_mvp_a_scene_skeleton_is_active()) {
+        pet_event.key = mvp_a_app_map_pet_key(key);
+        pet_event.type = (event == MVP_A_KEY_EVENT_CLICK) ? PET_KEY_EVENT_CLICK : PET_KEY_EVENT_UP;
+        pet_event.timestamp_ms = mvp_a_platform_get_ms();
+        pet_event.hold_ms = 0u;
+        pet_event.repeat_count = 0u;
+        pet_event.raw_code = 0u;
+        if (pet_event.key == PET_KEY_MAX) {
+            return MVP_A_RESULT_INVALID_PARAM;
+        }
+        pet_ret = pet2d_mvp_a_scene_skeleton_handle_key(&pet_event);
+        ret = mvp_a_app_pet_result_to_mvp(pet_ret);
+        mvp_a_last_result = ret;
+        return ret;
     }
 
     if (event != MVP_A_KEY_EVENT_CLICK) {

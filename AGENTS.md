@@ -1,5 +1,348 @@
 # AGENTS.md
 
+## PetEgg P1 Shared Interface Pack Rule
+
+`apps/watch/pet_shared/include` owns the frozen cross-platform PetEgg interface headers used to align
+future Jieli ports with the PC simulator shared portable layer. These headers must remain C99
+compatible and must not include Jieli SDK private headers, LVGL, SDL, simulator adapters, malloc,
+printf, file-system APIs, Flash APIs, BLE private structs, or real hardware driver APIs.
+
+P1 has been aligned against the simulator reference headers in
+`D:/0-jieli_sdk/simulator/shared_portable/include`. Keep that path as the comparison source before
+changing packet, key, save, resource, result-code, or display-profile ABI fields.
+
+The interface pack is a contract boundary, not a hardware implementation. New fields may be added only
+with version macros and explicit layout/compatibility notes. Existing field names, sizes, packet/save
+layout, and resource manifest semantics should be treated as frozen unless a later phase explicitly
+bumps the shared interface version and documents the simulator/Jieli migration impact.
+
+Build byproducts must not be committed for this pack. In particular, keep `build_logs/`,
+`cpu/br28/tools/download/watch/*`, `cpu/br28/tools/sdk.elf`, firmware/package outputs, object
+directories, `*.depend`, `*.layout`, and build-mutated tool executables out of commits unless a task
+explicitly proves they are source changes.
+
+When reading repository text files, avoid PowerShell `Get-Content` for files that may contain Chinese
+or mixed encodings. Prefer `rg`, `git show`, `cmd /c type`, Git Bash, or another tool that can preserve
+or explicitly select encoding. If output appears garbled, switch reading tools before editing and do
+not rewrite the whole file just to fix display encoding.
+
+## PetEgg P2 Jieli Platform HAL Skeleton Rule
+
+`apps/watch/pet_platform_jieli/` owns the Jieli-specific platform adapter layer for the shared PetEgg
+ABI. `apps/watch/pet_shared/include` remains platform-independent and must not include Jieli SDK
+private APIs; Jieli-specific code belongs only in `pet_platform_jieli`.
+
+P2 is skeleton/stub only. It may expose a complete `pet_platform_t` callback table and minimal compile
+checks, but it must not enable real Display, Input, Storage, BLE, NFC, Flash, VM, audio, power policy,
+Pet2D, or LVGL flush changes. Hardware callbacks should return `PET_RESULT_NOT_READY`,
+`PET_RESULT_UNSUPPORTED`, or fixed test values until their later phases explicitly wire them.
+
+## PetEgg P3 Display/Input POC Rule
+
+P3 may refine the Jieli display profile and add a controlled raw-key mapping POC under
+`apps/watch/pet_platform_jieli/`, but it must not enable real LCD flush, Pet2D rendering, VM/Flash,
+BLE, NFC, or audio hardware paths. Display profile constants must state their SDK source or board-test
+TODOs; self-tests only validate profile/layout and owner/input state machines.
+
+P3 input mapping is a private PetEgg HAL POC. It must not consume the real Jieli key queue, must not
+replace `mvp_a_ui_handle_system_key()` or `mvp_a_app_key_event()`, and must not take over LVGL/MVP-A
+input. Test raw-event injection must stay local to `pet_platform_jieli` and must not be treated as a
+real hardware binding.
+
+## PetEgg P4 Render Owner Boundary Rule
+
+P4 establishes only the render-owner boundary between the current MVP-A LVGL shell and a future Pet2D
+renderer. LVGL and PET2D must coordinate through `pet_display_owner_t` acquire/release before any real
+LCD flush is enabled. `apps/watch/pet2d_boundary/` is a placeholder boundary for owner handoff and
+self-test only; it is not the Pet2D engine and must not import simulator Pet2D code.
+
+P4 may hook MVP-A LVGL shell create/render paths to acquire or release `PET_DISPLAY_OWNER_LVGL_SYSTEM_UI`,
+but it must not modify the LVGL low-level flush callback, write RGB565 pixels to the LCD, enable real
+Pet2D runtime, take over the key path, write storage, or connect BLE/NFC. P4 self-tests validate owner
+state-machine behavior only and are not evidence of real hardware display ownership.
+
+## PetEgg P5 Resource Manifest Adapter Rule
+
+P5 is a read-only resource manifest compatibility phase. `apps/watch/pet_resource_jieli/` may parse the
+P1/simulator resource manifest ABI from an in-memory blob, validate CRCs, and perform entry lookup, but
+it must not read external Flash, write VM/Flash, decode PNG/JPG/GIF/JSON at runtime, import final art,
+or enable Pet2D rendering.
+
+The P5 static test blob is only a small fixture for compile/self-test coverage and is not the production
+resource route. Formal resources should later be produced by the Jieli resource tools / `image_dll`,
+packaged as manifest/resource binaries, and mapped to local or external Flash only after ownership,
+offset, size, byte order, compression and CRC policy are confirmed.
+
+## PetEgg P6 Save Transaction Adapter Rule
+
+P6 is an A/B save transaction and rollback adapter phase. `apps/watch/pet_save_jieli/` may validate
+the P1/simulator 64-byte save slot header, choose the latest valid slot by counter, write the inactive
+slot first, verify the written slot, and rely on the counter to select the latest save. It must not
+erase the old slot before the new slot verifies.
+
+P6 must not write real VM, Flash, syscfg, files or external storage, and must not replace the existing
+`mvp_a_save` default path. The memory backend and fault injection are for self-test only; they do not
+prove real power-fail atomicity, wear leveling, erase policy or Flash page alignment. `pet_platform`
+storage callbacks stay stubbed unless a later phase explicitly confirms storage ownership and power
+rules.
+
+## PetEgg P7 Protocol Debug Adapter Rule
+
+P7 is a BLE/NFC stub and debug-injection phase. Packet helpers may validate the P1/simulator packet and
+NFC pair payload ABI, and `apps/watch/pet_platform_jieli/` may expose BLE loopback and fake NFC queues
+only under `PET_DEBUG` or `PET_PLATFORM_JIELI_TEST`. The default product path must continue to return
+`PET_RESULT_NOT_READY` for real BLE/NFC callbacks.
+
+P7 must not start BLE advertising, scanning, connecting, GATT services, NFC reader scans or RF
+transactions. Protocol code must not depend on Jieli private BLE/NFC structs, must not write VM/Flash
+or syscfg, and must not change MVP-A page, input or save behavior. Debug injection is a self-test and
+bring-up aid only; it is not evidence that real BLE/NFC hardware paths are wired.
+
+## PetEgg P8 Platform Self-Test Snapshot Rule
+
+P8 is a platform self-test aggregator and integration snapshot phase. `apps/watch/pet_selftest/` may
+summarize and call existing P1-P7 compile/self-test entry points, but it must not create new real
+hardware side effects, modify MVP-A defaults, enable LCD flush, start Pet2D runtime, write VM/Flash or
+syscfg, or start BLE/NFC RF activity.
+
+The P8 capability snapshot must distinguish test/stub readiness from real hardware readiness. Shared
+ABI, HAL skeleton, display profile, owner boundary, resource parser, save transaction, protocol helper,
+BLE loopback, fake NFC and debug injection may be marked present; real LCD flush, real key queue, real
+Flash storage, real BLE, real NFC and Pet2D runtime must remain disabled until later hardware phases
+explicitly wire and validate them.
+
+## PetEgg P9 Display Flush Owner POC Rule
+
+P9 is a display-flush owner guard and no-op-to-real POC phase. `pet_display_jieli_flush()` may validate
+RGB565 rectangle parameters, enforce the current `pet_display_owner_t`, record diagnostic stats and
+provide self-test coverage, but the default path must not write the LCD or replace the LVGL flush
+callback.
+
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` must default to 0. Any tiny real LCD flush experiment must be
+manual, macro-gated and authorized by a later hardware task. P9 must not enable Pet2D runtime, allocate
+a full framebuffer, change MVP-A default pages, write VM/Flash/syscfg, connect BLE/NFC or submit build
+byproducts.
+
+## PetEgg P10 Tiny Real LCD Flush POC Rule
+
+P10 is a tiny, manual-only LCD flush POC phase. `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` must still default
+to 0 in committed source. Any real flush attempt must be explicitly macro-gated, manually triggered, and
+guarded by display owner state; it must not run from boot, the default LVGL page, or platform run-all
+self-tests.
+
+Do not replace the LVGL flush callback, change `lv_port_disp.c` default behavior, enable Pet2D runtime,
+allocate a full framebuffer, or render HOME/Observe scenes in P10. Manual board tests must first confirm
+owner state and use only a tiny caller-owned RGB565 rectangle.
+
+## PetEgg P11 Pet2D Minimal Real Flush POC Rule
+
+P11 is a Pet2D-boundary minimal visual POC phase, not the Pet2D runtime. It may generate a small
+caller-owned RGB565 test surface, such as 16x16, and expose a manual boundary probe that uses the P10
+gated real-flush path only when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is explicitly enabled for a local
+board test. The committed default must keep that macro at 0.
+
+Do not render HOME/Observe, load formal resources, parse PNG/JPG/GIF/JSON, allocate a full framebuffer,
+replace the LVGL flush callback, or change MVP-A default pages in P11. Temporary Debug UI triggers for
+manual board tests must be removed before commit, and build byproducts must stay out of commits.
+
+## PetEgg P12 Repeated Flush / Dirty Rect POC Rule
+
+P12 is a repeated tiny flush and dirty-rect alignment POC phase. It may add small 16x16, 32x32 and 64x64
+RGB565 test patterns plus finite repeated-probe helpers, but it must still keep full Pet2D runtime,
+HOME/Observe, formal resources, full framebuffer allocation and default MVP-A page behavior disabled.
+
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` must remain 0 in committed source. Any repeated real flush board
+test must be local, manually triggered, owner-guarded, finite, and removed from Debug UI before commit.
+The current board has no NFC, no speaker and only one unit, so real NFC, audio and BLE two-board link
+tests are Future Scope; keep only fake/stub/self-test coverage for those paths in this hardware cycle.
+
+## PetEgg P13 Resource Sprite Surface POC Rule
+
+P13 is a resource-sprite-to-minimal-surface POC phase. It may read only the P5 in-memory test resource
+blob, view RGB565 fixture entries as raw pixels, blit them into caller-owned 16/32/64 surfaces, and expose
+a manual resource-derived visual probe through the existing gated real-flush path.
+
+P13 must not load formal resource packages, read external Flash/NOR/SFC/`flash_file_info`, decode
+PNG/JPG/GIF/JSON, allocate a full framebuffer, enable full Pet2D runtime, render HOME/Observe, replace
+the LVGL flush callback, or change MVP-A default pages. `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` must remain
+0 in committed source, any Debug UI trigger for board testing must be temporary, and NFC/audio/real BLE
+two-board work remains Future Scope on the current hardware.
+
+## PetEgg P14 Key Calibration + Minimal Sprite Movement POC Rule
+
+P14 is a raw-key calibration and minimal sprite movement POC phase. It may add passive key-calibration
+record buffers and small Pet2D-boundary movement helpers, but it must not consume the real Jieli key
+queue, change `mvp_a_app_key_event()` defaults, or alter the board key table without board-log evidence.
+Physical key labels, SDK key values, raw codes and `PetKey` mapping must be documented together before
+any permanent mapping correction is made.
+
+P14 does not enable full Pet2D runtime, HOME/Observe, formal resources, external Flash, full framebuffer
+allocation, LVGL flush replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. Any Debug UI trigger
+or app-common key logging used for board tests must be temporary and removed before commit. The committed
+source must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
+hardware.
+
+## PetEgg P15 Key Latency + Movement Stats POC Rule
+
+P15 is a key-to-render latency and movement repeated-flush statistics phase. It may extend the
+Pet2D-boundary movement POC with coarse key/logic/render/flush timestamps, dirty-rect old/new union
+tracking, bounded repeated movement steps and stats snapshots, but it must not route the real Jieli key
+queue into Pet2D or make movement run automatically.
+
+P15 does not enable full Pet2D runtime, HOME/Observe, formal resources, external Flash, full framebuffer
+allocation, LVGL flush replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. Any Debug UI trigger
+used for local board latency tests must be temporary and removed before commit. The committed source
+must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
+hardware.
+
+## PetEgg P16 Real Resource Package / External Flash Read POC Rule
+
+P16 is a read-only real resource package and external-Flash resource-path POC. It may audit Jieli SDK
+resource APIs and add a read-only adapter that probes an existing `manifest.bin` or equivalent resource
+entry through the SDK resource file path, but it must not write external Flash, VM, syscfg or files and
+must not modify resource download/packaging tool defaults.
+
+P16 must not enable the full Pet2D runtime, HOME/Observe, background scrolling, image decoding,
+full-framebuffer allocation, LVGL flush replacement, NFC, audio or real BLE. If a resource package is
+not present, the adapter must return `NOT_FOUND`/`NOT_READY` rather than hardcoding an address or faking
+bytes. Any temporary Debug UI trigger used for board probing must be removed before commit. The committed
+source must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. NFC/audio/real BLE two-board tests remain Future Scope on the current
+hardware.
+
+## PetEgg P17S External Flash Pause Rule
+
+P17S stops the external Flash / virfat / raw NOR resource-package route. P17 board tests showed that
+the PetEgg package file can be present on `storage/virfat_flash/C/` with the expected size, but the
+runtime payload read from both `res_fopen/res_fread` and ordinary `fopen/fread` did not match the local
+plain `MRTP` package header. A direct raw NOR read experiment also caused a soft reset, so raw NOR reads
+must not be continued as a default PetEgg path.
+
+Until a later Future Scope task confirms the Jieli `fat_comm`/virfat encryption or mapping policy and a
+safe raw-binary read channel, do not add PetEgg external Flash package generators, do not modify
+`download/watch` or `fat_comm` inputs for PetEgg resources, do not add raw NOR read probes, and do not
+submit external Flash package artifacts such as `petegg.pkg`, `manifest.bin`, `sprites.pak` or
+`anim_table.bin`. Current development continues within the 2M internal Flash environment using compile
+time fixtures, the P5 resource test blob, and other explicitly bounded small-resource paths. NFC,
+audio/speaker and real BLE two-board validation remain Future Scope.
+
+## PetEgg P18 Pet2D Scene Mode / LVGL Handoff POC Rule
+
+P18 introduces only a controlled Pet2D test-scene handoff between the MVP-A LVGL shell and the existing
+minimal Pet2D-boundary movement/resource fixture. The scene may be entered manually from the Debug page,
+release LVGL display ownership, acquire `PET_DISPLAY_OWNER_PET2D`, handle bounded LEFT_UP/RIGHT_DOWN/OK/
+CANCEL input, then release PET2D ownership and request LVGL refresh on cancel, timeout or error.
+
+P18 must not enable HOME/Observe, the full Pet2D runtime, background scrolling, formal resources,
+external Flash / virfat / raw NOR, PNG/JPG/GIF/JSON decoding, full-framebuffer allocation, LVGL flush
+callback replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. Any retained Debug entry must be
+manual-only and safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is 0; the committed source must keep that
+macro at 0, `real_lcd_flush_enabled` at 0 and `pet2d_runtime_enabled` at 0. External Flash, NFC,
+audio/speaker and real BLE two-board validation remain Future Scope.
+
+## PetEgg P19 High-res Motion / Performance POC Rule
+
+P19 adds only a bounded high-res motion/performance POC on top of the P18 handoff. It may measure
+manual 32x32, 64x64 and 96x96 finite-frame dirty-rect movement, with optional 128x128 mode kept
+unsupported unless it can obey the 128x128 maximum scratch-buffer limit. It must record coarse logic,
+render, flush and frame timing stats without producing per-frame log spam.
+
+P19 must not enable HOME/Observe, the full Pet2D runtime, background maps, external Flash / virfat / raw
+NOR resources, formal resource packages, PNG/JPG/GIF/JSON decoding, full-framebuffer allocation, LVGL
+flush callback replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. The committed source must
+keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. Any P19 Debug entries are engineering-only, manual-triggered, finite, and
+safe when the real flush gate is disabled.
+
+## PetEgg P20 Engineering Test Menu / Integration Report Rule
+
+P20 is an integration snapshot phase. It may document and summarize the P1-P19 engineering capabilities,
+existing Debug/manual entries, self-test cases and capability bits, but it must not introduce new
+gameplay or mark POC features as production runtime. Prefer a low-risk documentation/report update unless
+a later task explicitly asks for a new engineering menu UI.
+
+P20 must not enable HOME/Observe, the full Pet2D runtime, external Flash / virfat / raw NOR resource
+work, formal resource packages, PNG/JPG/GIF/JSON decoding, full-framebuffer allocation, LVGL flush
+callback replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. The committed source must keep
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0. P18/P19 Debug entries remain manual engineering entries only; build
+byproducts and local caches must not be committed.
+
+## PetEgg P22 MVP-A Pet2D Scene Skeleton Rule
+
+P22 may add a reusable MVP-A Pet2D scene skeleton that wraps the proven P18/P19 LVGL -> PET2D -> LVGL
+handoff, small dirty-rect rendering, placeholder pose/action toggles and basic scene stats. It is a
+scene-structure POC only: it may be entered manually from the Debug page, handle bounded
+LEFT_UP/RIGHT_DOWN/OK/CANCEL input, timeout automatically, then release PET2D ownership and request LVGL
+refresh.
+
+P22 must not mark HOME/Observe as implemented, must not enable the full Pet2D runtime, must not add
+formal resources, background maps, external Flash / virfat / raw NOR, PNG/JPG/GIF/JSON decoding,
+full-framebuffer allocation, LVGL flush callback replacement, new pet-state persistence, NFC, audio or
+real BLE. The retained Debug entry must be manual-only and safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC`
+is 0; the committed source must keep that macro at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0.
+
+## PetEgg P23 MVP-A Scene State / Placeholder Action Loop Rule
+
+P23 may extend the P22 MVP-A Pet2D scene skeleton with a small reusable scene state and placeholder
+action loop contract. It may define explicit idle, move-left, move-right, action, exiting and error
+states, placeholder poses, input-to-state transitions, tick-driven action completion, and a
+renderer-facing draw command for later HOME/Observe work.
+
+P23 is still not HOME/Observe and must not mark the full Pet2D runtime as enabled. It must keep the
+Debug scene entry manual-only, use only the existing dirty-rect/small-buffer path, avoid full
+framebuffers, and keep formal resources, animation tables, transparency/RLE/compression policy,
+external Flash / virfat / raw NOR, download/watch changes, pet-state persistence, NFC, audio and real
+BLE out of scope. Capability snapshots must remain side-effect free and keep `home_observe_enabled`,
+`full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
+
+## PetEgg P24 MVP-A Placeholder Renderer Contract Rule
+
+P24 may refine the P23 placeholder draw command into a small renderer-facing contract with rect helpers,
+stage patch, pet placeholder, dirty-rect render plan, command metadata and render stats. It may connect
+the existing P22/P23 Debug scene to that contract, but the contract itself must stay side-effect free and
+testable without acquiring display ownership or writing the LCD.
+
+P24 is still not HOME/Observe, not the formal renderer and not the full Pet2D runtime. It must not add
+formal resources, animation tables, transparency/RLE/compression policy, external Flash / virfat / raw
+NOR, download/watch changes, pet-state persistence, NFC, audio or real BLE. Capability snapshots must
+distinguish the renderer contract from a production renderer and keep `home_observe_enabled`,
+`full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0. The Debug entry remains the manual
+engineering scene entry and must be safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is 0.
+
+## PetEgg P25 Simulator Bring-up / Shared Core Consistency Harness Rule
+
+P25 may add a host-side consistency harness under `tools/` to replay the P22-P24 scene/action/render
+contract with fixed inputs and golden text output. It may compile against the shared PetEgg headers and
+the P24 renderer contract, but it must not depend on Jieli SDK private headers, real display ownership,
+syscfg, BLE, NFC, audio or resource/package paths.
+
+P25 is not a complete PC simulator, not SDL rendering, not HOME/Observe and not shared-core completion.
+It must not enable the full Pet2D runtime, formal resources, external Flash / virfat / raw NOR, pet-state
+persistence, NFC, audio or real BLE. Capability snapshots may mark the consistency harness and fixtures
+present, but must keep `full_pc_simulator_enabled`, `sdl_simulator_enabled`, `home_observe_enabled`,
+`full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
+
+## PetEgg P21 Internal Save / syscfg A-B POC Rule
+
+P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a
+PetEgg-owned test namespace. The only allowed persistent write path is the bounded A/B save slot proof
+under `apps/watch/pet_save_jieli/`, using the frozen P1/P6 save header, CRC, counter and fallback rules.
+It must not overwrite existing watch settings, product syscfg items, external Flash, files or raw NOR.
+
+P21 is not the complete pet growth save system. It must keep payloads small, non-destructive, manually
+verified or self-test gated, and clearly distinguish compile/fake-syscfg checks from real board syscfg
+writes. Capability snapshots must remain side-effect free, so real syscfg write verification belongs in
+manual Debug/self-test logs rather than snapshot fields. Low-battery write veto must not be marked
+supported unless a real battery/power-policy hook blocks the syscfg write path. P21 must not enable
+HOME/Observe, the full Pet2D runtime, external Flash / virfat / raw NOR resources, LVGL flush callback
+replacement, NFC, audio or real BLE. The committed source must keep
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0.
+
 ## 项目基线
 
 这是杰理 AC701N / BR28 手表类 SDK 工程，当前根目录是 `D:\0-jieli_sdk\sdk`。主应用位于 `apps/watch`，公共业务和驱动适配位于 `apps/common`，芯片相关实现、库和后处理工具位于 `cpu/br28`，对外头文件与预编译库接口位于 `include_lib`。
