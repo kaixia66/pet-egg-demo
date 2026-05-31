@@ -1,4 +1,5 @@
 #include "pet2d_scene.h"
+#include "pet2d_mvp_a_scene_skeleton.h"
 #include "pet2d_perf_poc.h"
 
 PET_STATIC_ASSERT(pet2d_scene_stats_has_expected_width,
@@ -30,4 +31,9 @@ pet_result_t pet2d_scene_compile_check_self_test(void)
 pet_result_t pet2d_scene_compile_check_perf_poc(void)
 {
     return pet2d_perf_poc_self_test();
+}
+
+pet_result_t pet2d_scene_compile_check_mvp_a_scene_skeleton(void)
+{
+    return pet2d_mvp_a_scene_skeleton_self_test();
 }

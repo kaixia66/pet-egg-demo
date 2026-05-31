@@ -4,6 +4,7 @@
 #include "pet2d_dirty_rect_poc.h"
 #include "pet2d_minimal_visual.h"
 #include "pet2d_movement_poc.h"
+#include "pet2d_mvp_a_scene_skeleton.h"
 #include "pet2d_perf_poc.h"
 #include "pet2d_scene.h"
 #include "pet2d_resource_sprite_poc.h"
@@ -163,6 +164,11 @@ static pet_result_t pet_selftest_pet2d_perf_poc(void)
     return pet2d_perf_poc_self_test();
 }
 
+static pet_result_t pet_selftest_mvp_a_scene_skeleton(void)
+{
+    return pet2d_mvp_a_scene_skeleton_self_test();
+}
+
 static pet_result_t pet_selftest_save_ab_internal(void)
 {
     return pet_save_jieli_syscfg_self_test();
@@ -190,6 +196,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_selftest_key_latency_movement_gate,
         pet_selftest_pet2d_scene_handoff,
         pet_selftest_pet2d_perf_poc,
+        pet_selftest_mvp_a_scene_skeleton,
         pet_save_jieli_self_test,
         pet_selftest_save_ab_internal,
         pet_protocol_jieli_self_test,
@@ -227,6 +234,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "key_latency_movement_gate",
         "pet2d_scene_handoff",
         "pet2d_perf_poc",
+        "mvp_a_scene_skeleton",
         "save_transaction",
         "save_ab_internal",
         "protocol_packet",
@@ -312,6 +320,11 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->has_key_latency_probe_gate = 1u;
     out_snapshot->has_pet2d_scene_handoff = 1u;
     out_snapshot->has_pet2d_perf_poc = 1u;
+    out_snapshot->has_mvp_a_scene_skeleton = 1u;
+    out_snapshot->mvp_a_scene_skeleton_debug_entry = 1u;
+    out_snapshot->mvp_a_scene_skeleton_real_board_verified = 0u;
+    out_snapshot->home_observe_enabled = 0u;
+    out_snapshot->full_pet2d_runtime_enabled = 0u;
     out_snapshot->has_resource_manifest_adapter = 1u;
     out_snapshot->has_save_transaction_adapter = 1u;
     out_snapshot->has_internal_save_syscfg_backend = 1u;

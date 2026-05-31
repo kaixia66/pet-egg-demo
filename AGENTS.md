@@ -270,6 +270,21 @@ callback replacement, VM/Flash/syscfg writes, NFC, audio or real BLE. The commit
 `pet2d_runtime_enabled` at 0. P18/P19 Debug entries remain manual engineering entries only; build
 byproducts and local caches must not be committed.
 
+## PetEgg P22 MVP-A Pet2D Scene Skeleton Rule
+
+P22 may add a reusable MVP-A Pet2D scene skeleton that wraps the proven P18/P19 LVGL -> PET2D -> LVGL
+handoff, small dirty-rect rendering, placeholder pose/action toggles and basic scene stats. It is a
+scene-structure POC only: it may be entered manually from the Debug page, handle bounded
+LEFT_UP/RIGHT_DOWN/OK/CANCEL input, timeout automatically, then release PET2D ownership and request LVGL
+refresh.
+
+P22 must not mark HOME/Observe as implemented, must not enable the full Pet2D runtime, must not add
+formal resources, background maps, external Flash / virfat / raw NOR, PNG/JPG/GIF/JSON decoding,
+full-framebuffer allocation, LVGL flush callback replacement, new pet-state persistence, NFC, audio or
+real BLE. The retained Debug entry must be manual-only and safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC`
+is 0; the committed source must keep that macro at 0, `real_lcd_flush_enabled` at 0 and
+`pet2d_runtime_enabled` at 0.
+
 ## PetEgg P21 Internal Save / syscfg A-B POC Rule
 
 P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a

@@ -492,3 +492,25 @@ Open items:
 - P21 does not define the final pet growth payload, inventory/card data, save migration policy or schema
   upgrade flow.
 - External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P22 MVP-A Pet2D Scene Skeleton Risks
+
+Status: P22 adds a bounded Debug-triggered MVP-A Pet2D scene skeleton. It is a reusable structure for
+later HOME/Observe work, but it is not itself the product HOME/Observe renderer.
+
+Open items:
+- Board smoke testing with a temporary `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build confirmed entry,
+  owner handoff, LEFT_UP / RIGHT_DOWN movement, OK pose-toggle, CANCEL exit, timeout exit and LVGL
+  recovery.
+- The skeleton draws only a 96x64 local stage patch and a 32x32 placeholder pet. It does not restore an
+  arbitrary full scene background or LVGL pixels outside that bounded patch.
+- OK toggles placeholder poses only. There is no final pet action state machine, animation table,
+  transparency policy, RLE/compression handling or formal resource binding.
+- The frame/timing stats are coarse millisecond diagnostics. P19 remains the performance baseline for
+  32x32/64x64/96x96 repeated motion, while P22 focuses on scene structure.
+- The Debug entry is an engineering POC hook. Whether it remains in a later engineering menu or is
+  removed before production is still undecided.
+- P22 does not persist scene state. P21 syscfg item IDs 206/207 remain test save slots and must not be
+  treated as the production pet save schema.
+- HOME/Observe remains incomplete and `pet2d_runtime_enabled` remains 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.

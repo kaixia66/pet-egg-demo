@@ -27,6 +27,7 @@ typedef enum {
     PET_SELFTEST_KEY_LATENCY_MOVEMENT_GATE,
     PET_SELFTEST_PET2D_SCENE_HANDOFF,
     PET_SELFTEST_PET2D_PERF_POC,
+    PET_SELFTEST_MVP_A_SCENE_SKELETON,
     PET_SELFTEST_SAVE_TRANSACTION,
     PET_SELFTEST_SAVE_AB_INTERNAL,
     PET_SELFTEST_PROTOCOL_PACKET,
@@ -64,6 +65,11 @@ typedef struct {
     pet_u8_t has_key_latency_probe_gate;
     pet_u8_t has_pet2d_scene_handoff;
     pet_u8_t has_pet2d_perf_poc;
+    pet_u8_t has_mvp_a_scene_skeleton;
+    pet_u8_t mvp_a_scene_skeleton_debug_entry;
+    pet_u8_t mvp_a_scene_skeleton_real_board_verified;
+    pet_u8_t home_observe_enabled;
+    pet_u8_t full_pet2d_runtime_enabled;
     pet_u8_t has_resource_manifest_adapter;
     pet_u8_t has_save_transaction_adapter;
     pet_u8_t has_internal_save_syscfg_backend;

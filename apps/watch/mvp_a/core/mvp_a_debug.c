@@ -1,6 +1,7 @@
 #include "mvp_a_debug.h"
 #include "mvp_a_pet.h"
 #include "mvp_a_save.h"
+#include "pet2d_mvp_a_scene_skeleton.h"
 #include "pet2d_perf_poc.h"
 #include "pet2d_scene.h"
 #include "pet_save_jieli_syscfg_backend.h"
@@ -142,6 +143,9 @@ mvp_a_result_t mvp_a_debug_execute_selected(void)
                MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
     case MVP_A_DEBUG_P21_SAVE_AB:
         return mvp_a_debug_run_p21_save_ab();
+    case MVP_A_DEBUG_P22_SCENE_SKELETON:
+        return (pet2d_mvp_a_scene_skeleton_enter() == PET_RESULT_OK) ?
+               MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
     default:
         break;
     }
@@ -168,6 +172,8 @@ const char *mvp_a_debug_get_action_name(mvp_a_debug_action_t action)
         return "P19 Perf96";
     case MVP_A_DEBUG_P21_SAVE_AB:
         return "P21 Save";
+    case MVP_A_DEBUG_P22_SCENE_SKELETON:
+        return "P22 Scene";
     default:
         break;
     }
@@ -200,6 +206,8 @@ const char *mvp_a_debug_get_prompt(void)
         return "Perf 96x96";
     case MVP_A_DEBUG_P21_SAVE_AB:
         return "Save A/B";
+    case MVP_A_DEBUG_P22_SCENE_SKELETON:
+        return "Scene Skeleton";
     default:
         break;
     }

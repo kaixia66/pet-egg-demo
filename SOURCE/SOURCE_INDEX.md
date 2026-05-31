@@ -1011,3 +1011,29 @@ Tracked for P21:
 P21 does not write external Flash, files, raw NOR or existing watch setting IDs. Snapshot
 `internal_save_real_write_verified` remains 0 because snapshots are side-effect free; manual Debug
 self-test real-write evidence is recorded separately. Low-battery write veto is planned, not supported.
+
+## P22 MVP-A Pet2D Scene Skeleton Addendum
+
+P22 adds a reusable MVP-A Pet2D scene skeleton on top of the P18/P19 owner handoff and dirty-rect
+experience. It remains a Debug-only POC entry and does not mark HOME/Observe or the full Pet2D runtime
+as enabled.
+
+Tracked for P22:
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.h`: scene state, placeholder pose enum, stats,
+  timeout/tick constants and public skeleton APIs.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.c`: manual skeleton state machine, LVGL release /
+  PET2D acquire, 96x64 bounded patch, 32x32 placeholder pet, LEFT_UP/RIGHT_DOWN/OK/CANCEL handling,
+  timeout exit, dirty-rect render and stats logging.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton_compile_check.c`: syntax-only skeleton API check.
+- `apps/watch/mvp_a/core/mvp_a_debug.c/.h`: adds the manual Debug-page `P22 Scene` entry. It is not run
+  at boot and is safe when the real LCD flush gate is disabled.
+- `apps/watch/mvp_a/core/mvp_a_app.c`: routes ticks and keys to the skeleton only while it is active.
+- `apps/watch/pet_selftest/*`: adds `PET_SELFTEST_MVP_A_SCENE_SKELETON` and snapshot fields for
+  skeleton support, Debug-entry presence, real-board verification status, HOME/Observe disabled and full
+  Pet2D runtime disabled.
+- `SOURCE/10_engineering_reports/p22_mvp_a_pet2d_scene_skeleton.md`: records skeleton design, handoff,
+  input behavior, dirty-rect strategy, safety boundaries and remaining risks.
+
+P22 still uses compiled/generated fixture pixels only. It does not reopen external Flash / virfat / raw
+NOR resources, does not write pet-state saves, does not allocate a full framebuffer and does not replace
+the LVGL flush callback.

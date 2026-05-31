@@ -12,6 +12,7 @@ typedef enum {
     MVP_A_DEBUG_P19_PERF64,
     MVP_A_DEBUG_P19_PERF96,
     MVP_A_DEBUG_P21_SAVE_AB,
+    MVP_A_DEBUG_P22_SCENE_SKELETON,
     MVP_A_DEBUG_MAX,
 } mvp_a_debug_action_t;
 

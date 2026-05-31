@@ -627,3 +627,45 @@ P21 still does not:
 - add HOME/Observe, full Pet2D runtime or new LCD behavior;
 - use external Flash, files, raw NOR, SD card or resource packages;
 - connect real NFC/audio/BLE hardware.
+
+## P22 MVP-A Pet2D Scene Skeleton Status
+
+Status: implemented in source as a reusable MVP-A Pet2D scene skeleton on baseline
+`5135e813dff45f6a2f0fa7c334d651c7fca0c0fa feat(petegg): add internal save syscfg ab poc`. P22 is not
+HOME/Observe and is not the full Pet2D runtime.
+
+Current capability:
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.*` owns a bounded scene skeleton with explicit
+  states, pose toggles, dirty-rect render stats and timeout/cancel exit.
+- The Debug-page manual `P22 Scene` entry enters the skeleton on demand. It is not run at boot and is not
+  a normal HOME/LVGL path.
+- Entry follows the same owner path proven in P18/P19: LVGL release, PET2D acquire, skeleton run,
+  PET2D release, then LVGL refresh request so the Debug page can redraw.
+- Rendering uses a 96x64 bounded stage patch and a 32x32 placeholder pet. LEFT_UP / RIGHT_DOWN move the
+  placeholder within the patch; OK cycles idle/happy/blink placeholder poses; CANCEL exits; timeout is
+  4 seconds.
+- Stats record enter/exit, tick/key/action counts, frame/render/flush counts, skipped flushes when the
+  real gate is off, logic/render/flush/frame timing totals and maximums, last dirty rect, last pet
+  position, pose, state, result and exit reason.
+- Self-test adds `PET_SELFTEST_MVP_A_SCENE_SKELETON`. Capability snapshot adds skeleton support and
+  Debug-entry fields while keeping HOME/Observe and full Pet2D runtime disabled.
+- COM3 board smoke testing with a temporary real-flush build confirmed Debug entry, LVGL release,
+  PET2D acquire, initial patch render, LEFT_UP / RIGHT_DOWN movement, OK pose-toggle, CANCEL exit,
+  timeout exit and LVGL reacquire.
+- The side-effect-free capability snapshot keeps `mvp_a_scene_skeleton_real_board_verified = 0`; the
+  manual engineering evidence is documented as `p22_manual_real_board_verified = 1` in the P22 report.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P22 is a reusable skeleton POC, not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P22 still does not:
+- implement product HOME/Observe, full pet state machine, background map scrolling or formal animation;
+- use formal resources, external Flash, files, raw NOR, SD card or resource packages;
+- parse PNG/JPG/GIF/JSON;
+- allocate a full framebuffer, use IMB acceleration or replace the LVGL flush callback;
+- write real pet-state saves, use P21 item 206/207 as production save slots or add low-battery veto logic;
+- connect real NFC/audio/BLE hardware.
