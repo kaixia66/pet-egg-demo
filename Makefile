@@ -959,6 +959,8 @@ c_SRC_FILES := \
 	apps/watch/pet2d_boundary/pet2d_boundary_compile_check.c \
 	apps/watch/pet2d_scene/pet2d_scene.c \
 	apps/watch/pet2d_scene/pet2d_scene_compile_check.c \
+	apps/watch/pet2d_scene/pet2d_perf_poc.c \
+	apps/watch/pet2d_scene/pet2d_perf_poc_compile_check.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_real.c \
 	apps/watch/pet_resource_jieli/pet_resource_jieli_test_blob.c \

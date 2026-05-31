@@ -1,6 +1,7 @@
 #include "mvp_a_debug.h"
 #include "mvp_a_pet.h"
 #include "mvp_a_save.h"
+#include "pet2d_perf_poc.h"
 #include "pet2d_scene.h"
 
 static mvp_a_debug_action_t mvp_a_debug_selected = MVP_A_DEBUG_VIEW_SAVE;
@@ -43,6 +44,15 @@ mvp_a_result_t mvp_a_debug_execute_selected(void)
         return mvp_a_pet_set_fast_growth(mvp_a_pet_fast_growth_enabled() ? MVP_A_FALSE : MVP_A_TRUE);
     case MVP_A_DEBUG_PET2D_SCENE:
         return (pet2d_scene_enter_test() == PET_RESULT_OK) ? MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
+    case MVP_A_DEBUG_P19_PERF32:
+        return (pet2d_perf_poc_run_mode(PET2D_PERF_MODE_RECT_32, 60u, 0u) == PET_RESULT_OK) ?
+               MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
+    case MVP_A_DEBUG_P19_PERF64:
+        return (pet2d_perf_poc_run_mode(PET2D_PERF_MODE_RECT_64, 60u, 0u) == PET_RESULT_OK) ?
+               MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
+    case MVP_A_DEBUG_P19_PERF96:
+        return (pet2d_perf_poc_run_mode(PET2D_PERF_MODE_RECT_96, 60u, 0u) == PET_RESULT_OK) ?
+               MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
     default:
         break;
     }
@@ -61,6 +71,12 @@ const char *mvp_a_debug_get_action_name(mvp_a_debug_action_t action)
         return "Fast";
     case MVP_A_DEBUG_PET2D_SCENE:
         return "P18 Scene";
+    case MVP_A_DEBUG_P19_PERF32:
+        return "P19 Perf32";
+    case MVP_A_DEBUG_P19_PERF64:
+        return "P19 Perf64";
+    case MVP_A_DEBUG_P19_PERF96:
+        return "P19 Perf96";
     default:
         break;
     }
@@ -85,6 +101,12 @@ const char *mvp_a_debug_get_prompt(void)
         return mvp_a_pet_fast_growth_enabled() ? "Fast On" : "Fast Off";
     case MVP_A_DEBUG_PET2D_SCENE:
         return "Pet2D Scene";
+    case MVP_A_DEBUG_P19_PERF32:
+        return "Perf 32x32";
+    case MVP_A_DEBUG_P19_PERF64:
+        return "Perf 64x64";
+    case MVP_A_DEBUG_P19_PERF96:
+        return "Perf 96x96";
     default:
         break;
     }

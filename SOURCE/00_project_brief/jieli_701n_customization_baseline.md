@@ -518,3 +518,38 @@ P18 still does not:
 - parse PNG/JPG/GIF/JSON;
 - allocate a full framebuffer or replace the LVGL flush callback;
 - write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.
+
+## P19 High-res Motion / Performance POC Status
+
+Status: implemented in source as a bounded high-res motion/performance probe on top of the P18 handoff.
+P19 is still not HOME/Observe and is not the full Pet2D runtime.
+
+Current capability:
+- `apps/watch/pet2d_scene/pet2d_perf_poc.*` provides manual 32x32, 64x64 and 96x96 finite-frame movement
+  probes using generated RGB565 patterns and a static scratch buffer no larger than 128x128 pixels.
+- Manual Debug actions `P19 Perf32`, `P19 Perf64` and `P19 Perf96` run 60-frame probes from the Debug
+  page only. They do not run at boot or from normal HOME/LVGL pages.
+- Each frame computes a small horizontal motion step, renders the old/new dirty union, flushes the dirty
+  rect through the existing gated real-flush path, and records coarse logic/render/flush/frame timings.
+- Stats report run count, frame attempt/success/fail counts, total/min/max/avg timing, approximate FPS,
+  last rect size, last dirty rect size, last frame count, mode and result.
+- The optional 128x128 mode is intentionally unsupported for moving dirty-union tests because moving a
+  128x128 rect by even one step would exceed the 128x128 maximum scratch-buffer limit.
+- Self-test adds `PET_SELFTEST_PET2D_PERF_POC` and capability bit `has_pet2d_perf_poc`.
+- COM3 board testing with a temporary real-flush build confirmed 32x32, 64x64 and 96x96 modes all ran
+  60/60 frames successfully with `ret=0`, average frame time about 22 ms, max frame time 30 ms and
+  approximate FPS around 44.8-45.5. LVGL owner release/reacquire and Debug page redraw were observed.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; performance probing is a controlled precursor, not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+
+P19 still does not:
+- implement HOME/Observe, background scrolling, full scene background restore or formal animation;
+- use IMB/hardware acceleration or formal production assets;
+- read external Flash, formal resource packages or SDK `.res` images as PetEgg sprites;
+- parse PNG/JPG/GIF/JSON;
+- allocate a full framebuffer or replace the LVGL flush callback;
+- write VM/Flash/syscfg or connect real NFC/audio/BLE hardware.

@@ -1,4 +1,5 @@
 #include "pet2d_scene.h"
+#include "pet2d_perf_poc.h"
 
 PET_STATIC_ASSERT(pet2d_scene_stats_has_expected_width,
                   sizeof(((pet2d_scene_stats_t *)0)->enter_count) == sizeof(pet_u32_t));
@@ -24,4 +25,9 @@ pet_result_t pet2d_scene_compile_check_state(void)
 pet_result_t pet2d_scene_compile_check_self_test(void)
 {
     return pet2d_scene_self_test();
+}
+
+pet_result_t pet2d_scene_compile_check_perf_poc(void)
+{
+    return pet2d_perf_poc_self_test();
 }

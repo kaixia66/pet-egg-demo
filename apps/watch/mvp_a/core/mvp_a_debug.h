@@ -8,6 +8,9 @@ typedef enum {
     MVP_A_DEBUG_RESET_SAVE,
     MVP_A_DEBUG_FAST_GROWTH,
     MVP_A_DEBUG_PET2D_SCENE,
+    MVP_A_DEBUG_P19_PERF32,
+    MVP_A_DEBUG_P19_PERF64,
+    MVP_A_DEBUG_P19_PERF96,
     MVP_A_DEBUG_MAX,
 } mvp_a_debug_action_t;
 

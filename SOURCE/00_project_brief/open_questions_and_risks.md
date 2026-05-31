@@ -422,3 +422,27 @@ Open items:
 - External Flash / virfat / raw NOR resources remain paused; formal assets still need another route.
 - Current hardware still has no NFC and no speaker, and only one board is available. Real NFC, real audio
   and real BLE two-board validation remain Future Scope.
+
+## P19 High-res Motion / Performance Risks
+
+Status: P19 adds a bounded Debug-triggered performance probe for 32x32, 64x64 and 96x96 dirty-rect
+movement. It remains a performance baseline POC and does not implement HOME/Observe.
+
+Open items:
+- Board validation with a temporary `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build confirmed 32x32,
+  64x64 and 96x96 probes all completed 60 frames with `ret=0`; this is a first real-flush performance
+  baseline, not a final HOME/Observe FPS target.
+- P19 still has no large background map, no full scene background restore and no formal scene graph. The
+  dirty rect is a generated local test surface only.
+- P19 does not use IMB/hardware acceleration. The measured numbers are for the current CPU pattern-fill
+  plus gated LCD flush path, not the final renderer.
+- The optional 128x128 moving dirty-union test is unsupported under the current 128x128 maximum scratch
+  buffer policy; supporting it would require a different erase/restore strategy or a larger buffer that
+  this phase intentionally avoids.
+- Debug actions `P19 Perf32`, `P19 Perf64` and `P19 Perf96` are engineering POC entries. Whether they move
+  into a later engineering test menu or are removed before production remains undecided.
+- The current run API is finite and owner-guarded, but it is not an interactive performance scene with
+  mid-run CANCEL handling.
+- External Flash / virfat / raw NOR resources remain paused, so P19 uses generated/compiled fixtures only.
+- Current hardware still has no NFC and no speaker, and only one board is available. Real NFC, real audio
+  and real BLE two-board validation remain Future Scope.

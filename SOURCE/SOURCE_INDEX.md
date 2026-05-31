@@ -949,3 +949,22 @@ Tracked for P18:
   `has_pet2d_scene_handoff` while keeping `pet2d_runtime_enabled = 0`.
 - `SOURCE/10_engineering_reports/p18_pet2d_scene_handoff_poc.md`: records design, safety boundaries,
   verification and remaining risks.
+
+## P19 High-res Motion / Performance POC Addendum
+
+P19 adds a bounded high-res dirty-rect motion/performance probe on top of the P18 scene handoff. It uses
+only generated RGB565 test patterns in a small static scratch buffer; it does not reopen external Flash,
+formal packages or HOME/Observe.
+
+Tracked for P19:
+- `apps/watch/pet2d_scene/pet2d_perf_poc.h`: public perf mode enum, stats struct and bounded run APIs.
+- `apps/watch/pet2d_scene/pet2d_perf_poc.c`: 32x32, 64x64 and 96x96 finite-frame movement probe, owner
+  handoff, coarse timing stats, and gate behavior. 128x128 remains an optional unsupported mode because
+  moving it would exceed the 128x128 maximum scratch-buffer limit.
+- `apps/watch/pet2d_scene/pet2d_perf_poc_compile_check.c`: compile-time perf API checks.
+- `apps/watch/mvp_a/core/mvp_a_debug.*`: retained manual-only Debug actions `P19 Perf32`, `P19 Perf64`
+  and `P19 Perf96`.
+- `apps/watch/pet_selftest/*`: adds `PET_SELFTEST_PET2D_PERF_POC` and capability bit
+  `has_pet2d_perf_poc` while keeping `pet2d_runtime_enabled = 0`.
+- `SOURCE/10_engineering_reports/p19_high_res_motion_performance_poc.md`: records mode design, stats,
+  safety boundaries, build status and the board-test plan/results.
