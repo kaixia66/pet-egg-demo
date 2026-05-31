@@ -29,6 +29,7 @@ typedef enum {
     PET_SELFTEST_PET2D_PERF_POC,
     PET_SELFTEST_MVP_A_SCENE_SKELETON,
     PET_SELFTEST_MVP_A_SCENE_ACTION_LOOP,
+    PET_SELFTEST_MVP_A_RENDERER_CONTRACT,
     PET_SELFTEST_SAVE_TRANSACTION,
     PET_SELFTEST_SAVE_AB_INTERNAL,
     PET_SELFTEST_PROTOCOL_PACKET,
@@ -72,6 +73,10 @@ typedef struct {
     pet_u8_t has_mvp_a_scene_action_loop;
     pet_u8_t mvp_a_scene_action_loop_selftest;
     pet_u8_t mvp_a_scene_action_loop_debug_entry;
+    pet_u8_t has_mvp_a_renderer_contract;
+    pet_u8_t mvp_a_renderer_contract_selftest;
+    pet_u8_t mvp_a_renderer_contract_debug_entry;
+    pet_u8_t mvp_a_renderer_contract_used_by_scene_debug_entry;
     pet_u8_t home_observe_enabled;
     pet_u8_t full_pet2d_runtime_enabled;
     pet_u8_t has_resource_manifest_adapter;

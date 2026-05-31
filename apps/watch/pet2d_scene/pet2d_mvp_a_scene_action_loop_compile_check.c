@@ -22,8 +22,8 @@ pet_result_t pet2d_mvp_a_scene_action_loop_compile_check_contract(void)
     if (pet2d_mvp_a_scene_skeleton_get_draw_cmd(&cmd) != PET_RESULT_OK) {
         return PET_RESULT_ERROR;
     }
-    if ((cmd.w > PET2D_MVP_A_SCENE_SPRITE_SIZE) ||
-        (cmd.h > PET2D_MVP_A_SCENE_SPRITE_SIZE)) {
+    if ((cmd.dst.w > PET2D_MVP_A_SCENE_SPRITE_SIZE) ||
+        (cmd.dst.h > PET2D_MVP_A_SCENE_SPRITE_SIZE)) {
         return PET_RESULT_ERROR;
     }
     if (model.timeout_ms < model.enter_ms) {

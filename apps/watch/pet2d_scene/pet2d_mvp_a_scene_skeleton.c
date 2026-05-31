@@ -12,12 +12,14 @@ typedef struct {
     pet_i16_t stage_y;
     pet_u32_t last_render_ms;
     pet_u8_t full_patch_pending;
+    pet_u8_t visual_dirty_pending;
     pet_u8_t pose_cycle;
 } pet2d_mvp_a_scene_context_t;
 
 static pet2d_mvp_a_scene_context_t g_mvp_a_scene_ctx;
 static pet2d_mvp_a_scene_model_t g_mvp_a_scene_model;
 static pet2d_mvp_a_scene_draw_cmd_t g_mvp_a_scene_draw_cmd;
+static pet2d_mvp_a_render_plan_t g_mvp_a_scene_render_plan;
 static pet2d_mvp_a_scene_stats_t g_mvp_a_scene_stats;
 
 #if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
@@ -155,15 +157,77 @@ static pet_u16_t pet2d_mvp_a_scene_pet_pixel(pet_u16_t x,
 
 static void pet2d_mvp_a_scene_update_draw_cmd(void)
 {
-    g_mvp_a_scene_draw_cmd.x = g_mvp_a_scene_model.pet_x;
-    g_mvp_a_scene_draw_cmd.y = g_mvp_a_scene_model.pet_y;
-    g_mvp_a_scene_draw_cmd.w = PET2D_MVP_A_SCENE_SPRITE_SIZE;
-    g_mvp_a_scene_draw_cmd.h = PET2D_MVP_A_SCENE_SPRITE_SIZE;
+    g_mvp_a_scene_draw_cmd.type = PET2D_MVP_A_RENDER_CMD_PET_PLACEHOLDER;
+    g_mvp_a_scene_draw_cmd.dst.x = g_mvp_a_scene_model.pet_x;
+    g_mvp_a_scene_draw_cmd.dst.y = g_mvp_a_scene_model.pet_y;
+    g_mvp_a_scene_draw_cmd.dst.w = PET2D_MVP_A_SCENE_SPRITE_SIZE;
+    g_mvp_a_scene_draw_cmd.dst.h = PET2D_MVP_A_SCENE_SPRITE_SIZE;
+    g_mvp_a_scene_draw_cmd.pattern =
+        pet2d_mvp_a_renderer_pattern_from_pose((pet_u8_t)g_mvp_a_scene_model.pose);
     g_mvp_a_scene_draw_cmd.pose = (pet_u8_t)g_mvp_a_scene_model.pose;
-    g_mvp_a_scene_draw_cmd.pattern_id = (pet_u8_t)g_mvp_a_scene_model.pose;
+    g_mvp_a_scene_draw_cmd.alpha_mode = 0u;
     g_mvp_a_scene_draw_cmd.flags =
-        (pet_u8_t)((g_mvp_a_scene_model.state == PET2D_MVP_A_SCENE_STATE_ACTION) ? 1u : 0u);
+        PET2D_MVP_A_RENDER_FLAG_PET_DRAW;
     g_mvp_a_scene_draw_cmd.reserved = 0u;
+}
+
+static pet2d_mvp_a_rect_t pet2d_mvp_a_scene_stage_rect(void)
+{
+    pet2d_mvp_a_rect_t rect;
+
+    rect.x = g_mvp_a_scene_ctx.stage_x;
+    rect.y = g_mvp_a_scene_ctx.stage_y;
+    rect.w = PET2D_MVP_A_SCENE_STAGE_W;
+    rect.h = PET2D_MVP_A_SCENE_STAGE_H;
+    return rect;
+}
+
+static pet2d_mvp_a_rect_t pet2d_mvp_a_scene_pet_rect(pet_i16_t x, pet_i16_t y)
+{
+    pet2d_mvp_a_rect_t rect;
+
+    rect.x = x;
+    rect.y = y;
+    rect.w = PET2D_MVP_A_SCENE_SPRITE_SIZE;
+    rect.h = PET2D_MVP_A_SCENE_SPRITE_SIZE;
+    return rect;
+}
+
+static pet_result_t pet2d_mvp_a_scene_build_render_plan(void)
+{
+    pet2d_mvp_a_rect_t stage = pet2d_mvp_a_scene_stage_rect();
+    pet2d_mvp_a_rect_t pet = pet2d_mvp_a_scene_pet_rect(
+        g_mvp_a_scene_model.pet_x,
+        g_mvp_a_scene_model.pet_y);
+    pet2d_mvp_a_rect_t prev = pet2d_mvp_a_scene_pet_rect(
+        g_mvp_a_scene_model.prev_x,
+        g_mvp_a_scene_model.prev_y);
+    pet_result_t ret;
+    pet_u8_t i;
+
+    if (g_mvp_a_scene_ctx.full_patch_pending != 0u) {
+        ret = pet2d_mvp_a_renderer_build_initial_plan(
+            &stage, &pet, (pet_u8_t)g_mvp_a_scene_model.pose,
+            &g_mvp_a_scene_render_plan);
+    } else if (g_mvp_a_scene_ctx.visual_dirty_pending != 0u) {
+        ret = pet2d_mvp_a_renderer_build_pet_change_plan(
+            &stage, &prev, &pet, (pet_u8_t)g_mvp_a_scene_model.pose,
+            PET_TRUE, &g_mvp_a_scene_render_plan);
+    } else {
+        ret = pet2d_mvp_a_renderer_build_idle_plan(&g_mvp_a_scene_render_plan);
+    }
+    if (ret != PET_RESULT_OK) {
+        return ret;
+    }
+
+    pet2d_mvp_a_scene_update_draw_cmd();
+    for (i = 0u; i < g_mvp_a_scene_render_plan.cmd_count; i++) {
+        if (g_mvp_a_scene_render_plan.cmds[i].type ==
+            PET2D_MVP_A_RENDER_CMD_PET_PLACEHOLDER) {
+            g_mvp_a_scene_draw_cmd = g_mvp_a_scene_render_plan.cmds[i];
+        }
+    }
+    return PET_RESULT_OK;
 }
 
 static void pet2d_mvp_a_scene_init_context(pet_u32_t now_ms)
@@ -199,6 +263,7 @@ static void pet2d_mvp_a_scene_init_context(pet_u32_t now_ms)
 
     g_mvp_a_scene_ctx.last_render_ms = now_ms;
     g_mvp_a_scene_ctx.full_patch_pending = 1u;
+    g_mvp_a_scene_ctx.visual_dirty_pending = 1u;
     g_mvp_a_scene_ctx.pose_cycle = 0u;
     pet2d_mvp_a_scene_update_draw_cmd();
 }
@@ -227,48 +292,8 @@ static void pet2d_mvp_a_scene_begin_action(pet2d_mvp_a_scene_state_t state,
     g_mvp_a_scene_model.pose = pose;
     g_mvp_a_scene_model.action_started_ms = now_ms;
     g_mvp_a_scene_model.action_duration_ms = duration_ms;
+    g_mvp_a_scene_ctx.visual_dirty_pending = 1u;
     pet2d_mvp_a_scene_update_draw_cmd();
-}
-
-static pet_result_t pet2d_mvp_a_scene_compute_dirty(pet_i16_t *out_x,
-                                                    pet_i16_t *out_y,
-                                                    pet_u16_t *out_w,
-                                                    pet_u16_t *out_h)
-{
-    pet_i16_t min_x;
-    pet_i16_t min_y;
-    pet_i16_t max_x;
-    pet_i16_t max_y;
-
-    if ((out_x == 0) || (out_y == 0) || (out_w == 0) || (out_h == 0)) {
-        return PET_RESULT_INVALID_ARGUMENT;
-    }
-
-    if (g_mvp_a_scene_ctx.full_patch_pending != 0u) {
-        *out_x = g_mvp_a_scene_ctx.stage_x;
-        *out_y = g_mvp_a_scene_ctx.stage_y;
-        *out_w = PET2D_MVP_A_SCENE_STAGE_W;
-        *out_h = PET2D_MVP_A_SCENE_STAGE_H;
-        return PET_RESULT_OK;
-    }
-
-    min_x = (g_mvp_a_scene_model.prev_x < g_mvp_a_scene_model.pet_x) ?
-            g_mvp_a_scene_model.prev_x : g_mvp_a_scene_model.pet_x;
-    min_y = (g_mvp_a_scene_model.prev_y < g_mvp_a_scene_model.pet_y) ?
-            g_mvp_a_scene_model.prev_y : g_mvp_a_scene_model.pet_y;
-    max_x = (g_mvp_a_scene_model.prev_x > g_mvp_a_scene_model.pet_x) ?
-            g_mvp_a_scene_model.prev_x : g_mvp_a_scene_model.pet_x;
-    max_y = (g_mvp_a_scene_model.prev_y > g_mvp_a_scene_model.pet_y) ?
-            g_mvp_a_scene_model.prev_y : g_mvp_a_scene_model.pet_y;
-    *out_x = min_x;
-    *out_y = min_y;
-    *out_w = (pet_u16_t)((max_x - min_x) + PET2D_MVP_A_SCENE_SPRITE_SIZE);
-    *out_h = (pet_u16_t)((max_y - min_y) + PET2D_MVP_A_SCENE_SPRITE_SIZE);
-    if ((*out_w > PET2D_MVP_A_SCENE_STAGE_W) ||
-        (*out_h > PET2D_MVP_A_SCENE_STAGE_H)) {
-        return PET_RESULT_UNSUPPORTED;
-    }
-    return PET_RESULT_OK;
 }
 
 #if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
@@ -307,10 +332,7 @@ static void pet2d_mvp_a_scene_fill_dirty_surface(pet_u16_t *pixels,
 
 static pet_result_t pet2d_mvp_a_scene_render_once(void)
 {
-    pet_i16_t dirty_x;
-    pet_i16_t dirty_y;
-    pet_u16_t dirty_w;
-    pet_u16_t dirty_h;
+    pet2d_mvp_a_rect_t dirty;
     pet_u32_t frame_start_ms;
     pet_u32_t logic_start_ms;
     pet_u32_t logic_end_ms;
@@ -323,10 +345,50 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
 
     frame_start_ms = pet2d_mvp_a_scene_now_ms();
     logic_start_ms = frame_start_ms;
-    pet2d_mvp_a_scene_update_draw_cmd();
-    ret = pet2d_mvp_a_scene_compute_dirty(&dirty_x, &dirty_y, &dirty_w, &dirty_h);
+    ret = pet2d_mvp_a_scene_build_render_plan();
     logic_end_ms = pet2d_mvp_a_scene_now_ms();
     if (ret != PET_RESULT_OK) {
+        g_mvp_a_scene_stats.render_count++;
+        g_mvp_a_scene_stats.last_result = (pet_u8_t)ret;
+        return ret;
+    }
+
+    if ((g_mvp_a_scene_render_plan.skipped_flush != 0u) ||
+        (g_mvp_a_scene_render_plan.cmd_count == 0u) ||
+        (pet2d_mvp_a_rect_is_valid(&g_mvp_a_scene_render_plan.dirty_rect) == PET_FALSE)) {
+        frame_end_ms = pet2d_mvp_a_scene_now_ms();
+        g_mvp_a_scene_stats.frame_count++;
+        g_mvp_a_scene_stats.render_count++;
+        g_mvp_a_scene_model.frame_index = g_mvp_a_scene_stats.frame_count;
+        g_mvp_a_scene_stats.flush_skipped_count++;
+        g_mvp_a_scene_stats.last_dirty_x = 0u;
+        g_mvp_a_scene_stats.last_dirty_y = 0u;
+        g_mvp_a_scene_stats.last_dirty_w = 0u;
+        g_mvp_a_scene_stats.last_dirty_h = 0u;
+        g_mvp_a_scene_stats.last_pet_x = (pet_u16_t)g_mvp_a_scene_model.pet_x;
+        g_mvp_a_scene_stats.last_pet_y = (pet_u16_t)g_mvp_a_scene_model.pet_y;
+        g_mvp_a_scene_stats.last_pose = (pet_u8_t)g_mvp_a_scene_model.pose;
+        g_mvp_a_scene_stats.logic_total_ms +=
+            pet2d_mvp_a_scene_elapsed_ms(logic_end_ms, logic_start_ms);
+        g_mvp_a_scene_stats.frame_total_ms +=
+            pet2d_mvp_a_scene_elapsed_ms(frame_end_ms, frame_start_ms);
+        pet2d_mvp_a_scene_update_max(
+            pet2d_mvp_a_scene_elapsed_ms(logic_end_ms, logic_start_ms),
+            &g_mvp_a_scene_stats.logic_max_ms);
+        pet2d_mvp_a_scene_update_max(
+            pet2d_mvp_a_scene_elapsed_ms(frame_end_ms, frame_start_ms),
+            &g_mvp_a_scene_stats.frame_max_ms);
+        g_mvp_a_scene_stats.last_result = PET_RESULT_OK;
+        printf("[PET2D_MVP_A_RENDER] frame=%lu cmd_count=0 dirty=0x0 stage_restore=0 pet_draw=0 skipped=%lu\n",
+               (unsigned long)g_mvp_a_scene_stats.frame_count,
+               (unsigned long)g_mvp_a_scene_stats.flush_skipped_count);
+        return PET_RESULT_OK;
+    }
+
+    dirty = g_mvp_a_scene_render_plan.dirty_rect;
+    if ((dirty.w > PET2D_MVP_A_SCENE_STAGE_W) ||
+        (dirty.h > PET2D_MVP_A_SCENE_STAGE_H)) {
+        ret = PET_RESULT_UNSUPPORTED;
         g_mvp_a_scene_stats.last_result = (pet_u8_t)ret;
         return ret;
     }
@@ -334,16 +396,16 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
     render_start_ms = pet2d_mvp_a_scene_now_ms();
 #if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
     pet2d_mvp_a_scene_fill_dirty_surface(g_mvp_a_scene_pixels,
-                                         dirty_x, dirty_y, dirty_w, dirty_h);
+                                         dirty.x, dirty.y, dirty.w, dirty.h);
 #else
-    (void)pet2d_mvp_a_scene_background_pixel(dirty_x, dirty_y);
+    (void)pet2d_mvp_a_scene_background_pixel(dirty.x, dirty.y);
 #endif
     render_end_ms = pet2d_mvp_a_scene_now_ms();
 
     flush_start_ms = pet2d_mvp_a_scene_now_ms();
 #if PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC
-    ret = pet_display_jieli_real_flush_poc_rect(dirty_x, dirty_y, dirty_w, dirty_h,
-                                                g_mvp_a_scene_pixels, dirty_w);
+    ret = pet_display_jieli_real_flush_poc_rect(dirty.x, dirty.y, dirty.w, dirty.h,
+                                                g_mvp_a_scene_pixels, dirty.w);
 #else
     ret = PET_RESULT_UNSUPPORTED;
 #endif
@@ -353,10 +415,10 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
     g_mvp_a_scene_stats.frame_count++;
     g_mvp_a_scene_stats.render_count++;
     g_mvp_a_scene_model.frame_index = g_mvp_a_scene_stats.frame_count;
-    g_mvp_a_scene_stats.last_dirty_x = (pet_u16_t)dirty_x;
-    g_mvp_a_scene_stats.last_dirty_y = (pet_u16_t)dirty_y;
-    g_mvp_a_scene_stats.last_dirty_w = dirty_w;
-    g_mvp_a_scene_stats.last_dirty_h = dirty_h;
+    g_mvp_a_scene_stats.last_dirty_x = (pet_u16_t)dirty.x;
+    g_mvp_a_scene_stats.last_dirty_y = (pet_u16_t)dirty.y;
+    g_mvp_a_scene_stats.last_dirty_w = dirty.w;
+    g_mvp_a_scene_stats.last_dirty_h = dirty.h;
     g_mvp_a_scene_stats.last_pet_x = (pet_u16_t)g_mvp_a_scene_model.pet_x;
     g_mvp_a_scene_stats.last_pet_y = (pet_u16_t)g_mvp_a_scene_model.pet_y;
     g_mvp_a_scene_stats.last_pose = (pet_u8_t)g_mvp_a_scene_model.pose;
@@ -394,6 +456,7 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
     g_mvp_a_scene_model.prev_x = g_mvp_a_scene_model.pet_x;
     g_mvp_a_scene_model.prev_y = g_mvp_a_scene_model.pet_y;
     g_mvp_a_scene_ctx.full_patch_pending = 0u;
+    g_mvp_a_scene_ctx.visual_dirty_pending = 0u;
 
     printf("[PET2D_MVP_A_SCENE] frame=%lu state=%s pose=%s pet=%u,%u dirty=%ux%u ret=%d owner=%d\n",
            (unsigned long)g_mvp_a_scene_stats.frame_count,
@@ -405,6 +468,24 @@ static pet_result_t pet2d_mvp_a_scene_render_once(void)
            g_mvp_a_scene_stats.last_dirty_h,
            ret,
            pet_display_jieli_get_owner());
+    printf("[PET2D_MVP_A_RENDER] frame=%lu cmd_count=%u dirty=%ux%u stage_restore=%u pet_draw=%u skipped=%lu\n",
+           (unsigned long)g_mvp_a_scene_stats.frame_count,
+           g_mvp_a_scene_render_plan.cmd_count,
+           g_mvp_a_scene_render_plan.dirty_rect.w,
+           g_mvp_a_scene_render_plan.dirty_rect.h,
+           g_mvp_a_scene_render_plan.needs_stage_restore,
+           g_mvp_a_scene_render_plan.needs_pet_draw,
+           (unsigned long)g_mvp_a_scene_stats.flush_skipped_count);
+    if (g_mvp_a_scene_render_plan.cmd_count > 0u) {
+        const pet2d_mvp_a_render_cmd_t *cmd = &g_mvp_a_scene_render_plan.cmds[0];
+        printf("[PET2D_MVP_A_RENDER] cmd[0] type=%d x=%d y=%d w=%u h=%u pattern=%d\n",
+               cmd->type,
+               cmd->dst.x,
+               cmd->dst.y,
+               cmd->dst.w,
+               cmd->dst.h,
+               cmd->pattern);
+    }
     return ret;
 }
 
@@ -427,6 +508,7 @@ static pet_result_t pet2d_mvp_a_scene_finish_action_if_due(pet_u32_t now_ms,
     g_mvp_a_scene_model.action_duration_ms = 0u;
     pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_IDLE);
     g_mvp_a_scene_stats.action_done_count++;
+    g_mvp_a_scene_ctx.visual_dirty_pending = 1u;
     pet2d_mvp_a_scene_update_draw_cmd();
 
     printf("[PET2D_MVP_A_ACTION] state=IDLE action_done=1 pose=%s pet=%d,%d\n",
@@ -717,6 +799,16 @@ pet_result_t pet2d_mvp_a_scene_skeleton_get_draw_cmd(
     return PET_RESULT_OK;
 }
 
+pet_result_t pet2d_mvp_a_scene_skeleton_get_render_plan(
+    pet2d_mvp_a_render_plan_t *out_plan)
+{
+    if (out_plan == 0) {
+        return PET_RESULT_INVALID_ARGUMENT;
+    }
+    *out_plan = g_mvp_a_scene_render_plan;
+    return PET_RESULT_OK;
+}
+
 pet_result_t pet2d_mvp_a_scene_skeleton_get_stats(
     pet2d_mvp_a_scene_stats_t *out_stats)
 {
@@ -732,6 +824,7 @@ pet_result_t pet2d_mvp_a_scene_skeleton_reset_stats(void)
     pet_u8_t *stats_bytes = (pet_u8_t *)&g_mvp_a_scene_stats;
     pet_u8_t *model_bytes = (pet_u8_t *)&g_mvp_a_scene_model;
     pet_u8_t *cmd_bytes = (pet_u8_t *)&g_mvp_a_scene_draw_cmd;
+    pet_u8_t *plan_bytes = (pet_u8_t *)&g_mvp_a_scene_render_plan;
     pet_u32_t i;
 
     for (i = 0u; i < (pet_u32_t)sizeof(g_mvp_a_scene_stats); i++) {
@@ -742,6 +835,9 @@ pet_result_t pet2d_mvp_a_scene_skeleton_reset_stats(void)
     }
     for (i = 0u; i < (pet_u32_t)sizeof(g_mvp_a_scene_draw_cmd); i++) {
         cmd_bytes[i] = 0u;
+    }
+    for (i = 0u; i < (pet_u32_t)sizeof(g_mvp_a_scene_render_plan); i++) {
+        plan_bytes[i] = 0u;
     }
     pet2d_mvp_a_scene_set_state(PET2D_MVP_A_SCENE_STATE_NONE);
     return PET_RESULT_OK;
@@ -836,10 +932,11 @@ static pet_result_t pet2d_mvp_a_scene_action_loop_core_self_test(void)
     }
     ret = pet2d_mvp_a_scene_skeleton_get_draw_cmd(&draw_cmd);
     if ((ret != PET_RESULT_OK) ||
-        (draw_cmd.x != model.pet_x) ||
-        (draw_cmd.y != model.pet_y) ||
-        (draw_cmd.w != PET2D_MVP_A_SCENE_SPRITE_SIZE) ||
-        (draw_cmd.h != PET2D_MVP_A_SCENE_SPRITE_SIZE) ||
+        (draw_cmd.type != PET2D_MVP_A_RENDER_CMD_PET_PLACEHOLDER) ||
+        (draw_cmd.dst.x != model.pet_x) ||
+        (draw_cmd.dst.y != model.pet_y) ||
+        (draw_cmd.dst.w != PET2D_MVP_A_SCENE_SPRITE_SIZE) ||
+        (draw_cmd.dst.h != PET2D_MVP_A_SCENE_SPRITE_SIZE) ||
         (draw_cmd.pose != (pet_u8_t)model.pose)) {
         return PET_RESULT_ERROR;
     }
@@ -905,7 +1002,10 @@ pet_result_t pet2d_mvp_a_scene_action_loop_self_test(void)
         (void)platform->display_release(platform->ctx, original_owner);
     }
 
-    ret = pet2d_mvp_a_scene_skeleton_reset_stats();
+    ret = pet2d_mvp_a_renderer_contract_self_test();
+    if (ret == PET_RESULT_OK) {
+        ret = pet2d_mvp_a_scene_skeleton_reset_stats();
+    }
     if (ret == PET_RESULT_OK) {
         ret = pet2d_mvp_a_scene_action_loop_core_self_test();
     }

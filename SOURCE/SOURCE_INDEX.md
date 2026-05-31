@@ -1062,3 +1062,29 @@ Tracked for P23:
 P23 remains a renderer-facing contract and placeholder action-loop POC. It does not persist pet state,
 does not use P21 syscfg item 206/207 as production slots, and does not reopen external Flash / virfat /
 raw NOR.
+
+## P24 MVP-A Placeholder Renderer Contract Addendum
+
+P24 refines the P23 placeholder draw command into an explicit renderer-facing contract. It keeps the
+existing Debug-page `P22 Scene` entry and owner handoff, but moves rect math, render-plan generation,
+command metadata and idle no-change skip behavior into a side-effect-free contract layer.
+
+Tracked for P24:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract.h`: declares render command types, render
+  patterns, `pet2d_mvp_a_rect_t`, `pet2d_mvp_a_render_cmd_t`, `pet2d_mvp_a_render_plan_t`, render stats
+  and rect/helper APIs.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract.c`: implements stage patch, pet placeholder,
+  dirty union, clamp, idle skip and side-effect-free renderer-contract self-test.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract_compile_check.c`: compile-time reference for
+  the P24 contract.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.c/.h`: consumes the render plan for scene drawing,
+  keeps the Debug entry manual-only, exposes the latest render plan and logs P24 render command summary.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds `PET_SELFTEST_MVP_A_RENDERER_CONTRACT` and snapshot
+  bits for renderer-contract support while keeping HOME/Observe and full runtime disabled.
+- `SOURCE/10_engineering_reports/p24_mvp_a_placeholder_renderer_contract.md`: engineering report for the
+  P24 placeholder renderer-contract refinement.
+
+P24 is still not HOME/Observe, not the formal renderer and not the full Pet2D runtime. It does not
+persist pet state, does not use P21 syscfg item 206/207 as production slots, and does not reopen external
+Flash / virfat / raw NOR.

@@ -299,6 +299,20 @@ external Flash / virfat / raw NOR, download/watch changes, pet-state persistence
 BLE out of scope. Capability snapshots must remain side-effect free and keep `home_observe_enabled`,
 `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
 
+## PetEgg P24 MVP-A Placeholder Renderer Contract Rule
+
+P24 may refine the P23 placeholder draw command into a small renderer-facing contract with rect helpers,
+stage patch, pet placeholder, dirty-rect render plan, command metadata and render stats. It may connect
+the existing P22/P23 Debug scene to that contract, but the contract itself must stay side-effect free and
+testable without acquiring display ownership or writing the LCD.
+
+P24 is still not HOME/Observe, not the formal renderer and not the full Pet2D runtime. It must not add
+formal resources, animation tables, transparency/RLE/compression policy, external Flash / virfat / raw
+NOR, download/watch changes, pet-state persistence, NFC, audio or real BLE. Capability snapshots must
+distinguish the renderer contract from a production renderer and keep `home_observe_enabled`,
+`full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0. The Debug entry remains the manual
+engineering scene entry and must be safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is 0.
+
 ## PetEgg P21 Internal Save / syscfg A-B POC Rule
 
 P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a

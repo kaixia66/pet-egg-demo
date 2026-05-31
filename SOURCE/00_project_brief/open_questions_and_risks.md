@@ -536,3 +536,27 @@ Open items:
 - HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
   `pet2d_runtime_enabled` remain 0.
 - External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P24 MVP-A Placeholder Renderer Contract Risks
+
+Status: P24 refines the P23 placeholder draw command into a side-effect-free renderer-facing contract.
+It clarifies rect helpers, render plans, command metadata and idle skip behavior, but it is still not a
+production renderer.
+
+Open items:
+
+- The render command set covers only stage patch, dirty clear and placeholder pet draw. It does not yet
+  cover layered backgrounds, animation tables, transparency, RLE/compression, palette policy or IMB
+  hardware acceleration.
+- The renderer contract is validated by self-test and compile checks. No new P24 real-board run was
+  required because P22 already verified owner handoff and manual scene entry, but final renderer timing
+  still needs hardware validation in a later stage.
+- Dirty restoration is bounded to the 96x64 placeholder stage. Full HOME/Observe background restore,
+  occlusion and multi-object dirty merging remain open.
+- The contract is a Jieli-side placeholder API and still needs PC simulator/shared-core alignment before
+  being treated as cross-platform final.
+- P24 does not persist scene state. P21 syscfg item IDs 206/207 remain test save slots and must not be
+  reused for production pet state without a later schema decision.
+- HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
+  `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.

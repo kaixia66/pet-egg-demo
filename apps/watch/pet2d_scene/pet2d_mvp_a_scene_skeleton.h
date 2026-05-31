@@ -2,6 +2,7 @@
 #define PET2D_MVP_A_SCENE_SKELETON_H
 
 #include "pet_key.h"
+#include "pet2d_mvp_a_renderer_contract.h"
 #include "pet_platform.h"
 
 #ifdef __cplusplus
@@ -44,16 +45,7 @@ typedef enum {
     PET2D_MVP_A_SCENE_POSE_MAX
 } pet2d_mvp_a_scene_pose_t;
 
-typedef struct {
-    pet_i16_t x;
-    pet_i16_t y;
-    pet_u16_t w;
-    pet_u16_t h;
-    pet_u8_t pose;
-    pet_u8_t pattern_id;
-    pet_u8_t flags;
-    pet_u8_t reserved;
-} pet2d_mvp_a_scene_draw_cmd_t;
+typedef pet2d_mvp_a_render_cmd_t pet2d_mvp_a_scene_draw_cmd_t;
 
 typedef struct {
     pet2d_mvp_a_scene_state_t state;
@@ -118,6 +110,8 @@ pet_result_t pet2d_mvp_a_scene_skeleton_get_state(pet2d_mvp_a_scene_state_t *out
 pet_result_t pet2d_mvp_a_scene_skeleton_get_model(pet2d_mvp_a_scene_model_t *out_model);
 pet_result_t pet2d_mvp_a_scene_skeleton_get_draw_cmd(
     pet2d_mvp_a_scene_draw_cmd_t *out_cmd);
+pet_result_t pet2d_mvp_a_scene_skeleton_get_render_plan(
+    pet2d_mvp_a_render_plan_t *out_plan);
 pet_result_t pet2d_mvp_a_scene_skeleton_get_stats(pet2d_mvp_a_scene_stats_t *out_stats);
 pet_result_t pet2d_mvp_a_scene_skeleton_reset_stats(void);
 pet_result_t pet2d_mvp_a_scene_action_loop_self_test(void);

@@ -5,8 +5,9 @@ PET_STATIC_ASSERT(pet2d_mvp_a_scene_scratch_bound,
 PET_STATIC_ASSERT(pet2d_mvp_a_scene_stats_frame_width,
                   sizeof(((pet2d_mvp_a_scene_stats_t *)0)->frame_count) ==
                       sizeof(pet_u32_t));
-PET_STATIC_ASSERT(pet2d_mvp_a_scene_draw_cmd_small,
-                  sizeof(pet2d_mvp_a_scene_draw_cmd_t) <= 12u);
+PET_STATIC_ASSERT(pet2d_mvp_a_scene_draw_cmd_has_dst,
+                  sizeof(((pet2d_mvp_a_scene_draw_cmd_t *)0)->dst) ==
+                      sizeof(pet2d_mvp_a_rect_t));
 PET_STATIC_ASSERT(pet2d_mvp_a_scene_model_has_counter,
                   sizeof(((pet2d_mvp_a_scene_model_t *)0)->frame_index) ==
                       sizeof(pet_u32_t));
@@ -22,6 +23,7 @@ pet_result_t pet2d_mvp_a_scene_skeleton_compile_check_stats(void)
     pet2d_mvp_a_scene_state_t state;
     pet2d_mvp_a_scene_model_t model;
     pet2d_mvp_a_scene_draw_cmd_t cmd;
+    pet2d_mvp_a_render_plan_t plan;
 
     if (pet2d_mvp_a_scene_skeleton_get_stats(&stats) != PET_RESULT_OK) {
         return PET_RESULT_ERROR;
@@ -33,6 +35,9 @@ pet_result_t pet2d_mvp_a_scene_skeleton_compile_check_stats(void)
         return PET_RESULT_ERROR;
     }
     if (pet2d_mvp_a_scene_skeleton_get_draw_cmd(&cmd) != PET_RESULT_OK) {
+        return PET_RESULT_ERROR;
+    }
+    if (pet2d_mvp_a_scene_skeleton_get_render_plan(&plan) != PET_RESULT_OK) {
         return PET_RESULT_ERROR;
     }
     if ((state != PET2D_MVP_A_SCENE_STATE_NONE) &&
@@ -49,5 +54,6 @@ pet_result_t pet2d_mvp_a_scene_skeleton_compile_check_stats(void)
     (void)stats;
     (void)model;
     (void)cmd;
+    (void)plan;
     return PET_RESULT_OK;
 }

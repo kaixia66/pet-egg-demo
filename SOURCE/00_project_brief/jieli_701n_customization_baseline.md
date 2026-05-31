@@ -712,3 +712,43 @@ P23 still does not:
 - write real pet-state saves or use P21 syscfg item 206/207 as production save slots;
 - restore arbitrary full-scene background pixels outside the bounded test patch;
 - connect real NFC/audio/BLE hardware.
+
+## P24 MVP-A Placeholder Renderer Contract Status
+
+Status: implemented in source as a renderer-contract refinement on baseline
+`8a41938a276a9a7b52b3d91e54287664daf389e8 feat(petegg): add mvp a scene action loop`. P24 is still not
+HOME/Observe, not the formal renderer and not the full Pet2D runtime.
+
+Current P24 capability:
+
+- `pet2d_mvp_a_renderer_contract` defines rect helpers, render command types, placeholder render patterns,
+  render plans and small render stats.
+- Initial scene enter builds a stage patch plan with a 96x64 dirty rect and a placeholder pet draw command.
+- Pet movement builds an old/new union dirty rect; the typical 8-pixel horizontal step remains 40x32.
+- Pose-only changes build a 32x32 pet dirty rect.
+- Idle no-change ticks can generate a zero-command plan and increment skipped-flush accounting instead of
+  emitting a meaningless dirty rect.
+- The P22/P23 Debug scene entry now consumes the render plan, but no new production menu or automatic
+  HOME/Observe route is added.
+- Self-test adds `PET_SELFTEST_MVP_A_RENDERER_CONTRACT` and validates rect area, union, clipping, stage
+  patch, movement, pose-only and idle-skip plans without touching display ownership.
+- Capability snapshot adds `has_mvp_a_renderer_contract = 1`,
+  `mvp_a_renderer_contract_selftest = 1`, `mvp_a_renderer_contract_debug_entry = 0` and
+  `mvp_a_renderer_contract_used_by_scene_debug_entry = 1`.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `home_observe_enabled = 0`.
+- `full_pet2d_runtime_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P24 is a renderer-facing contract POC, not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P24 still does not:
+
+- implement HOME/Observe product gameplay or a formal renderer API;
+- add formal resources, animation tables, transparency, RLE, compression policy or IMB acceleration;
+- write real pet-state saves or use P21 syscfg item 206/207 as production save slots;
+- prove shared core completion or PC simulator parity;
+- connect real NFC/audio/BLE hardware.

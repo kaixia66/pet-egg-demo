@@ -961,6 +961,8 @@ c_SRC_FILES := \
 	apps/watch/pet2d_scene/pet2d_scene_compile_check.c \
 	apps/watch/pet2d_scene/pet2d_perf_poc.c \
 	apps/watch/pet2d_scene/pet2d_perf_poc_compile_check.c \
+	apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract.c \
+	apps/watch/pet2d_scene/pet2d_mvp_a_renderer_contract_compile_check.c \
 	apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton.c \
 	apps/watch/pet2d_scene/pet2d_mvp_a_scene_action_loop_compile_check.c \
 	apps/watch/pet2d_scene/pet2d_mvp_a_scene_skeleton_compile_check.c \
