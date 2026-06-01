@@ -604,3 +604,28 @@ Open items:
 - HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
   `pet2d_runtime_enabled` remain 0.
 - External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P37 Imported Scene Real-flush Smoke Risks
+
+Status: P37 smoke-tested the P36 imported placeholder scene on the real Jieli board with a temporary
+real-flush build. The manual Debug entry, initial patch, LEFT_UP/RIGHT_DOWN/OK input, CANCEL exit,
+timeout exit, PET2D owner release and LVGL Debug-page recovery were verified by serial logs.
+
+Open items:
+
+- P37 is still a bounded `160x96` placeholder smoke test. It does not cover full-screen HOME/Observe,
+  background restore, camera/map scrolling, occlusion or multiple actors.
+- The smoke test revealed that the first real-flush attempt may return `BUSY`; the imported scene now
+  treats `BUSY`/`NOT_READY` as skipped bounded flushes instead of fatal scene errors. Final renderer
+  scheduling still needs a later timing policy.
+- The smoke test fixed a recovery edge case where CANCEL/TIMEOUT could set the model to DONE before the
+  owner-release helper ran. Future scene exits should continue to release PET2D ownership even after the
+  model has already reached a terminal state.
+- Real-board evidence is manual and log-based. It is not an automated hardware regression test.
+- The committed source must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=0`; real-flush validation remains
+  a temporary local board-test mode.
+- P37 does not add production pet resources, formal animation tables, transparency/RLE/compression
+  policy, IMB acceleration or formal pet-state persistence.
+- HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
+  `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.

@@ -838,3 +838,45 @@ P36 still does not:
   acceleration;
 - write formal pet-state saves or use P21 syscfg item 206/207 as production save slots;
 - connect real NFC/audio/BLE hardware.
+
+## P37 Imported Scene Real-flush Smoke Status
+
+Status: implemented as a board-smoke validation and small runtime hardening pass on P36 baseline
+`982d7a87dc6402a1abf3d223791fdebbdef2789e feat(petegg): import simulator HOME observe placeholder scene`.
+P37 validates the imported bounded placeholder scene on the real Jieli board; it is still not complete
+HOME/Observe, not production gameplay and not full Pet2D runtime enablement.
+
+Current P37 capability:
+
+- A temporary `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build was downloaded to the board and tested from
+  the manual Debug-page `P36 Import` entry.
+- Serial logs from COM3 at 1000000 baud confirmed enter, 160x96 initial patch, LEFT_UP and RIGHT_DOWN
+  movement, OK placeholder action, CANCEL exit and timeout exit.
+- LEFT_UP and RIGHT_DOWN produced the expected 8px movement and typical `40x32` dirty rect.
+- OK produced the expected placeholder action and `32x32` dirty rect.
+- CANCEL produced `exit reason=CANCEL release_ret=0`, released PET2D ownership and allowed LVGL to
+  reacquire owner 2 and render the Debug page.
+- Timeout produced `exit reason=TIMEOUT release_ret=0`, released PET2D ownership and allowed LVGL to
+  reacquire owner 2 and render the Debug page.
+- The imported scene now treats transient real-flush `BUSY`/`NOT_READY` as skipped flushes instead of
+  fatal scene errors, and idle no-change ticks no longer keep re-flushing the 160x96 stage patch.
+- No `panic`, `assert`, `WDT`, `HardFault` or `exception` strings were observed in the P37 smoke log.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `home_observe_enabled = 0`.
+- `full_pet2d_runtime_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P37 is a real-board smoke validation for an imported placeholder scene,
+  not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P37 still does not:
+
+- implement complete HOME/Observe product gameplay;
+- add production resources, formal animation tables, transparency/RLE/compression policy or IMB
+  acceleration;
+- persist pet scene state or use P21 syscfg item 206/207 as production save slots;
+- add a production menu route or automatic boot path;
+- connect real NFC/audio/BLE hardware.

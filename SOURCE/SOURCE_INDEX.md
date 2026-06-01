@@ -1140,3 +1140,24 @@ Tracked for P36:
 P36 keeps `home_observe_enabled = 0`, `full_pet2d_runtime_enabled = 0` and `pet2d_runtime_enabled = 0`.
 It does not reopen external Flash / virfat / raw NOR, does not use P21 syscfg item 206/207 as production
 pet saves, and does not connect NFC/audio/real BLE.
+
+## P37 Imported Scene Real-flush Smoke Addendum
+
+P37 validates the P36 imported simulator scene on the real Jieli board with a temporary real-flush build.
+It keeps the same manual Debug-page `P36 Import` entry and does not add a production HOME/Observe route.
+
+Tracked for P37:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_imported.c`: treats transient real-flush
+  `BUSY`/`NOT_READY` as skipped flushes during bounded smoke testing, suppresses idle no-change
+  re-flushes, and releases PET2D ownership even if CANCEL/TIMEOUT already moved the model to DONE.
+- `SOURCE/10_engineering_reports/p37_jieli_imported_scene_real_flush_smoke.md`: engineering report for
+  the P37 board smoke run and serial evidence.
+- `AGENTS.md`, `SOURCE/00_project_brief/jieli_701n_customization_baseline.md` and
+  `SOURCE/00_project_brief/open_questions_and_risks.md`: document the P37 safety boundary, board result
+  and remaining gaps.
+
+P37 board logs verified Debug entry, 160x96 enter patch, LEFT_UP/RIGHT_DOWN 40x32 movement dirty rects,
+OK 32x32 action dirty rect, CANCEL release/recover and TIMEOUT release/recover. The committed safety
+state remains `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`, `home_observe_enabled = 0`,
+`full_pet2d_runtime_enabled = 0` and `pet2d_runtime_enabled = 0`.

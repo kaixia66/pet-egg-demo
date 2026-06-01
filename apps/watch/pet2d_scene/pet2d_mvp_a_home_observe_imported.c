@@ -209,9 +209,12 @@ static pet_result_t imported_core_tick(
     if (ret != PET_RESULT_OK) {
         return ret;
     }
-    if ((previous_state == core->model.state) &&
-        (imported_state_is_action(core->model.state) != PET_FALSE)) {
-        return imported_build_idle_plan(core);
+    if (previous_state == core->model.state) {
+        if ((core->model.state ==
+             PET2D_MVP_A_HOME_OBSERVE_IMPORTED_STATE_IDLE) ||
+            (imported_state_is_action(core->model.state) != PET_FALSE)) {
+            return imported_build_idle_plan(core);
+        }
     }
     if ((core->plan.cmd_count == 0u) && (core->plan.skipped_flush == 0u)) {
         ret = imported_build_idle_plan(core);
@@ -423,6 +426,7 @@ static pet_result_t imported_render_once(void)
     pet2d_mvp_a_render_plan_t *plan = &g_imported_runtime.core.plan;
     pet2d_mvp_a_rect_t dirty = plan->dirty_rect;
     pet_result_t ret = PET_RESULT_OK;
+    pet_result_t raw_ret = PET_RESULT_OK;
 
     g_imported_stats.render_count++;
     g_imported_stats.last_dirty_w = dirty.w;
@@ -459,9 +463,13 @@ static pet_result_t imported_render_once(void)
     ret = PET_RESULT_UNSUPPORTED;
 #endif
 
+    raw_ret = ret;
     if (ret == PET_RESULT_OK) {
         g_imported_stats.flush_success_count++;
     } else if (ret == PET_RESULT_UNSUPPORTED) {
+        g_imported_stats.flush_skipped_count++;
+        ret = PET_RESULT_OK;
+    } else if ((ret == PET_RESULT_BUSY) || (ret == PET_RESULT_NOT_READY)) {
         g_imported_stats.flush_skipped_count++;
         ret = PET_RESULT_OK;
     } else {
@@ -470,7 +478,7 @@ static pet_result_t imported_render_once(void)
 
     g_imported_runtime.core.model.frame_index++;
     g_imported_stats.last_result = (pet_u8_t)ret;
-    printf("[PET2D_MVP_A_IMPORT] frame=%lu state=%s pose=%s pet=%d,%d dirty=%ux%u cmd_count=%u ret=%d owner=%d\n",
+    printf("[PET2D_MVP_A_IMPORT] frame=%lu state=%s pose=%s pet=%d,%d dirty=%ux%u cmd_count=%u ret=%d raw_ret=%d owner=%d\n",
            (unsigned long)g_imported_runtime.core.model.frame_index,
            pet2d_mvp_a_home_observe_imported_state_name(
                g_imported_runtime.core.model.state),
@@ -481,6 +489,7 @@ static pet_result_t imported_render_once(void)
            dirty.h,
            plan->cmd_count,
            ret,
+           raw_ret,
            pet_display_jieli_get_owner());
     return ret;
 }
@@ -493,7 +502,8 @@ static pet_result_t imported_exit_with_reason(
     pet_result_t release_ret = PET_RESULT_OK;
 
     if (imported_state_is_active(g_imported_runtime.core.model.state) ==
-        PET_FALSE) {
+        PET_FALSE &&
+        pet_display_jieli_get_owner() != PET_DISPLAY_OWNER_PET2D) {
         return PET_RESULT_OK;
     }
     now_ms = imported_resolve_now(now_ms);

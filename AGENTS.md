@@ -341,6 +341,19 @@ Debug entry must remain manual-only and safe when `PET_JIELI_ENABLE_REAL_LCD_FLU
 snapshots must distinguish `has_mvp_a_home_observe_imported_scene` from HOME/Observe completion and keep
 `home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
 
+## PetEgg P37 Imported Scene Real-flush Smoke Rule
+
+P37 may use a temporary local `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build to smoke-test the P36
+imported simulator scene on the real Jieli board. It may refine the imported scene's bounded flush/error
+handling and owner-release recovery based on board logs, but the committed source must restore
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` to 0 and keep the Debug entry manual-only.
+
+P37 is still not complete HOME/Observe, not production gameplay and not full Pet2D runtime enablement.
+Do not restore external Flash / virfat / raw NOR resources, do not modify `download/watch` or
+`fat_comm`, do not write formal pet-state saves or use P21 syscfg item 206/207 as production storage,
+and do not connect real NFC, audio or real BLE. Capability snapshots and documentation must keep
+`home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
+
 ## PetEgg P21 Internal Save / syscfg A-B POC Rule
 
 P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a
