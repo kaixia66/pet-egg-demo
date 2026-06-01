@@ -1161,3 +1161,24 @@ P37 board logs verified Debug entry, 160x96 enter patch, LEFT_UP/RIGHT_DOWN 40x3
 OK 32x32 action dirty rect, CANCEL release/recover and TIMEOUT release/recover. The committed safety
 state remains `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`, `home_observe_enabled = 0`,
 `full_pet2d_runtime_enabled = 0` and `pet2d_runtime_enabled = 0`.
+
+## P38 Simulator / Jieli Imported Scene Reconciliation Addendum
+
+P38 reconciles the simulator P34/P35 bounded HOME/Observe placeholder export contract with the Jieli
+P36/P37 imported-scene adapter. It is a side-effect-free contract alignment pass, not new gameplay, not
+new real-board smoke and not HOME/Observe enablement.
+
+Tracked for P38:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_reconcile.h/.c`: simulator manifest constants,
+  exact/semantic/non-match counts, dirty-rule checks and reconciliation summary.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_reconcile_compile_check.c`: compile-time and
+  syntax-only entry for the P38 fixture.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds `PET_SELFTEST_MVP_A_HOME_OBSERVE_RECONCILE` and
+  side-effect-free capability bits for reconciliation and P37 manual smoke evidence.
+- `SOURCE/10_engineering_reports/p38_sim_jieli_imported_scene_reconciliation.md`: engineering report for
+  the reconciliation matrix.
+
+P38 records 20 exact-match fields, 5 semantic-match fields and 7 explicit non-match fields. It keeps
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`, `home_observe_enabled = 0`,
+`full_pet2d_runtime_enabled = 0` and `pet2d_runtime_enabled = 0`.

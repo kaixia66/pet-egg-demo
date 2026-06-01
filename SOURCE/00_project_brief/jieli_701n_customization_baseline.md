@@ -880,3 +880,49 @@ P37 still does not:
 - persist pet scene state or use P21 syscfg item 206/207 as production save slots;
 - add a production menu route or automatic boot path;
 - connect real NFC/audio/BLE hardware.
+
+## P38 Simulator / Jieli Imported Scene Reconciliation Status
+
+Status: implemented as a side-effect-free reconciliation fixture on baseline
+`5adfccc test(petegg): verify imported simulator scene on board`. P38 compares the simulator P34/P35
+bounded HOME/Observe placeholder export contract with the Jieli P36/P37 imported-scene adapter; it is
+still not complete HOME/Observe, not production gameplay and not full Pet2D runtime enablement.
+
+Current P38 capability:
+
+- Adds `pet2d_mvp_a_home_observe_reconcile` as a small compile/self-test fixture.
+- Records 20 exact-match fields across scene id/status, round454 profile semantics, 160x96 stage,
+  32x32 pet, initial `64,32`, 8px move step, 160ms move, 300ms action, 4000ms timeout, dirty rules,
+  exit semantics and disabled production paths.
+- Records 5 semantic-match fields: pose enum naming, exit reason naming/numeric mapping, simulator
+  render command semantics vs Jieli dirty flush path, simulator golden replay vs Jieli manual Debug
+  sequence, and host offscreen CRC vs P37 visual/log evidence.
+- Records 7 explicit non-match fields: host CRC is not Jieli LCD CRC, simulator offscreen pixels are not
+  real LCD pixels, simulator timing is not hardware flush timing, production resource CRC is not covered,
+  SDL visible renderer parity is not covered, real NFC/Audio/BLE is not covered and full HOME/Observe is
+  not covered.
+- Adds `PET_SELFTEST_MVP_A_HOME_OBSERVE_RECONCILE`; it is side-effect-free and does not acquire display
+  ownership or write the LCD.
+- Capability snapshot adds `has_mvp_a_home_observe_reconciliation = 1`,
+  `mvp_a_home_observe_reconciliation_selftest = 1` and
+  `mvp_a_home_observe_imported_real_board_smoke_verified = 1`. The last bit records P37 manual smoke
+  evidence only; the snapshot itself performs no real write.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `home_observe_enabled = 0`.
+- `full_pet2d_runtime_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P38 is a reconciliation contract, not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P38 still does not:
+
+- implement complete HOME/Observe product gameplay;
+- add production resources, formal animation tables, transparency/RLE/compression policy or IMB
+  acceleration;
+- claim SDL-visible parity or hardware LCD CRC parity;
+- persist pet scene state or use P21 syscfg item 206/207 as production save slots;
+- add a production menu route or automatic boot path;
+- connect real NFC/audio/BLE hardware.

@@ -629,3 +629,25 @@ Open items:
 - HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
   `pet2d_runtime_enabled` remain 0.
 - External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P38 Simulator / Jieli Imported Scene Reconciliation Risks
+
+Status: P38 reconciles simulator P34/P35 export-contract fields with the Jieli P36/P37 imported-scene
+adapter through side-effect-free compile/self-test coverage. It clarifies exact matches, semantic
+matches and explicit non-matches before the first simulator-developed mini app scene.
+
+Open items:
+
+- P38 proves contract alignment, not product HOME/Observe. Full-screen layout, background restore,
+  multi-object dirty merging, camera/map scrolling and product UX remain open.
+- Host CRCs remain host/offscreen evidence only. They must not be treated as Jieli LCD CRCs or hardware
+  framebuffer parity.
+- SDL-visible renderer parity is explicitly not covered. A later simulator/board visual parity task
+  needs a separate acceptance model.
+- Production resource CRC, formal art, animation tables, transparency/RLE/compression policy and IMB
+  acceleration are not covered.
+- `mvp_a_home_observe_imported_real_board_smoke_verified = 1` records P37 manual smoke evidence only;
+  capability snapshot and run-all self-tests still do not execute real LCD writes.
+- HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
+  `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.

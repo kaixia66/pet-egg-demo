@@ -354,6 +354,20 @@ Do not restore external Flash / virfat / raw NOR resources, do not modify `downl
 and do not connect real NFC, audio or real BLE. Capability snapshots and documentation must keep
 `home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
 
+## PetEgg P38 Simulator / Jieli Imported Scene Reconciliation Rule
+
+P38 may add a side-effect-free reconciliation fixture that compares the simulator P34/P35 bounded
+HOME/Observe placeholder export contract with the Jieli P36/P37 imported-scene adapter. It may classify
+fields as exact match, semantic match or explicit non-match, and may record that P37 manual real-board
+smoke passed, but it must not run a new real LCD test from self-tests or capability snapshots.
+
+P38 is not complete HOME/Observe, not a production renderer/resource route and not full Pet2D runtime
+enablement. Do not claim simulator host CRCs are Jieli LCD CRCs, do not claim SDL-visible parity,
+production resource parity or formal save parity, and do not restore external Flash / virfat / raw NOR,
+formal pet-state saves, NFC, audio or real BLE. Keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC`,
+`home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0 in committed
+source.
+
 ## PetEgg P21 Internal Save / syscfg A-B POC Rule
 
 P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a
