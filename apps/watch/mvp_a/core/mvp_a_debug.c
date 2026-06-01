@@ -1,6 +1,7 @@
 #include "mvp_a_debug.h"
 #include "mvp_a_pet.h"
 #include "mvp_a_save.h"
+#include "pet2d_mvp_a_home_observe_imported.h"
 #include "pet2d_mvp_a_scene_skeleton.h"
 #include "pet2d_perf_poc.h"
 #include "pet2d_scene.h"
@@ -146,6 +147,9 @@ mvp_a_result_t mvp_a_debug_execute_selected(void)
     case MVP_A_DEBUG_P22_SCENE_SKELETON:
         return (pet2d_mvp_a_scene_skeleton_enter() == PET_RESULT_OK) ?
                MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
+    case MVP_A_DEBUG_P36_IMPORTED_SCENE:
+        return (pet2d_mvp_a_home_observe_imported_enter() == PET_RESULT_OK) ?
+               MVP_A_RESULT_OK : MVP_A_RESULT_NOT_READY;
     default:
         break;
     }
@@ -174,6 +178,8 @@ const char *mvp_a_debug_get_action_name(mvp_a_debug_action_t action)
         return "P21 Save";
     case MVP_A_DEBUG_P22_SCENE_SKELETON:
         return "P22 Scene";
+    case MVP_A_DEBUG_P36_IMPORTED_SCENE:
+        return "P36 Import";
     default:
         break;
     }
@@ -208,6 +214,8 @@ const char *mvp_a_debug_get_prompt(void)
         return "Save A/B";
     case MVP_A_DEBUG_P22_SCENE_SKELETON:
         return "Scene Skeleton";
+    case MVP_A_DEBUG_P36_IMPORTED_SCENE:
+        return "Imported HOME";
     default:
         break;
     }

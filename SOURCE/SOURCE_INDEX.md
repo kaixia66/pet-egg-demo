@@ -1113,3 +1113,30 @@ Tracked for P25:
 
 P25 does not include a host executable artifact. If a normal host compiler is missing, the source is
 verified with syntax-only checks and the report records that executable verification is pending.
+
+## P36 Jieli Import of Simulator-developed Scene Addendum
+
+P36 imports the simulator P35/P34 bounded HOME/Observe placeholder contract as a Jieli board-side
+Debug/manual scene. It is an imported placeholder scene adapter, not complete HOME/Observe, not a
+simulator binary port and not full Pet2D runtime enablement.
+
+Tracked for P36:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_imported.h`: imported scene constants, state names,
+  model/stats structs and public board-side APIs.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_imported.c`: 160x96 stage, 32x32 placeholder pet,
+  LEFT_UP/RIGHT_DOWN/OK/CANCEL/timeout action flow, renderer-plan generation, owner handoff and gated
+  optional flush.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_imported_compile_check.c`: compile-time reference
+  for the imported-scene contract.
+- `apps/watch/mvp_a/core/mvp_a_app.c`: dispatches tick/key events to the imported scene only while it is
+  active.
+- `apps/watch/mvp_a/core/mvp_a_debug.c/.h`: adds the manual `P36 Import` Debug action.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds `PET_SELFTEST_MVP_A_HOME_OBSERVE_IMPORTED` and
+  capability bits for imported-scene support while keeping HOME/Observe and full runtime disabled.
+- `SOURCE/10_engineering_reports/p36_jieli_import_simulator_scene.md`: engineering report for the P36
+  import.
+
+P36 keeps `home_observe_enabled = 0`, `full_pet2d_runtime_enabled = 0` and `pet2d_runtime_enabled = 0`.
+It does not reopen external Flash / virfat / raw NOR, does not use P21 syscfg item 206/207 as production
+pet saves, and does not connect NFC/audio/real BLE.

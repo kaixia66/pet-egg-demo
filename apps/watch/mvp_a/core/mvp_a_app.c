@@ -5,6 +5,7 @@
 #include "mvp_a_pet.h"
 #include "mvp_a_save.h"
 #include "mvp_a_training.h"
+#include "pet2d_mvp_a_home_observe_imported.h"
 #include "pet2d_mvp_a_scene_skeleton.h"
 #include "pet2d_scene.h"
 
@@ -150,6 +151,10 @@ void mvp_a_app_tick(void)
     if (ret != PET_RESULT_OK) {
         mvp_a_last_result = mvp_a_app_pet_result_to_mvp(ret);
     }
+    ret = pet2d_mvp_a_home_observe_imported_tick(mvp_a_platform_get_ms());
+    if (ret != PET_RESULT_OK) {
+        mvp_a_last_result = mvp_a_app_pet_result_to_mvp(ret);
+    }
 }
 
 mvp_a_bool_t mvp_a_app_is_active(void)
@@ -203,6 +208,22 @@ mvp_a_result_t mvp_a_app_key_event(mvp_a_key_t key, mvp_a_key_event_t event)
             return MVP_A_RESULT_INVALID_PARAM;
         }
         pet_ret = pet2d_mvp_a_scene_skeleton_handle_key(&pet_event);
+        ret = mvp_a_app_pet_result_to_mvp(pet_ret);
+        mvp_a_last_result = ret;
+        return ret;
+    }
+
+    if (pet2d_mvp_a_home_observe_imported_is_active()) {
+        pet_event.key = mvp_a_app_map_pet_key(key);
+        pet_event.type = (event == MVP_A_KEY_EVENT_CLICK) ? PET_KEY_EVENT_CLICK : PET_KEY_EVENT_UP;
+        pet_event.timestamp_ms = mvp_a_platform_get_ms();
+        pet_event.hold_ms = 0u;
+        pet_event.repeat_count = 0u;
+        pet_event.raw_code = 0u;
+        if (pet_event.key == PET_KEY_MAX) {
+            return MVP_A_RESULT_INVALID_PARAM;
+        }
+        pet_ret = pet2d_mvp_a_home_observe_imported_handle_key(&pet_event);
         ret = mvp_a_app_pet_result_to_mvp(pet_ret);
         mvp_a_last_result = ret;
         return ret;

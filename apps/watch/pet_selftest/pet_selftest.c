@@ -4,6 +4,7 @@
 #include "pet2d_dirty_rect_poc.h"
 #include "pet2d_minimal_visual.h"
 #include "pet2d_movement_poc.h"
+#include "pet2d_mvp_a_home_observe_imported.h"
 #include "pet2d_mvp_a_scene_skeleton.h"
 #include "pet2d_perf_poc.h"
 #include "pet2d_scene.h"
@@ -179,6 +180,11 @@ static pet_result_t pet_selftest_mvp_a_renderer_contract(void)
     return pet2d_mvp_a_renderer_contract_self_test();
 }
 
+static pet_result_t pet_selftest_mvp_a_home_observe_imported(void)
+{
+    return pet2d_mvp_a_home_observe_imported_self_test();
+}
+
 static pet_result_t pet_selftest_save_ab_internal(void)
 {
     return pet_save_jieli_syscfg_self_test();
@@ -209,6 +215,7 @@ static pet_result_t pet_selftest_call(pet_selftest_case_t test_case)
         pet_selftest_mvp_a_scene_skeleton,
         pet_selftest_mvp_a_scene_action_loop,
         pet_selftest_mvp_a_renderer_contract,
+        pet_selftest_mvp_a_home_observe_imported,
         pet_save_jieli_self_test,
         pet_selftest_save_ab_internal,
         pet_protocol_jieli_self_test,
@@ -249,6 +256,7 @@ const char *pet_selftest_case_name(pet_selftest_case_t test_case)
         "mvp_a_scene_skeleton",
         "mvp_a_scene_action_loop",
         "mvp_a_renderer_contract",
+        "mvp_a_home_observe_imported",
         "save_transaction",
         "save_ab_internal",
         "protocol_packet",
@@ -344,6 +352,10 @@ pet_result_t pet_selftest_get_capability_snapshot(pet_platform_capability_snapsh
     out_snapshot->mvp_a_renderer_contract_selftest = 1u;
     out_snapshot->mvp_a_renderer_contract_debug_entry = 0u;
     out_snapshot->mvp_a_renderer_contract_used_by_scene_debug_entry = 1u;
+    out_snapshot->has_mvp_a_home_observe_imported_scene = 1u;
+    out_snapshot->mvp_a_home_observe_imported_selftest = 1u;
+    out_snapshot->mvp_a_home_observe_imported_debug_entry = 1u;
+    out_snapshot->simulator_scene_import_contract = 1u;
     out_snapshot->has_sim_consistency_harness = 1u;
     out_snapshot->sim_consistency_scene_replay = 1u;
     out_snapshot->sim_consistency_renderer_contract = 1u;

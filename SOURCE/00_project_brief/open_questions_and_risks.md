@@ -581,3 +581,26 @@ Open items:
 - HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
   `pet2d_runtime_enabled` remain 0.
 - External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P36 Jieli Import of Simulator-developed Scene Risks
+
+Status: P36 imports the simulator P35/P34 bounded HOME/Observe placeholder contract into the Jieli board
+tree as a Debug/manual scene adapter. It proves that the simulator-developed placeholder contract can be
+compiled and exercised on the board-side architecture, but it is still not product HOME/Observe.
+
+Open items:
+
+- The imported scene is intentionally bounded to a 160x96 patch with a 32x32 placeholder pet. It does
+  not cover full-screen HOME/Observe layout, background restore, occlusion, multi-object dirty merging
+  or camera/map scrolling.
+- The render contract uses placeholder patterns only. There is no formal pet art, animation table,
+  transparency/RLE/compression policy, production resource package or IMB acceleration.
+- The Debug entry is an engineering hook. It remains manual-only and must not become a production
+  HOME/Observe route without a later phase that explicitly enables and documents that path.
+- Compile/self-test verifies the imported contract side-effect free. Real-board smoke can be done with
+  a temporary `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build, then the macro must return to 0.
+- P36 does not write scene state. P21 syscfg item IDs 206/207 remain test save slots and must not be
+  reused for production pet state without a later schema decision.
+- HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
+  `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.

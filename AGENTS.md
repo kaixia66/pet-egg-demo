@@ -326,6 +326,21 @@ persistence, NFC, audio or real BLE. Capability snapshots may mark the consisten
 present, but must keep `full_pc_simulator_enabled`, `sdl_simulator_enabled`, `home_observe_enabled`,
 `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
 
+## PetEgg P36 Jieli Import of Simulator-developed Scene Rule
+
+P36 may import only the simulator P35/P34 bounded HOME/Observe placeholder scene contract into the
+Jieli board tree. The imported board-side scene may expose a Debug-page manual entry, reuse the proven
+LVGL -> PET2D -> LVGL owner handoff, accept LEFT_UP/RIGHT_DOWN/OK/CANCEL input, use a 160x96 stage with a
+32x32 placeholder pet, and validate the imported manifest/dirty-rect contract through side-effect-free
+self-tests.
+
+P36 is not complete HOME/Observe, not production gameplay, not a simulator binary port, and not the full
+Pet2D runtime. It must not import SDL, C++ simulator shell/runtime, SimBroker, SaveManager, production
+resources, external Flash / virfat / raw NOR paths, formal pet-state saves, NFC, audio or real BLE. The
+Debug entry must remain manual-only and safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is 0; capability
+snapshots must distinguish `has_mvp_a_home_observe_imported_scene` from HOME/Observe completion and keep
+`home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
+
 ## PetEgg P21 Internal Save / syscfg A-B POC Rule
 
 P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a
