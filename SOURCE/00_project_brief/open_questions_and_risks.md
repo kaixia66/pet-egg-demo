@@ -581,3 +581,73 @@ Open items:
 - HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
   `pet2d_runtime_enabled` remain 0.
 - External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P36 Jieli Import of Simulator-developed Scene Risks
+
+Status: P36 imports the simulator P35/P34 bounded HOME/Observe placeholder contract into the Jieli board
+tree as a Debug/manual scene adapter. It proves that the simulator-developed placeholder contract can be
+compiled and exercised on the board-side architecture, but it is still not product HOME/Observe.
+
+Open items:
+
+- The imported scene is intentionally bounded to a 160x96 patch with a 32x32 placeholder pet. It does
+  not cover full-screen HOME/Observe layout, background restore, occlusion, multi-object dirty merging
+  or camera/map scrolling.
+- The render contract uses placeholder patterns only. There is no formal pet art, animation table,
+  transparency/RLE/compression policy, production resource package or IMB acceleration.
+- The Debug entry is an engineering hook. It remains manual-only and must not become a production
+  HOME/Observe route without a later phase that explicitly enables and documents that path.
+- Compile/self-test verifies the imported contract side-effect free. Real-board smoke can be done with
+  a temporary `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build, then the macro must return to 0.
+- P36 does not write scene state. P21 syscfg item IDs 206/207 remain test save slots and must not be
+  reused for production pet state without a later schema decision.
+- HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
+  `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P37 Imported Scene Real-flush Smoke Risks
+
+Status: P37 smoke-tested the P36 imported placeholder scene on the real Jieli board with a temporary
+real-flush build. The manual Debug entry, initial patch, LEFT_UP/RIGHT_DOWN/OK input, CANCEL exit,
+timeout exit, PET2D owner release and LVGL Debug-page recovery were verified by serial logs.
+
+Open items:
+
+- P37 is still a bounded `160x96` placeholder smoke test. It does not cover full-screen HOME/Observe,
+  background restore, camera/map scrolling, occlusion or multiple actors.
+- The smoke test revealed that the first real-flush attempt may return `BUSY`; the imported scene now
+  treats `BUSY`/`NOT_READY` as skipped bounded flushes instead of fatal scene errors. Final renderer
+  scheduling still needs a later timing policy.
+- The smoke test fixed a recovery edge case where CANCEL/TIMEOUT could set the model to DONE before the
+  owner-release helper ran. Future scene exits should continue to release PET2D ownership even after the
+  model has already reached a terminal state.
+- Real-board evidence is manual and log-based. It is not an automated hardware regression test.
+- The committed source must keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=0`; real-flush validation remains
+  a temporary local board-test mode.
+- P37 does not add production pet resources, formal animation tables, transparency/RLE/compression
+  policy, IMB acceleration or formal pet-state persistence.
+- HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
+  `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.
+
+## P38 Simulator / Jieli Imported Scene Reconciliation Risks
+
+Status: P38 reconciles simulator P34/P35 export-contract fields with the Jieli P36/P37 imported-scene
+adapter through side-effect-free compile/self-test coverage. It clarifies exact matches, semantic
+matches and explicit non-matches before the first simulator-developed mini app scene.
+
+Open items:
+
+- P38 proves contract alignment, not product HOME/Observe. Full-screen layout, background restore,
+  multi-object dirty merging, camera/map scrolling and product UX remain open.
+- Host CRCs remain host/offscreen evidence only. They must not be treated as Jieli LCD CRCs or hardware
+  framebuffer parity.
+- SDL-visible renderer parity is explicitly not covered. A later simulator/board visual parity task
+  needs a separate acceptance model.
+- Production resource CRC, formal art, animation tables, transparency/RLE/compression policy and IMB
+  acceleration are not covered.
+- `mvp_a_home_observe_imported_real_board_smoke_verified = 1` records P37 manual smoke evidence only;
+  capability snapshot and run-all self-tests still do not execute real LCD writes.
+- HOME/Observe remains incomplete, and `home_observe_enabled`, `full_pet2d_runtime_enabled` and
+  `pet2d_runtime_enabled` remain 0.
+- External Flash / virfat / raw NOR remains paused, and real NFC/audio/real BLE remains Future Scope.

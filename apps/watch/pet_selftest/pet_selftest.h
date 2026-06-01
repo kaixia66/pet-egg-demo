@@ -30,6 +30,8 @@ typedef enum {
     PET_SELFTEST_MVP_A_SCENE_SKELETON,
     PET_SELFTEST_MVP_A_SCENE_ACTION_LOOP,
     PET_SELFTEST_MVP_A_RENDERER_CONTRACT,
+    PET_SELFTEST_MVP_A_HOME_OBSERVE_IMPORTED,
+    PET_SELFTEST_MVP_A_HOME_OBSERVE_RECONCILE,
     PET_SELFTEST_SAVE_TRANSACTION,
     PET_SELFTEST_SAVE_AB_INTERNAL,
     PET_SELFTEST_PROTOCOL_PACKET,
@@ -77,6 +79,13 @@ typedef struct {
     pet_u8_t mvp_a_renderer_contract_selftest;
     pet_u8_t mvp_a_renderer_contract_debug_entry;
     pet_u8_t mvp_a_renderer_contract_used_by_scene_debug_entry;
+    pet_u8_t has_mvp_a_home_observe_imported_scene;
+    pet_u8_t mvp_a_home_observe_imported_selftest;
+    pet_u8_t mvp_a_home_observe_imported_debug_entry;
+    pet_u8_t simulator_scene_import_contract;
+    pet_u8_t has_mvp_a_home_observe_reconciliation;
+    pet_u8_t mvp_a_home_observe_reconciliation_selftest;
+    pet_u8_t mvp_a_home_observe_imported_real_board_smoke_verified;
     pet_u8_t has_sim_consistency_harness;
     pet_u8_t sim_consistency_scene_replay;
     pet_u8_t sim_consistency_renderer_contract;

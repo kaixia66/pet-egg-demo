@@ -791,3 +791,138 @@ P25 still does not:
 - prove shared-core parity or PC simulator completion;
 - write real pet-state saves or use P21 syscfg item 206/207 as production save slots;
 - connect real NFC/audio/BLE hardware.
+
+## P36 Jieli Import of Simulator-developed Scene Status
+
+Status: implemented as a board-side imported-scene adapter on baseline
+`d97bb882364493aa01f420da175910a07088fd53 merge: integrate petegg dev board p1-p25 platform baseline`.
+P36 imports the simulator P35/P34 bounded HOME/Observe placeholder contract; it is not complete
+HOME/Observe, not production gameplay and not the full Pet2D runtime.
+
+Current P36 capability:
+
+- Simulator source references are P35
+  `0cf4fdc62690da5660e2389a73cbd914ccbfe64f` and P34
+  `cb5f9a61639292e6c459dc384fa20ecf2f8c3049`.
+- The imported board scene uses a 160x96 stage/viewport, a 32x32 placeholder pet at 64,32, 8-pixel
+  horizontal moves, 160ms move actions, 300ms OK action and a 4000ms timeout.
+- The Debug page adds a manual `P36 Import` action. It releases LVGL ownership, acquires
+  `PET_DISPLAY_OWNER_PET2D`, runs the bounded scene, then releases PET2D and requests LVGL refresh on
+  CANCEL, timeout or error.
+- LEFT_UP and RIGHT_DOWN move the placeholder pet, OK toggles a placeholder pose/action, CANCEL exits,
+  and timeout exits without generating a final flush.
+- Render/dirty behavior follows the simulator contract: enter dirty is 160x96, moves are typically
+  40x32, OK pose change is 32x32, cancel/timeout skip flush.
+- The implementation uses a bounded static scratch buffer only when the real-flush macro is enabled; it
+  does not allocate a 454x454 framebuffer.
+- Self-test adds `PET_SELFTEST_MVP_A_HOME_OBSERVE_IMPORTED` and validates constants, movement, dirty
+  rects, OK action, CANCEL and timeout without touching display ownership.
+- Capability snapshot adds `has_mvp_a_home_observe_imported_scene = 1`,
+  `mvp_a_home_observe_imported_selftest = 1`,
+  `mvp_a_home_observe_imported_debug_entry = 1` and `simulator_scene_import_contract = 1`.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `home_observe_enabled = 0`.
+- `full_pet2d_runtime_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P36 is an imported placeholder scene POC, not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P36 still does not:
+
+- implement complete HOME/Observe product gameplay;
+- import SDL, C++ simulator shell/runtime, SimBroker or simulator binaries;
+- add production pet resources, animation tables, transparency/RLE/compression policy or IMB
+  acceleration;
+- write formal pet-state saves or use P21 syscfg item 206/207 as production save slots;
+- connect real NFC/audio/BLE hardware.
+
+## P37 Imported Scene Real-flush Smoke Status
+
+Status: implemented as a board-smoke validation and small runtime hardening pass on P36 baseline
+`982d7a87dc6402a1abf3d223791fdebbdef2789e feat(petegg): import simulator HOME observe placeholder scene`.
+P37 validates the imported bounded placeholder scene on the real Jieli board; it is still not complete
+HOME/Observe, not production gameplay and not full Pet2D runtime enablement.
+
+Current P37 capability:
+
+- A temporary `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build was downloaded to the board and tested from
+  the manual Debug-page `P36 Import` entry.
+- Serial logs from COM3 at 1000000 baud confirmed enter, 160x96 initial patch, LEFT_UP and RIGHT_DOWN
+  movement, OK placeholder action, CANCEL exit and timeout exit.
+- LEFT_UP and RIGHT_DOWN produced the expected 8px movement and typical `40x32` dirty rect.
+- OK produced the expected placeholder action and `32x32` dirty rect.
+- CANCEL produced `exit reason=CANCEL release_ret=0`, released PET2D ownership and allowed LVGL to
+  reacquire owner 2 and render the Debug page.
+- Timeout produced `exit reason=TIMEOUT release_ret=0`, released PET2D ownership and allowed LVGL to
+  reacquire owner 2 and render the Debug page.
+- The imported scene now treats transient real-flush `BUSY`/`NOT_READY` as skipped flushes instead of
+  fatal scene errors, and idle no-change ticks no longer keep re-flushing the 160x96 stage patch.
+- No `panic`, `assert`, `WDT`, `HardFault` or `exception` strings were observed in the P37 smoke log.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `home_observe_enabled = 0`.
+- `full_pet2d_runtime_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P37 is a real-board smoke validation for an imported placeholder scene,
+  not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P37 still does not:
+
+- implement complete HOME/Observe product gameplay;
+- add production resources, formal animation tables, transparency/RLE/compression policy or IMB
+  acceleration;
+- persist pet scene state or use P21 syscfg item 206/207 as production save slots;
+- add a production menu route or automatic boot path;
+- connect real NFC/audio/BLE hardware.
+
+## P38 Simulator / Jieli Imported Scene Reconciliation Status
+
+Status: implemented as a side-effect-free reconciliation fixture on baseline
+`5adfccc test(petegg): verify imported simulator scene on board`. P38 compares the simulator P34/P35
+bounded HOME/Observe placeholder export contract with the Jieli P36/P37 imported-scene adapter; it is
+still not complete HOME/Observe, not production gameplay and not full Pet2D runtime enablement.
+
+Current P38 capability:
+
+- Adds `pet2d_mvp_a_home_observe_reconcile` as a small compile/self-test fixture.
+- Records 20 exact-match fields across scene id/status, round454 profile semantics, 160x96 stage,
+  32x32 pet, initial `64,32`, 8px move step, 160ms move, 300ms action, 4000ms timeout, dirty rules,
+  exit semantics and disabled production paths.
+- Records 5 semantic-match fields: pose enum naming, exit reason naming/numeric mapping, simulator
+  render command semantics vs Jieli dirty flush path, simulator golden replay vs Jieli manual Debug
+  sequence, and host offscreen CRC vs P37 visual/log evidence.
+- Records 7 explicit non-match fields: host CRC is not Jieli LCD CRC, simulator offscreen pixels are not
+  real LCD pixels, simulator timing is not hardware flush timing, production resource CRC is not covered,
+  SDL visible renderer parity is not covered, real NFC/Audio/BLE is not covered and full HOME/Observe is
+  not covered.
+- Adds `PET_SELFTEST_MVP_A_HOME_OBSERVE_RECONCILE`; it is side-effect-free and does not acquire display
+  ownership or write the LCD.
+- Capability snapshot adds `has_mvp_a_home_observe_reconciliation = 1`,
+  `mvp_a_home_observe_reconciliation_selftest = 1` and
+  `mvp_a_home_observe_imported_real_board_smoke_verified = 1`. The last bit records P37 manual smoke
+  evidence only; the snapshot itself performs no real write.
+
+Committed safety state:
+- `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`.
+- `real_lcd_flush_enabled = 0`.
+- `home_observe_enabled = 0`.
+- `full_pet2d_runtime_enabled = 0`.
+- `pet2d_runtime_enabled = 0`; P38 is a reconciliation contract, not the full runtime.
+- External Flash / virfat / raw NOR resources remain paused.
+- NFC, audio/speaker and real BLE two-board validation remain Future Scope.
+
+P38 still does not:
+
+- implement complete HOME/Observe product gameplay;
+- add production resources, formal animation tables, transparency/RLE/compression policy or IMB
+  acceleration;
+- claim SDL-visible parity or hardware LCD CRC parity;
+- persist pet scene state or use P21 syscfg item 206/207 as production save slots;
+- add a production menu route or automatic boot path;
+- connect real NFC/audio/BLE hardware.

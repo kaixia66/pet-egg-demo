@@ -38,6 +38,13 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
         (snapshot.mvp_a_renderer_contract_selftest == 0u) ||
         (snapshot.mvp_a_renderer_contract_debug_entry != 0u) ||
         (snapshot.mvp_a_renderer_contract_used_by_scene_debug_entry == 0u) ||
+        (snapshot.has_mvp_a_home_observe_imported_scene == 0u) ||
+        (snapshot.mvp_a_home_observe_imported_selftest == 0u) ||
+        (snapshot.mvp_a_home_observe_imported_debug_entry == 0u) ||
+        (snapshot.simulator_scene_import_contract == 0u) ||
+        (snapshot.has_mvp_a_home_observe_reconciliation == 0u) ||
+        (snapshot.mvp_a_home_observe_reconciliation_selftest == 0u) ||
+        (snapshot.mvp_a_home_observe_imported_real_board_smoke_verified == 0u) ||
         (snapshot.has_sim_consistency_harness == 0u) ||
         (snapshot.sim_consistency_scene_replay == 0u) ||
         (snapshot.sim_consistency_renderer_contract == 0u) ||
@@ -66,5 +73,5 @@ pet_result_t pet_selftest_compile_check_snapshot(void)
 
 const char *pet_selftest_compile_check_name(void)
 {
-    return pet_selftest_case_name(PET_SELFTEST_MVP_A_RENDERER_CONTRACT);
+    return pet_selftest_case_name(PET_SELFTEST_MVP_A_HOME_OBSERVE_RECONCILE);
 }

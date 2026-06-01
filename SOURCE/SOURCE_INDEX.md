@@ -1113,3 +1113,72 @@ Tracked for P25:
 
 P25 does not include a host executable artifact. If a normal host compiler is missing, the source is
 verified with syntax-only checks and the report records that executable verification is pending.
+
+## P36 Jieli Import of Simulator-developed Scene Addendum
+
+P36 imports the simulator P35/P34 bounded HOME/Observe placeholder contract as a Jieli board-side
+Debug/manual scene. It is an imported placeholder scene adapter, not complete HOME/Observe, not a
+simulator binary port and not full Pet2D runtime enablement.
+
+Tracked for P36:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_imported.h`: imported scene constants, state names,
+  model/stats structs and public board-side APIs.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_imported.c`: 160x96 stage, 32x32 placeholder pet,
+  LEFT_UP/RIGHT_DOWN/OK/CANCEL/timeout action flow, renderer-plan generation, owner handoff and gated
+  optional flush.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_imported_compile_check.c`: compile-time reference
+  for the imported-scene contract.
+- `apps/watch/mvp_a/core/mvp_a_app.c`: dispatches tick/key events to the imported scene only while it is
+  active.
+- `apps/watch/mvp_a/core/mvp_a_debug.c/.h`: adds the manual `P36 Import` Debug action.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds `PET_SELFTEST_MVP_A_HOME_OBSERVE_IMPORTED` and
+  capability bits for imported-scene support while keeping HOME/Observe and full runtime disabled.
+- `SOURCE/10_engineering_reports/p36_jieli_import_simulator_scene.md`: engineering report for the P36
+  import.
+
+P36 keeps `home_observe_enabled = 0`, `full_pet2d_runtime_enabled = 0` and `pet2d_runtime_enabled = 0`.
+It does not reopen external Flash / virfat / raw NOR, does not use P21 syscfg item 206/207 as production
+pet saves, and does not connect NFC/audio/real BLE.
+
+## P37 Imported Scene Real-flush Smoke Addendum
+
+P37 validates the P36 imported simulator scene on the real Jieli board with a temporary real-flush build.
+It keeps the same manual Debug-page `P36 Import` entry and does not add a production HOME/Observe route.
+
+Tracked for P37:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_imported.c`: treats transient real-flush
+  `BUSY`/`NOT_READY` as skipped flushes during bounded smoke testing, suppresses idle no-change
+  re-flushes, and releases PET2D ownership even if CANCEL/TIMEOUT already moved the model to DONE.
+- `SOURCE/10_engineering_reports/p37_jieli_imported_scene_real_flush_smoke.md`: engineering report for
+  the P37 board smoke run and serial evidence.
+- `AGENTS.md`, `SOURCE/00_project_brief/jieli_701n_customization_baseline.md` and
+  `SOURCE/00_project_brief/open_questions_and_risks.md`: document the P37 safety boundary, board result
+  and remaining gaps.
+
+P37 board logs verified Debug entry, 160x96 enter patch, LEFT_UP/RIGHT_DOWN 40x32 movement dirty rects,
+OK 32x32 action dirty rect, CANCEL release/recover and TIMEOUT release/recover. The committed safety
+state remains `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`, `home_observe_enabled = 0`,
+`full_pet2d_runtime_enabled = 0` and `pet2d_runtime_enabled = 0`.
+
+## P38 Simulator / Jieli Imported Scene Reconciliation Addendum
+
+P38 reconciles the simulator P34/P35 bounded HOME/Observe placeholder export contract with the Jieli
+P36/P37 imported-scene adapter. It is a side-effect-free contract alignment pass, not new gameplay, not
+new real-board smoke and not HOME/Observe enablement.
+
+Tracked for P38:
+
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_reconcile.h/.c`: simulator manifest constants,
+  exact/semantic/non-match counts, dirty-rule checks and reconciliation summary.
+- `apps/watch/pet2d_scene/pet2d_mvp_a_home_observe_reconcile_compile_check.c`: compile-time and
+  syntax-only entry for the P38 fixture.
+- `apps/watch/pet_selftest/pet_selftest.c/.h`: adds `PET_SELFTEST_MVP_A_HOME_OBSERVE_RECONCILE` and
+  side-effect-free capability bits for reconciliation and P37 manual smoke evidence.
+- `SOURCE/10_engineering_reports/p38_sim_jieli_imported_scene_reconciliation.md`: engineering report for
+  the reconciliation matrix.
+
+P38 records 20 exact-match fields, 5 semantic-match fields and 7 explicit non-match fields. It keeps
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC = 0`, `home_observe_enabled = 0`,
+`full_pet2d_runtime_enabled = 0` and `pet2d_runtime_enabled = 0`.

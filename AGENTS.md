@@ -326,6 +326,48 @@ persistence, NFC, audio or real BLE. Capability snapshots may mark the consisten
 present, but must keep `full_pc_simulator_enabled`, `sdl_simulator_enabled`, `home_observe_enabled`,
 `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
 
+## PetEgg P36 Jieli Import of Simulator-developed Scene Rule
+
+P36 may import only the simulator P35/P34 bounded HOME/Observe placeholder scene contract into the
+Jieli board tree. The imported board-side scene may expose a Debug-page manual entry, reuse the proven
+LVGL -> PET2D -> LVGL owner handoff, accept LEFT_UP/RIGHT_DOWN/OK/CANCEL input, use a 160x96 stage with a
+32x32 placeholder pet, and validate the imported manifest/dirty-rect contract through side-effect-free
+self-tests.
+
+P36 is not complete HOME/Observe, not production gameplay, not a simulator binary port, and not the full
+Pet2D runtime. It must not import SDL, C++ simulator shell/runtime, SimBroker, SaveManager, production
+resources, external Flash / virfat / raw NOR paths, formal pet-state saves, NFC, audio or real BLE. The
+Debug entry must remain manual-only and safe when `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` is 0; capability
+snapshots must distinguish `has_mvp_a_home_observe_imported_scene` from HOME/Observe completion and keep
+`home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
+
+## PetEgg P37 Imported Scene Real-flush Smoke Rule
+
+P37 may use a temporary local `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC=1` build to smoke-test the P36
+imported simulator scene on the real Jieli board. It may refine the imported scene's bounded flush/error
+handling and owner-release recovery based on board logs, but the committed source must restore
+`PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC` to 0 and keep the Debug entry manual-only.
+
+P37 is still not complete HOME/Observe, not production gameplay and not full Pet2D runtime enablement.
+Do not restore external Flash / virfat / raw NOR resources, do not modify `download/watch` or
+`fat_comm`, do not write formal pet-state saves or use P21 syscfg item 206/207 as production storage,
+and do not connect real NFC, audio or real BLE. Capability snapshots and documentation must keep
+`home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0.
+
+## PetEgg P38 Simulator / Jieli Imported Scene Reconciliation Rule
+
+P38 may add a side-effect-free reconciliation fixture that compares the simulator P34/P35 bounded
+HOME/Observe placeholder export contract with the Jieli P36/P37 imported-scene adapter. It may classify
+fields as exact match, semantic match or explicit non-match, and may record that P37 manual real-board
+smoke passed, but it must not run a new real LCD test from self-tests or capability snapshots.
+
+P38 is not complete HOME/Observe, not a production renderer/resource route and not full Pet2D runtime
+enablement. Do not claim simulator host CRCs are Jieli LCD CRCs, do not claim SDL-visible parity,
+production resource parity or formal save parity, and do not restore external Flash / virfat / raw NOR,
+formal pet-state saves, NFC, audio or real BLE. Keep `PET_JIELI_ENABLE_REAL_LCD_FLUSH_POC`,
+`home_observe_enabled`, `full_pet2d_runtime_enabled` and `pet2d_runtime_enabled` at 0 in committed
+source.
+
 ## PetEgg P21 Internal Save / syscfg A-B POC Rule
 
 P21 may add a tiny internal-save POC that uses the SDK `syscfg_read` / `syscfg_write` API through a
